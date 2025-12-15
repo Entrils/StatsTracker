@@ -3,6 +3,7 @@ import { db } from "../../firebase";
 import { collection, onSnapshot } from "firebase/firestore";
 import { Link } from "react-router-dom";
 import styles from "./PlayersTab.module.css";
+import { useLang } from "../../i18n/LanguageContext";
 
 const SORTS = {
   SCORE: "score",
@@ -11,6 +12,8 @@ const SORTS = {
 };
 
 export default function PlayersTab() {
+  const { t } = useLang();
+
   const [players, setPlayers] = useState([]);
   const [sortBy, setSortBy] = useState(SORTS.SCORE);
   const [search, setSearch] = useState("");
@@ -43,18 +46,18 @@ export default function PlayersTab() {
   }, [players, sortBy, search]);
 
   if (!players.length) {
-    return <p className={styles.empty}>Пока нет данных</p>;
+    return <p className={styles.empty}>{t.leaderboard.empty}</p>;
   }
 
   return (
     <div className={styles.wrapper}>
       <div className={styles.header}>
-        <h1 className={styles.title}>Players Leaderboard</h1>
+        <h1 className={styles.title}>{t.leaderboard.title}</h1>
 
         <div className={styles.controls}>
           <input
             type="text"
-            placeholder="Search player..."
+            placeholder={t.leaderboard.search}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className={styles.search}
@@ -67,16 +70,18 @@ export default function PlayersTab() {
                 sortBy === SORTS.SCORE ? styles.active : ""
               }`}
             >
-              Score
+              {t.leaderboard.score}
             </button>
+
             <button
               onClick={() => setSortBy(SORTS.KILLS)}
               className={`${styles.sortBtn} ${
                 sortBy === SORTS.KILLS ? styles.active : ""
               }`}
             >
-              Kills
+              {t.leaderboard.kills}
             </button>
+
             <button
               onClick={() => setSortBy(SORTS.KDA)}
               className={`${styles.sortBtn} ${
@@ -93,11 +98,11 @@ export default function PlayersTab() {
         <table className={styles.table}>
           <thead>
             <tr>
-              <th>Player</th>
-              <th>Score</th>
-              <th>K</th>
-              <th>D</th>
-              <th>A</th>
+              <th>{t.upload.player}</th>
+              <th>{t.leaderboard.score}</th>
+              <th>{t.leaderboard.kills}</th>
+              <th>{t.leaderboard.deaths}</th>
+              <th>{t.leaderboard.assists}</th>
             </tr>
           </thead>
 
@@ -130,7 +135,9 @@ export default function PlayersTab() {
         </table>
 
         {!filteredAndSorted.length && (
-          <div className={styles.noResults}>Игрок не найден</div>
+          <div className={styles.noResults}>
+            {t.leaderboard.notFound}
+          </div>
         )}
       </div>
     </div>

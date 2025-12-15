@@ -70,3 +70,37 @@
 .active::after {
   width: 100%;
 }
+
+
+.langSwitch {
+  display: flex;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 6px;
+  border-radius: 14px;
+}
+
+.langBtn {
+  padding: 6px 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #9ca3af;
+  background: transparent;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition:
+    color 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.langBtn:hover {
+  color: #e5e7eb;
+}
+
+.langActive {
+  color: #ffffff;
+  background: linear-gradient(135deg, #6366f1, #22d3ee);
+  box-shadow: 0 0 12px rgba(99, 102, 241, 0.7);
+}

@@ -3,6 +3,11 @@
   margin: 0 auto;
   padding: 2.5rem 1.5rem;
 }
+.actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
 
 .title {
   font-size: 1.75rem;

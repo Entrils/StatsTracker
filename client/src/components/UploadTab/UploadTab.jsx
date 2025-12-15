@@ -3,15 +3,17 @@ import imageCompression from "browser-image-compression";
 import { db } from "../../firebase";
 import { collection, addDoc } from "firebase/firestore";
 import styles from "./UploadTab.module.css";
+import { useLang } from "../../i18n/LanguageContext";
 
 export default function UploadTab() {
+  const { t } = useLang();
+
   const [image, setImage] = useState(null);
   const [players, setPlayers] = useState([]);
   const [status, setStatus] = useState("");
   const [debugText, setDebugText] = useState("");
   const [loading, setLoading] = useState(false);
 
-  /* 🧠 PARSER — БЕЗ ИЗМЕНЕНИЙ */
   const parseFragpunkText = (text) => {
     const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
 
@@ -24,7 +26,7 @@ export default function UploadTab() {
     for (const line of lines) {
       if (
         /^[A-Za-z][A-Za-z0-9_.]{2,}$/.test(line) &&
-        !["Player","Score","KDA","All","VICTORY","MATCH","REPLAY"].includes(line)
+        !["Player", "Score", "KDA", "All", "VICTORY", "MATCH", "REPLAY"].includes(line)
       ) {
         names.push(line);
         continue;
@@ -37,7 +39,14 @@ export default function UploadTab() {
       if (/^\d{1,2}\.\d%$/.test(line)) dmg.push(parseFloat(line));
     }
 
-    const count = Math.min(names.length, scores.length, kdas.length, hits.length, dmg.length, 10);
+    const count = Math.min(
+      names.length,
+      scores.length,
+      kdas.length,
+      hits.length,
+      dmg.length,
+      10
+    );
 
     return Array.from({ length: count }, (_, i) => {
       const [kills, deaths, assists] = kdas[i].split("/").map(Number);
@@ -54,14 +63,13 @@ export default function UploadTab() {
     });
   };
 
-  /* 📸 OCR */
   const handleAnalyze = async () => {
     const fileInput = document.querySelector('input[type="file"]');
     if (!fileInput.files.length) return;
 
     setLoading(true);
     setPlayers([]);
-    setStatus("Сжимаем изображение...");
+    setStatus(t.upload.compressing);
     setDebugText("");
 
     try {
@@ -71,7 +79,7 @@ export default function UploadTab() {
         useWebWorker: true,
       });
 
-      setStatus("Распознаём текст...");
+      setStatus(t.upload.ocr);
 
       const formData = new FormData();
       formData.append("apikey", "K82627207388957");
@@ -90,14 +98,16 @@ export default function UploadTab() {
       const parsed = parseFragpunkText(text);
 
       if (!parsed.length) {
-        setStatus("Статистика не найдена");
+        setStatus(t.upload.notFound);
       } else {
         setPlayers(parsed);
-        setStatus(`Найдено игроков: ${parsed.length}`);
-        for (const p of parsed) await addDoc(collection(db, "players"), p);
+        setStatus(`${t.upload.found} ${parsed.length}`);
+        for (const p of parsed) {
+          await addDoc(collection(db, "players"), p);
+        }
       }
     } catch {
-      setStatus("Ошибка OCR");
+      setStatus(t.upload.error);
     } finally {
       setLoading(false);
     }
@@ -105,27 +115,31 @@ export default function UploadTab() {
 
   return (
     <div className={styles.container}>
-      <h1 className={styles.title}>Загрузка матча</h1>
+      <h1 className={styles.title}>{t.upload.title}</h1>
 
       <div className={styles.card}>
         <input
           type="file"
           accept="image/*"
           onChange={(e) =>
-            setImage(e.target.files[0] ? URL.createObjectURL(e.target.files[0]) : null)
+            setImage(
+              e.target.files[0]
+                ? URL.createObjectURL(e.target.files[0])
+                : null
+            )
           }
           className={styles.fileInput}
         />
 
         {image && <img src={image} alt="preview" className={styles.preview} />}
 
-        <div className="text-center">
+        <div className={styles.actions}>
           <button
             onClick={handleAnalyze}
             disabled={loading}
             className={styles.button}
           >
-            {loading ? "Обработка..." : "Распознать матч"}
+            {loading ? t.upload.processing : t.upload.analyze}
           </button>
         </div>
 
@@ -137,13 +151,13 @@ export default function UploadTab() {
           <table className={styles.table}>
             <thead>
               <tr>
-                <th>Игрок</th>
-                <th>Score</th>
-                <th>K</th>
-                <th>D</th>
-                <th>A</th>
-                <th>Hit</th>
-                <th>% DMG</th>
+                <th>{t.upload.player}</th>
+                <th>{t.upload.score}</th>
+                <th>{t.upload.kills}</th>
+                <th>{t.upload.deaths}</th>
+                <th>{t.upload.assists}</th>
+                <th>{t.upload.hit}</th>
+                <th>{t.upload.damage}</th>
               </tr>
             </thead>
             <tbody>

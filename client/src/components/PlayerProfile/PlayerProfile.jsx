@@ -9,13 +9,15 @@ import {
   XAxis,
   YAxis,
   Tooltip,
-  ResponsiveContainer
+  ResponsiveContainer,
 } from "recharts";
-
 import styles from "./PlayerProfile.module.css";
+import { useLang } from "../../i18n/LanguageContext";
 
 export default function PlayerProfile() {
+  const { t } = useLang();
   const { id } = useParams();
+
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -40,30 +42,37 @@ export default function PlayerProfile() {
     fetchHistory();
   }, [id]);
 
-  if (loading) return <p className={styles.wrapper}>Загрузка профиля...</p>;
-  if (!matches.length) return <p className={styles.wrapper}>Нет истории матчей</p>;
+  if (loading) {
+    return <p className={styles.wrapper}>{t.profile.loading}</p>;
+  }
+
+  if (!matches.length) {
+    return <p className={styles.wrapper}>{t.profile.empty}</p>;
+  }
 
   const player = matches[matches.length - 1];
 
   return (
     <div className={styles.wrapper}>
       <Link to="/players" className={styles.backLink}>
-        ← Назад
+        ← {t.profile.back}
       </Link>
 
       <h1 className={styles.nickname}>{player.name}</h1>
 
       <div className={styles.statsGrid}>
-        <Stat label="Score" value={player.score} />
-        <Stat label="Kills" value={player.kills} />
-        <Stat label="Deaths" value={player.deaths} />
-        <Stat label="Assists" value={player.assists} />
-        <Stat label="Hit Enemy" value={player.hit} />
-        <Stat label="Damage %" value={player.dmgShare} />
+        <Stat label={t.profile.score} value={player.score} />
+        <Stat label={t.profile.kills} value={player.kills} />
+        <Stat label={t.profile.deaths} value={player.deaths} />
+        <Stat label={t.profile.assists} value={player.assists} />
+        <Stat label={t.profile.hit} value={player.hit} />
+        <Stat label={t.profile.damage} value={player.dmgShare} />
       </div>
 
       <div className={styles.chartCard}>
-        <h2 className={styles.chartTitle}>📈 Прогресс</h2>
+        <h2 className={styles.chartTitle}>
+          📈 {t.profile.progress}
+        </h2>
 
         <ResponsiveContainer width="100%" height={300}>
           <LineChart data={matches}>
