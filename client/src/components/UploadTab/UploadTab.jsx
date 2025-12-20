@@ -4,15 +4,26 @@ import { db } from "../../firebase";
 import { collection, addDoc } from "firebase/firestore";
 import styles from "./UploadTab.module.css";
 import { useLang } from "../../i18n/LanguageContext";
+import { useAuth } from "../../auth/AuthContext";
+import { Navigate } from "react-router-dom";
 
 export default function UploadTab() {
   const { t } = useLang();
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return <p style={{ textAlign: "center" }}>Loading...</p>;
+  }
+
+  if (!user) {
+    return <Navigate to="/players" replace />;
+  }
 
   const [image, setImage] = useState(null);
   const [players, setPlayers] = useState([]);
   const [status, setStatus] = useState("");
   const [debugText, setDebugText] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loadingAnalyze, setLoadingAnalyze] = useState(false);
 
   const parseFragpunkText = (text) => {
     const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
@@ -67,7 +78,7 @@ export default function UploadTab() {
     const fileInput = document.querySelector('input[type="file"]');
     if (!fileInput.files.length) return;
 
-    setLoading(true);
+    setLoadingAnalyze(true);
     setPlayers([]);
     setStatus(t.upload.compressing);
     setDebugText("");
@@ -102,14 +113,18 @@ export default function UploadTab() {
       } else {
         setPlayers(parsed);
         setStatus(`${t.upload.found} ${parsed.length}`);
+
         for (const p of parsed) {
-          await addDoc(collection(db, "players"), p);
+          await addDoc(collection(db, "players"), {
+            ...p,
+            userId: user.uid,
+          });
         }
       }
     } catch {
       setStatus(t.upload.error);
     } finally {
-      setLoading(false);
+      setLoadingAnalyze(false);
     }
   };
 
@@ -136,10 +151,10 @@ export default function UploadTab() {
         <div className={styles.actions}>
           <button
             onClick={handleAnalyze}
-            disabled={loading}
+            disabled={loadingAnalyze}
             className={styles.button}
           >
-            {loading ? t.upload.processing : t.upload.analyze}
+            {loadingAnalyze ? t.upload.processing : t.upload.analyze}
           </button>
         </div>
 
