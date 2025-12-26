@@ -1,7 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, Link } from "react-router-dom";
+import {
+  collectionGroup,
+  getDocs,
+  query,
+  where,
+  orderBy,
+} from "firebase/firestore";
 import { db } from "../../firebase";
-import { collection, query, where, getDocs } from "firebase/firestore";
 import {
   LineChart,
   Line,
@@ -16,7 +22,7 @@ import { useLang } from "../../i18n/LanguageContext";
 
 export default function PlayerProfile() {
   const { t } = useLang();
-  const { id } = useParams();
+  const { id: uid } = useParams();
 
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -24,8 +30,9 @@ export default function PlayerProfile() {
   useEffect(() => {
     const fetchHistory = async () => {
       const q = query(
-        collection(db, "players"),
-        where("__name__", "==", id)
+        collectionGroup(db, "players"),
+        where("ownerUid", "==", uid),
+        orderBy("createdAt", "asc")
       );
 
       const snapshot = await getDocs(q);
@@ -40,17 +47,54 @@ export default function PlayerProfile() {
     };
 
     fetchHistory();
-  }, [id]);
+  }, [uid]);
+
+  const summary = useMemo(() => {
+    if (!matches.length) return null;
+
+    const total = matches.reduce(
+      (acc, m) => {
+        acc.score += m.score;
+        acc.kills += m.kills;
+        acc.deaths += m.deaths;
+        acc.assists += m.assists;
+        acc.damage += m.damage;
+        acc.damageShare += m.damageShare;
+        return acc;
+      },
+      {
+        score: 0,
+        kills: 0,
+        deaths: 0,
+        assists: 0,
+        damage: 0,
+        damageShare: 0,
+      }
+    );
+
+    return {
+      name: matches[0].name,
+      matches: matches.length,
+      avgScore: Math.round(total.score / matches.length),
+      avgKills: Math.round(total.kills / matches.length),
+      avgDeaths: Math.round(total.deaths / matches.length),
+      avgAssists: Math.round(total.assists / matches.length),
+      avgDamage: Math.round(total.damage / matches.length),
+      avgDamageShare: (total.damageShare / matches.length).toFixed(1),
+      kda: (
+        (total.kills + total.assists) /
+        Math.max(1, total.deaths)
+      ).toFixed(2),
+    };
+  }, [matches]);
 
   if (loading) {
     return <p className={styles.wrapper}>{t.profile.loading}</p>;
   }
 
-  if (!matches.length) {
+  if (!matches.length || !summary) {
     return <p className={styles.wrapper}>{t.profile.empty}</p>;
   }
-
-  const player = matches[matches.length - 1];
 
   return (
     <div className={styles.wrapper}>
@@ -58,15 +102,20 @@ export default function PlayerProfile() {
         ← {t.profile.back}
       </Link>
 
-      <h1 className={styles.nickname}>{player.name}</h1>
+      <h1 className={styles.nickname}>{summary.name}</h1>
 
       <div className={styles.statsGrid}>
-        <Stat label={t.profile.score} value={player.score} />
-        <Stat label={t.profile.kills} value={player.kills} />
-        <Stat label={t.profile.deaths} value={player.deaths} />
-        <Stat label={t.profile.assists} value={player.assists} />
-        <Stat label={t.profile.hit} value={player.hit} />
-        <Stat label={t.profile.damage} value={player.dmgShare} />
+        <Stat label={t.profile.matches} value={summary.matches} />
+        <Stat label={t.profile.score} value={summary.avgScore} />
+        <Stat label={t.profile.kills} value={summary.avgKills} />
+        <Stat label={t.profile.deaths} value={summary.avgDeaths} />
+        <Stat label={t.profile.assists} value={summary.avgAssists} />
+        <Stat label="KDA" value={summary.kda} />
+        <Stat label={t.profile.damage} value={summary.avgDamage} />
+        <Stat
+          label={t.profile.damageShare}
+          value={`${summary.avgDamageShare}%`}
+        />
       </div>
 
       <div className={styles.chartCard}>
