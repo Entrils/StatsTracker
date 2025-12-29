@@ -1,19 +1,19 @@
 .wrapper {
   padding: 24px;
-  color: #e5e7eb;
+  color: var(--text-main);
 }
 
 .backLink {
   display: inline-block;
   margin-bottom: 16px;
-  color: #60a5fa;
+  color: var(--neon-cyan);
   text-decoration: none;
   font-weight: 500;
   transition: color 0.2s;
 }
 
 .backLink:hover {
-  color: #93c5fd;
+  color: var(--neon-lime);
 }
 
 .nickname {
@@ -21,7 +21,10 @@
   font-weight: 800;
   margin: 16px 0 32px;
   letter-spacing: 0.5px;
-  text-shadow: 0 0 12px rgba(99, 102, 241, 0.35);
+  text-transform: uppercase;
+  text-shadow:
+    0 0 16px rgba(0, 245, 212, 0.45),
+    0 0 34px rgba(255, 45, 149, 0.35);
 }
 
 .statsGrid {
@@ -35,16 +38,16 @@
 .statCard {
   background: linear-gradient(
     145deg,
-    rgba(17, 24, 39, 0.9),
-    rgba(31, 41, 55, 0.9)
+    rgba(7, 10, 18, 0.92),
+    rgba(16, 22, 36, 0.92)
   );
   border-radius: 16px;
   padding: 16px;
   text-align: center;
-  border: 1px solid rgba(99, 102, 241, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow:
     0 0 0 rgba(0, 0, 0, 0),
-    inset 0 0 20px rgba(99, 102, 241, 0.05);
+    inset 0 0 20px rgba(0, 245, 212, 0.08);
   transition: transform 0.2s, box-shadow 0.2s;
 }
 
@@ -52,14 +55,14 @@
   transform: translateY(-4px);
   box-shadow:
     0 12px 30px rgba(0, 0, 0, 0.45),
-    inset 0 0 25px rgba(99, 102, 241, 0.15);
+    inset 0 0 25px rgba(0, 245, 212, 0.18);
 }
 
 .statLabel {
   font-size: 0.75rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #9ca3af;
+  color: #9aa4c1;
   margin-bottom: 6px;
 }
 
@@ -72,13 +75,13 @@
 .chartCard {
   background: linear-gradient(
     160deg,
-    rgba(17, 24, 39, 0.95),
-    rgba(31, 41, 55, 0.95)
+    rgba(7, 10, 18, 0.95),
+    rgba(16, 22, 36, 0.95)
   );
   border-radius: 20px;
   padding: 24px;
-  border: 1px solid rgba(99, 102, 241, 0.3);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: var(--shadow-strong);
 }
 
 .chartTitle {
@@ -86,5 +89,5 @@
   font-weight: 700;
   margin-bottom: 16px;
   color: #e0e7ff;
-  text-shadow: 0 0 10px rgba(99, 102, 241, 0.4);
+  text-shadow: 0 0 10px rgba(0, 245, 212, 0.4);
 }

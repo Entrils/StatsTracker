@@ -2,6 +2,9 @@
   max-width: 56rem;
   margin: 0 auto;
   padding: 2.5rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 .actions {
   display: flex;
@@ -16,48 +19,163 @@
   text-align: center;
   background: linear-gradient(
     90deg,
-    var(--accent-cyan),
-    var(--accent-purple)
+    var(--neon-cyan),
+    var(--neon-pink),
+    var(--neon-amber)
   );
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
 .card {
-  background: rgba(15, 23, 42, 0.8);
+  background: var(--bg-card);
   border: 1px solid var(--border-soft);
   border-radius: 1.25rem;
   padding: 1.5rem;
-  box-shadow: 0 0 40px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--shadow-strong);
   backdrop-filter: blur(14px);
+  width: min(720px, 100%);
 }
 
 .fileInput {
   margin: 1rem auto;
-  display: block;
+  display: none;
   color: var(--text-muted);
+}
+
+.uploadArea {
+  border-radius: 18px;
+  border: 1px dashed rgba(0, 245, 212, 0.5);
+  background:
+    linear-gradient(140deg, rgba(7, 10, 18, 0.9), rgba(16, 22, 36, 0.9));
+  padding: 28px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: border 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.uploadArea:hover {
+  border-color: rgba(163, 255, 18, 0.8);
+  box-shadow: 0 0 18px rgba(0, 245, 212, 0.35);
+  transform: translateY(-2px);
+}
+
+.uploadAreaDrag {
+  border-color: rgba(255, 45, 149, 0.9);
+  box-shadow:
+    0 0 24px rgba(255, 45, 149, 0.45),
+    0 0 50px rgba(0, 245, 212, 0.25);
+  transform: scale(1.02);
+}
+
+.uploadIcon {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #a3ff12, #00f5d4);
+  color: #081016;
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  font-weight: 800;
+  box-shadow: 0 0 18px rgba(0, 245, 212, 0.35);
+}
+
+.uploadText {
+  font-size: 16px;
+  font-weight: 800;
+  color: #f8fafc;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.uploadHint {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.fileName {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #f2f4ff;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(0, 245, 212, 0.12);
+  border: 1px solid rgba(0, 245, 212, 0.3);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fileStatus {
+  margin: 16px auto 0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-align: center;
+  width: 100%;
+}
+
+.fileStatusIcon {
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #a3ff12, #00f5d4);
+  color: #081016;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.fileStatusText {
+  font-size: 12px;
+  font-weight: 700;
+  color: #e7f0ff;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.fileStatusReady {
+  border: 1px solid rgba(163, 255, 18, 0.45);
+  background: rgba(163, 255, 18, 0.08);
+}
+
+.fileStatusEmpty {
+  border: 1px solid rgba(255, 45, 149, 0.45);
+  background: rgba(255, 45, 149, 0.08);
 }
 
 .preview {
   max-height: 24rem;
   margin: 1.5rem auto;
   border-radius: 1rem;
-  box-shadow: 0 0 30px rgba(34, 211, 238, 0.25);
+  box-shadow: 0 0 30px rgba(0, 245, 212, 0.25);
 }
 
 .button {
-  display: inline-block;
-  margin-top: 1rem;
+  display: block;
+  margin: 1rem auto 0;
   padding: 0.75rem 2rem;
   font-weight: 700;
   border-radius: 0.75rem;
-  background: linear-gradient(
-    135deg,
-    var(--accent-cyan),
-    var(--accent-purple)
-  );
-  color: #020617;
+  background: linear-gradient(135deg, #a3ff12, #00f5d4);
+  color: #081016;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.buttonReady {
+  box-shadow:
+    0 0 18px rgba(163, 255, 18, 0.35),
+    0 0 28px rgba(0, 245, 212, 0.45);
 }
 
 .button:disabled {
@@ -67,7 +185,7 @@
 
 .button:hover:not(:disabled) {
   transform: scale(1.05);
-  box-shadow: 0 0 25px rgba(168, 85, 247, 0.6);
+  box-shadow: 0 0 25px rgba(0, 245, 212, 0.6);
 }
 
 .status {
@@ -85,7 +203,7 @@
 .table {
   width: 100%;
   border-collapse: collapse;
-  background: rgba(2, 6, 23, 0.8);
+  background: rgba(6, 9, 18, 0.85);
   border-radius: 1rem;
   overflow: hidden;
 }
@@ -98,20 +216,20 @@
 }
 
 .table th {
-  background: rgba(15, 23, 42, 0.9);
+  background: rgba(12, 16, 30, 0.9);
   font-size: 0.85rem;
   color: var(--text-muted);
   text-transform: uppercase;
 }
 
 .table tr:hover td {
-  background: rgba(34, 211, 238, 0.08);
+  background: rgba(0, 245, 212, 0.08);
 }
 
 
 .debug {
   margin-top: 2rem;
-  background: rgba(15, 23, 42, 0.9);
+  background: rgba(12, 16, 30, 0.9);
   border: 1px solid var(--border-soft);
   border-radius: 1rem;
   padding: 1rem;

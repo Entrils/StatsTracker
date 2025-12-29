@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
   collectionGroup,
@@ -99,7 +99,7 @@ export default function PlayerProfile() {
   return (
     <div className={styles.wrapper}>
       <Link to="/players" className={styles.backLink}>
-        ← {t.profile.back}
+        {t.profile.back}
       </Link>
 
       <h1 className={styles.nickname}>{summary.name}</h1>
@@ -110,7 +110,7 @@ export default function PlayerProfile() {
         <Stat label={t.profile.kills} value={summary.avgKills} />
         <Stat label={t.profile.deaths} value={summary.avgDeaths} />
         <Stat label={t.profile.assists} value={summary.avgAssists} />
-        <Stat label="KDA" value={summary.kda} />
+        <Stat label={t.profile.kda} value={summary.kda} />
         <Stat label={t.profile.damage} value={summary.avgDamage} />
         <Stat
           label={t.profile.damageShare}
@@ -119,9 +119,7 @@ export default function PlayerProfile() {
       </div>
 
       <div className={styles.chartCard}>
-        <h2 className={styles.chartTitle}>
-          📈 {t.profile.progress}
-        </h2>
+        <h2 className={styles.chartTitle}>{t.profile.progress}</h2>
 
         <ResponsiveContainer width="100%" height={300}>
           <LineChart data={matches}>
@@ -156,3 +154,4 @@ function Stat({ label, value }) {
     </div>
   );
 }
+

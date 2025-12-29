@@ -1,4 +1,4 @@
-export default {
+﻿export default {
   nav: {
     upload: "Загрузка",
     players: "Игроки",
@@ -31,11 +31,16 @@ export default {
     assists: "А",
     hit: "Попадания",
     damage: "% урона",
+    selectFile: "Выбрать скриншот",
+    selectHint: "PNG/JPG, желательно полный экран",
+    fileReady: "Файл загружен — можно анализировать",
+    fileMissing: "Файл еще не выбран",
   },
    profile: {
     loading: "Загрузка профиля...",
     empty: "Нет истории матчей",
     back: "Назад",
+    matches: "Матчи",
     score: "Счёт",
     kills: "Убийства",
     deaths: "Смерти",
@@ -43,6 +48,8 @@ export default {
     hit: "Попадания",
     damage: "% урона",
     progress: "Прогресс",
+    damageShare: "Доля урона",
+    kda: "KDA",
   },
     me: {
     title: "Мой профиль",
@@ -72,3 +79,5 @@ export default {
     date: "Дата",
   },
 };
+
+

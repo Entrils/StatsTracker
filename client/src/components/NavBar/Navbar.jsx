@@ -1,18 +1,19 @@
-import { NavLink, useNavigate } from "react-router-dom"; // ✅ useNavigate
+import { useEffect, useRef, useState } from "react";
+import { NavLink, useNavigate } from "react-router-dom";
+import { signOut } from "firebase/auth";
 import styles from "./Navbar.module.css";
 import { useLang } from "../../i18n/LanguageContext";
 import DiscordLoginButton from "../../buttons/DiscordLoginButton/DiscordLoginButton";
 import { useAuth } from "../../auth/AuthContext";
-import { signOut } from "firebase/auth";
 import { auth } from "../../firebase";
-import { useEffect, useRef, useState } from "react";
 
 export default function Navbar() {
   const { lang, setLang, t } = useLang();
   const { user, claims } = useAuth();
-  const navigate = useNavigate(); // ✅
+  const navigate = useNavigate();
 
   const [open, setOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const dropdownRef = useRef(null);
 
   let discordAvatarUrl = null;
@@ -43,88 +44,195 @@ export default function Navbar() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+  const closeMobile = () => setMobileOpen(false);
+
   return (
     <nav className={styles.navbar}>
-      <div className={styles.logo}>
-        FRAG<span>PUNK</span>
-      </div>
+      <div className={styles.navInner}>
+        <div className={styles.logo}>
+          FRAG<span>PUNK</span>
+        </div>
 
-      <div className={styles.links}>
-        {user && (
+        <div className={styles.links}>
+          {user && (
+            <NavLink
+              to="/"
+              className={({ isActive }) =>
+                `${styles.link} ${isActive ? styles.active : ""}`
+              }
+            >
+              {t.nav.upload}
+            </NavLink>
+          )}
+
           <NavLink
-            to="/"
+            to="/players"
             className={({ isActive }) =>
               `${styles.link} ${isActive ? styles.active : ""}`
             }
           >
-            {t.nav.upload}
+            {t.nav.players}
           </NavLink>
-        )}
+        </div>
 
-        <NavLink
-          to="/players"
-          className={({ isActive }) =>
-            `${styles.link} ${isActive ? styles.active : ""}`
-          }
-        >
-          {t.nav.players}
-        </NavLink>
-      </div>
+        <div className={styles.right}>
+          {!user && <DiscordLoginButton />}
 
-      <div className={styles.right}>
-        {!user && <DiscordLoginButton />}
+          {user && (
+            <div className={styles.dropdownWrapper} ref={dropdownRef}>
+              <button
+                className={styles.userButton}
+                onClick={() => setOpen((v) => !v)}
+              >
+                {discordAvatarUrl && (
+                  <img
+                    src={discordAvatarUrl}
+                    alt={discordUsername}
+                    className={styles.avatar}
+                  />
+                )}
+                <span className={styles.username}>
+                  {discordUsername || "User"}
+                </span>
+                <span
+                  className={`${styles.chevron} ${
+                    open ? styles.chevronOpen : ""
+                  }`}
+                >
+                  v
+                </span>
+              </button>
 
-        {user && (
-          <div className={styles.dropdownWrapper} ref={dropdownRef}>
-            <button
-              className={styles.userButton}
-              onClick={() => setOpen((v) => !v)}
-            >
-              {discordAvatarUrl && (
-                <img
-                  src={discordAvatarUrl}
-                  alt={discordUsername}
-                  className={styles.avatar}
-                />
-              )}
-              <span className={styles.username}>
-                {discordUsername || "User"}
-              </span>
-              <span
-                className={`${styles.chevron} ${
-                  open ? styles.chevronOpen : ""
+              <div
+                className={`${styles.dropdown} ${
+                  open ? styles.dropdownOpen : ""
                 }`}
               >
-                ▾
-              </span>
+                <button
+                  onClick={() => {
+                    setOpen(false);
+                    navigate("/me");
+                  }}
+                  className={styles.dropdownItem}
+                >
+                  {t.nav.myProfile || "My profile"}
+                </button>
+
+                <button onClick={handleLogout} className={styles.dropdownItem}>
+                  {t.nav.Logout || "Logout"}
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className={styles.langSwitch}>
+            <button
+              className={`${styles.langBtn} ${
+                lang === "en" ? styles.langActive : ""
+              }`}
+              onClick={() => setLang("en")}
+            >
+              EN
             </button>
 
-            <div
-              className={`${styles.dropdown} ${
-                open ? styles.dropdownOpen : ""
+            <button
+              className={`${styles.langBtn} ${
+                lang === "ru" ? styles.langActive : ""
               }`}
+              onClick={() => setLang("ru")}
             >
-              <button
-                onClick={() => {
-                  setOpen(false);
-                  navigate("/me");
-                }}
-                className={styles.dropdownItem}
-              >
-                {t.nav.myProfile || "My profile"}
-              </button>
-
-              <button
-                onClick={handleLogout}
-                className={styles.dropdownItem}
-              >
-                {t.nav.Logout || "Logout"}
-              </button>
-            </div>
+              RU
+            </button>
           </div>
-        )}
 
-        <div className={styles.langSwitch}>
+          <button
+            className={styles.burger}
+            onClick={() => setMobileOpen((v) => !v)}
+            aria-label="Open menu"
+            aria-expanded={mobileOpen}
+          >
+            <span />
+            <span />
+            <span />
+          </button>
+        </div>
+      </div>
+
+      <div
+        className={`${styles.mobileOverlay} ${
+          mobileOpen ? styles.mobileOverlayOpen : ""
+        }`}
+        onClick={closeMobile}
+      />
+
+      <aside
+        className={`${styles.offcanvas} ${
+          mobileOpen ? styles.offcanvasOpen : ""
+        }`}
+      >
+        <div className={styles.offcanvasHeader}>
+          <div className={styles.logo}>
+            FRAG<span>PUNK</span>
+          </div>
+          <button
+            className={styles.closeBtn}
+            onClick={closeMobile}
+            aria-label="Close menu"
+          >
+            x
+          </button>
+        </div>
+
+        <div className={styles.offcanvasLinks}>
+          {user && (
+            <NavLink
+              to="/"
+              onClick={closeMobile}
+              className={({ isActive }) =>
+                `${styles.offcanvasLink} ${isActive ? styles.active : ""}`
+              }
+            >
+              {t.nav.upload}
+            </NavLink>
+          )}
+          <NavLink
+            to="/players"
+            onClick={closeMobile}
+            className={({ isActive }) =>
+              `${styles.offcanvasLink} ${isActive ? styles.active : ""}`
+            }
+          >
+            {t.nav.players}
+          </NavLink>
+          {user && (
+            <NavLink
+              to="/me"
+              onClick={closeMobile}
+              className={({ isActive }) =>
+                `${styles.offcanvasLink} ${isActive ? styles.active : ""}`
+              }
+            >
+              {t.nav.myProfile || "My profile"}
+            </NavLink>
+          )}
+        </div>
+
+        <div className={styles.offcanvasActions}>
+          {!user && <DiscordLoginButton />}
+          {user && (
+            <button
+              onClick={async () => {
+                await handleLogout();
+                closeMobile();
+              }}
+              className={styles.offcanvasBtn}
+            >
+              {t.nav.Logout || "Logout"}
+            </button>
+          )}
+        </div>
+
+        <div className={styles.offcanvasLang}>
           <button
             className={`${styles.langBtn} ${
               lang === "en" ? styles.langActive : ""
@@ -133,7 +241,6 @@ export default function Navbar() {
           >
             EN
           </button>
-
           <button
             className={`${styles.langBtn} ${
               lang === "ru" ? styles.langActive : ""
@@ -143,7 +250,7 @@ export default function Navbar() {
             RU
           </button>
         </div>
-      </div>
+      </aside>
     </nav>
   );
 }
