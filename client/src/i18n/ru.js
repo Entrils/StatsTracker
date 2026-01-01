@@ -32,7 +32,7 @@
     hit: "Попадания",
     damage: "% урона",
     selectFile: "Выбрать скриншот",
-    selectHint: "PNG/JPG, желательно полный экран",
+    selectHint: "PNG/JPG, полный экран",
     fileReady: "Файл загружен — можно анализировать",
     fileMissing: "Файл еще не выбран",
   },

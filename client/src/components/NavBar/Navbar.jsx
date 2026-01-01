@@ -30,6 +30,7 @@ export default function Navbar() {
 
   const handleLogout = async () => {
     setOpen(false);
+    sessionStorage.removeItem("discord_oauth_code");
     await signOut(auth);
   };
 

@@ -83,10 +83,12 @@ export default function DiscordCallback() {
         });
 
         console.log("[DEBUG] User fully logged in, redirecting");
+        sessionStorage.removeItem("discord_oauth_code");
         window.history.replaceState({}, document.title, "/");
         navigate("/", { replace: true });
       } catch (err) {
         console.error("[DEBUG] DISCORD LOGIN ERROR:", err);
+        sessionStorage.removeItem("discord_oauth_code");
         navigate("/", { replace: true });
       }
     };
