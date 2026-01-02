@@ -13,6 +13,10 @@ export function LanguageProvider({ children }) {
 
   useEffect(() => {
     localStorage.setItem("lang", lang);
+    if (typeof document !== "undefined") {
+      document.documentElement.lang = lang;
+      document.documentElement.dataset.lang = lang;
+    }
   }, [lang]);
 
   const value = {
