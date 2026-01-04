@@ -1,17 +1,71 @@
 import express from "express";
 import cors from "cors";
+import rateLimit from "express-rate-limit";
 import dotenv from "dotenv";
 import admin from "firebase-admin";
-import serviceAccount from "./firebaseServiceAccount.json" assert { type: "json" };
 
 dotenv.config();
 
 const app = express();
-app.use(cors());
+
+const allowedOrigins = (process.env.CORS_ORIGINS || "")
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
+
+app.use(
+  cors({
+    origin: (origin, cb) => {
+      if (!origin) return cb(null, true); // allow server-to-server or curl
+      if (!allowedOrigins.length) return cb(null, true);
+      return allowedOrigins.includes(origin)
+        ? cb(null, true)
+        : cb(new Error("Not allowed by CORS"));
+    },
+    credentials: true,
+  })
+);
+
 app.use(express.json());
 
+const baseLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 300,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+});
+
+const authLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  limit: 30,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+});
+
+const statsLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000,
+  limit: 60,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+});
+
+const ocrLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  limit: 20,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+});
+
+app.use(baseLimiter);
+
+const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON
+  ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON)
+  : null;
+
 admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
+  credential: serviceAccountJson
+    ? admin.credential.cert(serviceAccountJson)
+    : admin.credential.applicationDefault(),
 });
 
 const db = admin.firestore();
@@ -21,6 +75,8 @@ let globalCache = {
   distributions: null,
   countPlayers: 0,
 };
+const PERCENTILES_CACHE_TTL_MS = 60 * 1000;
+const percentilesCache = new Map();
 
 function percentileRank(sorted, value) {
   if (!sorted?.length || typeof value !== "number" || Number.isNaN(value)) {
@@ -226,7 +282,7 @@ async function getDistributions() {
   return globalCache;
 }
 
-app.post("/auth/discord", async (req, res) => {
+app.post("/auth/discord", authLimiter, async (req, res) => {
   const { code } = req.body;
 
   console.log("AUTH REQUEST RECEIVED. CODE:", code);
@@ -300,11 +356,104 @@ app.post("/auth/discord", async (req, res) => {
   }
 });
 
-app.post("/stats/percentiles", async (req, res) => {
+app.post("/ocr", ocrLimiter, async (req, res) => {
+  try {
+    const { base64Image } = req.body || {};
+    if (!base64Image) {
+      return res.status(400).json({ error: "Missing base64Image" });
+    }
+    if (!process.env.OCR_SPACE_API_KEY) {
+      return res.status(500).json({ error: "OCR key not configured" });
+    }
+
+    const form = new URLSearchParams();
+    form.append("apikey", process.env.OCR_SPACE_API_KEY);
+    form.append("language", "eng");
+    form.append("OCREngine", "2");
+    form.append("scale", "true");
+    form.append("isOverlayRequired", "false");
+    form.append("base64Image", base64Image);
+
+    const r = await fetch("https://api.ocr.space/parse/image", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: form.toString(),
+    });
+
+    if (!r.ok) {
+      const text = await r.text();
+      return res.status(502).json({ error: "OCR request failed", details: text });
+    }
+
+    const data = await r.json();
+    return res.json(data);
+  } catch (err) {
+    console.error("OCR ERROR:", err);
+    return res.status(500).json({ error: "OCR failed" });
+  }
+});
+
+app.post("/stats/percentiles", statsLimiter, async (req, res) => {
   try {
     const metrics = req.body?.metrics;
     if (!metrics) {
       return res.status(400).json({ error: "Missing metrics" });
+    }
+
+    const numberFields = [
+      "matches",
+      "wins",
+      "losses",
+      "winrate",
+      "avgScore",
+      "avgKills",
+      "avgDeaths",
+      "avgAssists",
+      "avgDamage",
+      "avgDamageShare",
+      "kda",
+    ];
+
+    for (const key of numberFields) {
+      const v = metrics[key];
+      if (typeof v !== "number" || Number.isNaN(v) || !Number.isFinite(v)) {
+        return res.status(400).json({ error: `Invalid ${key}` });
+      }
+    }
+
+    if (metrics.matches < 0 || metrics.matches > 100000) {
+      return res.status(400).json({ error: "Invalid matches" });
+    }
+    if (metrics.wins < 0 || metrics.losses < 0) {
+      return res.status(400).json({ error: "Invalid wins/losses" });
+    }
+    if (metrics.wins + metrics.losses > metrics.matches + 1) {
+      return res.status(400).json({ error: "Wins/losses exceed matches" });
+    }
+    if (metrics.winrate < 0 || metrics.winrate > 100) {
+      return res.status(400).json({ error: "Invalid winrate" });
+    }
+    if (metrics.avgDamageShare < 0 || metrics.avgDamageShare > 100) {
+      return res.status(400).json({ error: "Invalid damageShare" });
+    }
+    if (metrics.kda < 0 || metrics.kda > 50) {
+      return res.status(400).json({ error: "Invalid kda" });
+    }
+    if (
+      metrics.avgScore < 0 ||
+      metrics.avgKills < 0 ||
+      metrics.avgDeaths < 0 ||
+      metrics.avgAssists < 0 ||
+      metrics.avgDamage < 0
+    ) {
+      return res.status(400).json({ error: "Invalid averages" });
+    }
+
+    const cacheKey = JSON.stringify(metrics);
+    const cached = percentilesCache.get(cacheKey);
+    const now = Date.now();
+    if (cached && now - cached.ts < PERCENTILES_CACHE_TTL_MS) {
+      return res.json(cached.payload);
     }
 
     const cache = await getDistributions();
@@ -328,13 +477,16 @@ app.post("/stats/percentiles", async (req, res) => {
       kda: topPercent(dist.kda, metrics.kda, true),
     };
 
-    return res.json({
+    const payload = {
       updatedAt: cache.updatedAt,
       countPlayers: cache.countPlayers,
       averages: cache.averages,
       matchAverages: cache.matchAverages,
       percentiles,
-    });
+    };
+
+    percentilesCache.set(cacheKey, { ts: now, payload });
+    return res.json(payload);
   } catch (err) {
     console.error("PERCENTILES ERROR:", err);
     return res.status(500).json({ error: "Failed to compute percentiles" });

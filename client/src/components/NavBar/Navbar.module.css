@@ -71,16 +71,46 @@
   z-index: 1;
   font-size: 22px;
   font-weight: 800;
-  letter-spacing: 1.4px;
+  letter-spacing: 1.2px;
   color: #f8fafc;
   text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  border: none;
+  text-shadow:
+    0 0 14px rgba(0, 245, 212, 0.45),
+    0 0 28px rgba(255, 45, 149, 0.35);
 }
 
 .logo span {
-  color: #00f5d4;
-  text-shadow:
-    0 0 12px rgba(0, 245, 212, 0.8),
-    0 0 30px rgba(255, 45, 149, 0.5);
+  color: #0b0f1a;
+  padding: 6px 12px;
+  border-radius: 4px;
+  background: linear-gradient(135deg, #ff2d95, #ffb200);
+  text-shadow: none;
+  box-shadow:
+    0 0 18px rgba(255, 45, 149, 0.55),
+    0 0 28px rgba(255, 178, 0, 0.35);
+  transform: skewX(-10deg);
+  animation: trackerGlow 3s ease-in-out infinite;
+}
+
+@keyframes trackerGlow {
+  0%,
+  100% {
+    box-shadow:
+      0 0 8px rgba(255, 45, 149, 0.28),
+      0 0 14px rgba(255, 178, 0, 0.18);
+  }
+  50% {
+    box-shadow:
+      0 0 16px rgba(255, 45, 149, 0.55),
+      0 0 26px rgba(255, 178, 0, 0.35);
+  }
 }
 
 .links {

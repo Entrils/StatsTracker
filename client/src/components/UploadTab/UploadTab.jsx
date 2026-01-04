@@ -322,18 +322,25 @@ export default function UploadTab() {
 
       setStatus(`${t.upload.ocr} (player)`);
 
-      const f = new FormData();
-      f.append("apikey", "K82627207388957");
-      f.append("language", "eng");
-      f.append("OCREngine", "2");
-      f.append("scale", "true");
-      f.append("isOverlayRequired", "false");
-      f.append("file", blob, "player.png");
-
-      const r = await fetch("https://api.ocr.space/parse/image", {
-        method: "POST",
-        body: f,
+      const reader = new FileReader();
+      const base64Image = await new Promise((resolve, reject) => {
+        reader.onerror = () => reject(reader.error);
+        reader.onload = () => resolve(reader.result);
+        reader.readAsDataURL(blob);
       });
+
+      const r = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL || "http://localhost:4000"}/ocr`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ base64Image }),
+        }
+      );
+
+      if (!r.ok) {
+        throw new Error(`OCR request failed: ${await r.text()}`);
+      }
 
       const ocrJson = await r.json();
       const pt = ocrJson.ParsedResults?.[0]?.ParsedText || "";

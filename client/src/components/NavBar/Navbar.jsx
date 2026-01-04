@@ -51,7 +51,7 @@ export default function Navbar() {
     <nav className={styles.navbar}>
       <div className={styles.navInner}>
         <div className={styles.logo}>
-          FRAG<span>PUNK</span>
+          FragPunk <span>Tracker</span>
         </div>
 
         <div className={styles.links}>
@@ -173,7 +173,7 @@ export default function Navbar() {
       >
         <div className={styles.offcanvasHeader}>
           <div className={styles.logo}>
-            FRAG<span>PUNK</span>
+            FragPunk <span>Tracker</span>
           </div>
           <button
             className={styles.closeBtn}

@@ -1,2 +1,5 @@
 # secrets
 server/firebaseServiceAccount.json
+.env
+server/.env
+client/.env
