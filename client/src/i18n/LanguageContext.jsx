@@ -1,8 +1,10 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import ru from "./ru";
 import en from "./en";
+import de from "./de";
+import fr from "./fr";
 
-const translations = { ru, en };
+const translations = { ru, en, de, fr };
 
 const LanguageContext = createContext();
 
@@ -22,7 +24,7 @@ export function LanguageProvider({ children }) {
   const value = {
     lang,
     setLang,
-    t: translations[lang],
+    t: translations[lang] || translations.ru,
   };
 
   return (

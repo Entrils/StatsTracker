@@ -1,0 +1,58 @@
+.footer {
+  margin-top: auto;
+  padding: 14px 14px 8px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.74rem;
+  letter-spacing: 0.04em;
+  border-top: 1px solid var(--border-soft);
+  background: linear-gradient(
+    180deg,
+    rgba(6, 8, 16, 0),
+    rgba(6, 8, 16, 0.4)
+  );
+}
+
+.brand {
+  font-family: "Oxanium", "Noto Sans", "Segoe UI", sans-serif;
+  font-weight: 800;
+  font-size: 0.78rem;
+  color: #f3f6ff;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+  text-shadow:
+    0 0 16px rgba(0, 245, 212, 0.35),
+    0 0 26px rgba(255, 45, 149, 0.2);
+}
+
+.copy {
+  max-width: 720px;
+  margin: 0 auto;
+  line-height: 1.4;
+}
+
+.links {
+  margin-top: 6px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.link {
+  color: var(--neon-cyan);
+  font-weight: 700;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.link:hover {
+  color: var(--neon-lime);
+}
+
+.sep {
+  color: var(--text-muted);
+}

@@ -1,35 +1,109 @@
-import React, { useEffect, useRef, useState } from "react";
+﻿import React, { useRef, useState } from "react";
 import imageCompression from "browser-image-compression";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "../../firebase";
 import styles from "./UploadTab.module.css";
 import { useLang } from "../../i18n/LanguageContext";
 import { useAuth } from "../../auth/AuthContext";
-import { createWorker } from "tesseract.js";
 
 function extractMatchId(text) {
   if (!text) return null;
 
   const raw = text.toLowerCase();
+  const lines = raw.split("\n").map((l) => l.trim());
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i];
+    if (/(match\s*id|matchid|код\s*матча)/.test(line)) {
+      const candidateLine =
+        line + " " + (lines[i + 1] || "") + " " + (lines[i + 2] || "");
+      const token = candidateLine.match(/[a-z0-9]{6,32}/i);
+      if (token) return token[0];
+      const compact = candidateLine.replace(/[^a-f0-9]/gi, "");
+      if (compact.length >= 6) return compact;
+    }
+  }
+  const labelHit = raw.match(
+    /(?:match\s*id|matchid|код\s*матча)\s*[:#-]?\s*([a-f0-9]{6,32})/
+  );
+  if (labelHit) return labelHit[1];
 
-  const hex = raw.match(/\b[a-f0-9]{16,32}\b/);
+  const hex = raw.match(/\b[a-f0-9]{12,32}\b/);
   if (hex) return hex[0];
 
   const normalized = raw
     .replace(/[\s:]/g, "")
     .replace(/[li]/g, "1")
-    .replace(/o/g, "0");
+    .replace(/o/g, "0")
+    .replace(/[а]/g, "a")
+    .replace(/[в]/g, "b")
+    .replace(/[с]/g, "c")
+    .replace(/[е]/g, "e")
+    .replace(/[ф]/g, "f");
 
-  const numeric = normalized.match(/\d{7,14}/);
+  const labelNormalized = normalized.match(
+    /(matchid|кодматча)([a-f0-9]{6,32})/
+  );
+  if (labelNormalized) return labelNormalized[2];
+
+  const numeric = normalized.match(/\d{7,16}/);
   return numeric ? numeric[0] : null;
 }
 
 function parseMatchResult(text) {
   if (!text) return null;
   const t = String(text).toUpperCase();
+  const latin = t.replace(/[^A-Z]/g, "");
+  const cyrA = t
+    .replace(/[A]/g, "А")
+    .replace(/[B]/g, "В")
+    .replace(/[C]/g, "С")
+    .replace(/[E]/g, "Е")
+    .replace(/[H]/g, "Н")
+    .replace(/[K]/g, "К")
+    .replace(/[M]/g, "М")
+    .replace(/[O]/g, "О")
+    .replace(/[P]/g, "Р")
+    .replace(/[T]/g, "Т")
+    .replace(/[X]/g, "Х")
+    .replace(/[Y]/g, "У")
+    .replace(/[N]/g, "И")
+    .replace(/[V]/g, "В")
+    .replace(/[^А-Я]/g, "");
+  const cyrB = t
+    .replace(/[A]/g, "А")
+    .replace(/[B]/g, "В")
+    .replace(/[C]/g, "С")
+    .replace(/[E]/g, "Е")
+    .replace(/[H]/g, "Н")
+    .replace(/[K]/g, "К")
+    .replace(/[M]/g, "П")
+    .replace(/[O]/g, "О")
+    .replace(/[P]/g, "Р")
+    .replace(/[T]/g, "Т")
+    .replace(/[X]/g, "Х")
+    .replace(/[Y]/g, "У")
+    .replace(/[N]/g, "О")
+    .replace(/[V]/g, "В")
+    .replace(/[^А-Я]/g, "");
 
-  if (t.includes("VICTORY")) return "victory";
-  if (t.includes("DEFEAT")) return "defeat";
+  if (
+    latin.includes("VICTORY") ||
+    cyrA.includes("ПОБЕД") ||
+    cyrA.includes("ПОБЕ") ||
+    cyrB.includes("ПОБЕД") ||
+    cyrB.includes("ПОБЕ") ||
+    t.includes("ПОБЕДА")
+  )
+    return "victory";
+  if (
+    latin.includes("DEFEAT") ||
+    cyrA.includes("ПОРАЖ") ||
+    cyrA.includes("ПОРА") ||
+    cyrB.includes("ПОРАЖ") ||
+    cyrB.includes("ПОРА") ||
+    t.includes("ПОРАЖЕНИЕ")
+  )
+    return "defeat";
 
   return null;
 }
@@ -55,8 +129,29 @@ function preprocessForOCR(srcCanvas) {
   return c;
 }
 
+function preprocessForMatchId(srcCanvas) {
+  const c = document.createElement("canvas");
+  c.width = Math.max(1, Math.floor(srcCanvas.width * 2.4));
+  c.height = Math.max(1, Math.floor(srcCanvas.height * 2.4));
+
+  const ctx = c.getContext("2d");
+  ctx.drawImage(srcCanvas, 0, 0, c.width, c.height);
+
+  const img = ctx.getImageData(0, 0, c.width, c.height);
+  const d = img.data;
+
+  for (let i = 0; i < d.length; i += 4) {
+    const gray = d[i] * 0.3 + d[i + 1] * 0.59 + d[i + 2] * 0.11;
+    const v = gray > 140 ? 255 : 0;
+    d[i] = d[i + 1] = d[i + 2] = v;
+  }
+
+  ctx.putImageData(img, 0, 0);
+  return c;
+}
+
 export default function UploadTab() {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const { user, claims } = useAuth();
 
   const [imageUrl, setImageUrl] = useState(null);
@@ -64,61 +159,40 @@ export default function UploadTab() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const [status, setStatus] = useState("");
-  const [debugText, setDebugText] = useState("");
-  const [debugImage, setDebugImage] = useState(null);
-
-  const [debugMatchImage, setDebugMatchImage] = useState(null);
-  const [debugMatchId, setDebugMatchId] = useState(null);
-
-  const [debugResultImage, setDebugResultImage] = useState(null);
-  const [debugResultText, setDebugResultText] = useState(null);
-  const [debugResultValue, setDebugResultValue] = useState(null);
-
+  const [statusTone, setStatusTone] = useState("");
+  const [ocrRemaining, setOcrRemaining] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const tesseractRef = useRef(null);
+  const tesseractInitRef = useRef(null);
 
-  const debugPlayerUrl = useRef(null);
-  const debugMatchUrl = useRef(null);
-  const debugResultUrl = useRef(null);
+  const ensureTesseract = async () => {
+    if (tesseractRef.current) return tesseractRef.current;
+    if (!tesseractInitRef.current) {
+      tesseractInitRef.current = (async () => {
+        const { createWorker } = await import("tesseract.js");
+        const worker = await createWorker("eng+rus");
+        await worker.setParameters({
+          tessedit_char_whitelist: "0123456789abcdef",
+          preserve_interword_spaces: "1",
+        });
+        tesseractRef.current = worker;
+        return worker;
+      })();
+    }
+    return tesseractInitRef.current;
+  };
 
   const handleFile = (file) => {
     setSelectedFile(file || null);
     setImageUrl(file ? URL.createObjectURL(file) : null);
     setFileName(file ? file.name : "");
+    if (file) {
+      ensureTesseract().catch(() => {
+        // handled on analyze
+      });
+    }
   };
-
-  useEffect(() => {
-    let mounted = true;
-
-    (async () => {
-      try {
-        const worker = await createWorker("eng");
-        await worker.setParameters({
-          tessedit_char_whitelist: "0123456789abcdef",
-          preserve_interword_spaces: "1",
-        });
-
-        if (mounted) tesseractRef.current = worker;
-        else await worker.terminate();
-      } catch (e) {
-        console.error("Tesseract init failed:", e);
-      }
-    })();
-
-    return () => {
-      mounted = false;
-
-      if (tesseractRef.current) {
-        tesseractRef.current.terminate();
-        tesseractRef.current = null;
-      }
-
-      if (debugPlayerUrl.current) URL.revokeObjectURL(debugPlayerUrl.current);
-      if (debugMatchUrl.current) URL.revokeObjectURL(debugMatchUrl.current);
-      if (debugResultUrl.current) URL.revokeObjectURL(debugResultUrl.current);
-    };
-  }, []);
 
   if (!user) {
     return (
@@ -138,15 +212,18 @@ export default function UploadTab() {
     let score, kda, dmg, share;
 
     for (const line of lines) {
-      if (!score && /^\d{4,6}$/.test(line)) score = line;
+      if (!score && /^\d{3,6}$/.test(line)) score = line;
       else if (!kda && /^\d+\s*\/\s*\d+\s*\/\s*\d+$/.test(line))
         kda = line.replace(/\s/g, "");
-      else if (!dmg && /^\d{3,5}$/.test(line)) dmg = line;
-      else if (!share && /^\d{1,2}([.,]\d)?%$/.test(line)) share = line;
+      else if (!dmg && /^\d{2,6}$/.test(line)) dmg = line;
+      else if (
+        !share &&
+        /^\d{1,3}([.,]\d)?\s*%$/.test(line)
+      )
+        share = line.replace(/\s+/g, "");
     }
 
     if (!score || !kda || !dmg || !share) {
-      console.warn("PLAYER OCR PARSE FAILED:", { lines, score, kda, dmg, share });
       return null;
     }
 
@@ -168,40 +245,15 @@ export default function UploadTab() {
   const handleAnalyze = async () => {
     if (!selectedFile) return;
 
-    if (!tesseractRef.current) {
-      setStatus("Tesseract is not ready yet. Please try again in a second.");
-      return;
-    }
-
     setLoading(true);
-    setStatus(t.upload.processing);
-
-    setDebugText("");
-    setDebugImage(null);
-
-    setDebugMatchImage(null);
-    setDebugMatchId(null);
-
-    setDebugResultImage(null);
-    setDebugResultText(null);
-    setDebugResultValue(null);
-
-    if (debugPlayerUrl.current) {
-      URL.revokeObjectURL(debugPlayerUrl.current);
-      debugPlayerUrl.current = null;
-    }
-    if (debugMatchUrl.current) {
-      URL.revokeObjectURL(debugMatchUrl.current);
-      debugMatchUrl.current = null;
-    }
-    if (debugResultUrl.current) {
-      URL.revokeObjectURL(debugResultUrl.current);
-      debugResultUrl.current = null;
-    }
+    setStatus(t.upload.processing || "Processing...");
+    setStatusTone("neutral");
+    setOcrRemaining(null);
 
     let opencvWorker = null;
 
     try {
+      const worker = await ensureTesseract();
       setStatus(t.upload.compressing);
       const compressed = await imageCompression(selectedFile, {
         maxSizeMB: 0.9,
@@ -211,7 +263,8 @@ export default function UploadTab() {
 
       const bitmap = await createImageBitmap(compressed);
 
-      setStatus(`${t.upload.ocr} (result)`);
+      setStatus(t.upload.ocr || "OCR...");
+      setStatusTone("neutral");
 
       const resultCanvas = document.createElement("canvas");
       resultCanvas.width = Math.max(1, Math.floor(bitmap.width * 0.5));
@@ -229,34 +282,30 @@ export default function UploadTab() {
       const resultProcessed = preprocessForOCR(resultCanvas);
       const resultBlob = await new Promise((r) => resultProcessed.toBlob(r, "image/png"));
 
-      const resultUrl = URL.createObjectURL(resultBlob);
-      debugResultUrl.current = resultUrl;
-      setDebugResultImage(resultUrl);
-
-      await tesseractRef.current.setParameters({
-        tessedit_char_whitelist: "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+      await worker.setParameters({
+        // Latin + Cyrillic uppercase for result text (VICTORY/DEFEAT, ПОБЕДА/ПОРАЖЕНИЕ)
+        tessedit_char_whitelist:
+          "ABCDEFGHIJKLMNOPQRSTUVWXYZАБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЫЬЭЮЯ",
         preserve_interword_spaces: "1",
       });
 
-      const resultOCR = await tesseractRef.current.recognize(resultBlob);
+      const resultOCR = await worker.recognize(resultBlob);
       const resultText = resultOCR?.data?.text || "";
-      console.log("RAW RESULT OCR:", resultText);
-
-      setDebugResultText(resultText);
+      console.log("[DEBUG] OCR RESULT AREA:", resultText);
 
       const matchResult = parseMatchResult(resultText);
-      setDebugResultValue(matchResult || "(not found)");
 
-      await tesseractRef.current.setParameters({
+      await worker.setParameters({
         tessedit_char_whitelist: "0123456789abcdef",
         preserve_interword_spaces: "1",
       });
 
-      setStatus(`${t.upload.ocr} (match)`);
+      setStatus(t.upload.ocr || "OCR...");
+      setStatusTone("neutral");
 
       const matchCanvas = document.createElement("canvas");
       matchCanvas.width = bitmap.width;
-      matchCanvas.height = Math.floor(bitmap.height * 0.35);
+      matchCanvas.height = Math.floor(bitmap.height * 0.45);
 
       const mctx = matchCanvas.getContext("2d");
       mctx.drawImage(
@@ -271,27 +320,30 @@ export default function UploadTab() {
         matchCanvas.height
       );
 
-      const processed = preprocessForOCR(matchCanvas);
+      const processed = preprocessForMatchId(matchCanvas);
       const matchBlob = await new Promise((r) => processed.toBlob(r, "image/png"));
 
-      const matchUrl = URL.createObjectURL(matchBlob);
-      debugMatchUrl.current = matchUrl;
-      setDebugMatchImage(matchUrl);
+      await worker.setParameters({
+        tessedit_char_whitelist: "0123456789abcdef",
+        preserve_interword_spaces: "1",
+      });
 
-      const { data } = await tesseractRef.current.recognize(matchBlob);
-      console.log("RAW TESSERACT MATCH OCR:", data.text);
+      const { data } = await worker.recognize(matchBlob);
+      console.log("[DEBUG] OCR MATCH AREA:", data?.text || "");
 
       const matchId = extractMatchId(data.text);
 
-      console.log("MATCH ID EXTRACTED:", matchId);
-      setDebugMatchId(matchId || "(not found)");
-
       if (!matchId) {
-        setStatus("Match ID not found");
+        setStatus(
+          t.upload.statusMatchIdFailed ||
+            "Not successful (Match ID not found)"
+        );
+        setStatusTone("bad");
         return;
       }
 
-      setStatus(`${t.upload.processing} (player)`);
+      setStatus(t.upload.processing || "Processing...");
+      setStatusTone("neutral");
 
       const canvas = document.createElement("canvas");
       canvas.width = bitmap.width;
@@ -316,11 +368,8 @@ export default function UploadTab() {
         throw new Error(error || "OpenCV failed to crop player row");
       }
 
-      const playerUrl = URL.createObjectURL(blob);
-      debugPlayerUrl.current = playerUrl;
-      setDebugImage(playerUrl);
-
-      setStatus(`${t.upload.ocr} (player)`);
+      setStatus(t.upload.ocr || "OCR...");
+      setStatusTone("neutral");
 
       const reader = new FileReader();
       const base64Image = await new Promise((resolve, reject) => {
@@ -329,34 +378,63 @@ export default function UploadTab() {
         reader.readAsDataURL(blob);
       });
 
+      const idToken = user ? await user.getIdToken() : null;
+      const headers = {
+        "Content-Type": "application/json",
+        ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
+      };
       const r = await fetch(
         `${import.meta.env.VITE_BACKEND_URL || "http://localhost:4000"}/ocr`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ base64Image }),
+          headers,
+          body: JSON.stringify({
+            base64Image,
+            lang: lang === "ru" ? "rus" : "eng",
+          }),
         }
       );
 
       if (!r.ok) {
-        throw new Error(`OCR request failed: ${await r.text()}`);
+        if (r.status === 413) {
+          setStatus(t.upload.statusTooLarge || "File is too large (max 2MB)");
+          setStatusTone("bad");
+          return;
+        }
+        const err = await r.json().catch(() => null);
+        if (err?.remaining !== undefined) {
+          setOcrRemaining(err.remaining);
+        }
+        setStatus(t.upload.statusOcrFailed || "Not successful (OCR failed)");
+        setStatusTone("bad");
+        return;
       }
 
       const ocrJson = await r.json();
+      if (ocrJson?.remaining !== undefined) {
+        setOcrRemaining(ocrJson.remaining);
+      }
+      if (ocrJson?.IsErroredOnProcessing) {
+        setStatus(t.upload.statusOcrFailed || "Not successful (OCR failed)");
+        setStatusTone("bad");
+        return;
+      }
       const pt = ocrJson.ParsedResults?.[0]?.ParsedText || "";
-
-      console.log("RAW PLAYER OCR:", pt);
-      setDebugText(pt);
 
       const parsed = parseFragpunkText(pt);
       if (!parsed) {
-        setStatus(t.upload.notFound);
+        setStatus(
+          t.upload.statusPlayerFailed ||
+            "Not successful (Player row not recognized)"
+        );
+        setStatusTone("bad");
         return;
       }
 
       const userMatchRef = doc(db, "users", user.uid, "matches", matchId);
       if ((await getDoc(userMatchRef)).exists()) {
-        setStatus(t.upload.alreadyUploaded);
+        setStatus(t.upload.statusAlready || "Match already uploaded earlier");
+        setStatusTone("bad");
         return;
       }
 
@@ -364,19 +442,14 @@ export default function UploadTab() {
       if (!(await getDoc(matchRef)).exists()) {
         await setDoc(matchRef, {
           createdAt: Date.now(),
-          result: matchResult ?? null, 
+          result: matchResult ?? null,
         });
-      } else {
-        await setDoc(
-          matchRef,
-          {
-            result: matchResult ?? null,
-          },
-          { merge: true }
-        );
       }
 
-      await setDoc(doc(db, "matches", matchId, "players", user.uid), parsed);
+      const playerRef = doc(db, "matches", matchId, "players", user.uid);
+      if (!(await getDoc(playerRef)).exists()) {
+        await setDoc(playerRef, parsed);
+      }
 
       await setDoc(userMatchRef, {
         matchId,
@@ -384,10 +457,29 @@ export default function UploadTab() {
         ...parsed,
       });
 
-      setStatus(t.upload.success);
+      try {
+        const idToken = user ? await user.getIdToken() : null;
+        const headers = {
+          "Content-Type": "application/json",
+          ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
+        };
+        await fetch(
+          `${import.meta.env.VITE_BACKEND_URL || "http://localhost:4000"}/leaderboard/update`,
+          {
+            method: "POST",
+            headers,
+            body: JSON.stringify({ matchId }),
+          }
+        );
+      } catch {
+        // best-effort; leaderboard will update on next successful call
+      }
+
+      setStatus(t.upload.statusOk || "OK (Uploaded)");
+      setStatusTone("good");
     } catch (e) {
-      console.error(e);
-      setStatus(t.upload.error);
+      setStatus(t.upload.statusOtherFailed || "Not successful (Other error)");
+      setStatusTone("bad");
     } finally {
       setLoading(false);
       if (opencvWorker) opencvWorker.terminate();
@@ -461,41 +553,6 @@ export default function UploadTab() {
 
         {imageUrl && <img src={imageUrl} alt="preview" className={styles.preview} />}
 
-        {debugResultImage && (
-          <>
-            <h3 className={styles.debugTitle}>Result (Tesseract)</h3>
-            <img src={debugResultImage} alt="result crop" className={styles.preview} />
-          </>
-        )}
-
-        {debugResultValue && (
-          <p className={styles.status}>
-            <b>Result:</b> {debugResultValue}
-          </p>
-        )}
-
-        {debugResultText && <pre className={styles.debug}>{debugResultText}</pre>}
-
-        {debugMatchImage && (
-          <>
-            <h3 className={styles.debugTitle}>Match ID (Tesseract)</h3>
-            <img src={debugMatchImage} alt="match crop" className={styles.preview} />
-          </>
-        )}
-
-        {debugMatchId && (
-          <p className={styles.status}>
-            <b>Match ID:</b> {debugMatchId}
-          </p>
-        )}
-
-        {debugImage && (
-          <>
-            <h3 className={styles.debugTitle}>Player row</h3>
-            <img src={debugImage} alt="player crop" className={styles.preview} />
-          </>
-        )}
-
         <button
           onClick={handleAnalyze}
           disabled={loading || !selectedFile}
@@ -504,13 +561,35 @@ export default function UploadTab() {
           {loading ? t.upload.processing : t.upload.analyze}
         </button>
 
-        <p className={styles.status}>{status}</p>
+        <p
+          className={`${styles.status} ${
+            statusTone === "good"
+              ? styles.statusOk
+              : statusTone === "bad"
+              ? styles.statusError
+              : ""
+          }`}
+        >
+          {status}
+        </p>
+        {typeof ocrRemaining === "number" && (
+          <p
+            className={`${styles.ocrRemaining} ${
+              ocrRemaining < 3 ? styles.ocrRemainingLow : ""
+            }`}
+          >
+            {(t.upload.ocrRemaining || "OCR left today: {count}").replace(
+              "{count}",
+              String(ocrRemaining)
+            )}
+          </p>
+        )}
       </div>
-
-      {debugText && <pre className={styles.debug}>{debugText}</pre>}
     </div>
   );
 }
+
+
 
 
 

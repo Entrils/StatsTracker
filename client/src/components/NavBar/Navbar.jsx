@@ -14,7 +14,10 @@ export default function Navbar() {
 
   const [open, setOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [langOpen, setLangOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const langRef = useRef(null);
+  const langMobileRef = useRef(null);
 
   let discordAvatarUrl = null;
   let discordUsername = null;
@@ -39,13 +42,45 @@ export default function Navbar() {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setOpen(false);
       }
+      const inDesktopLang =
+        langRef.current && langRef.current.contains(e.target);
+      const inMobileLang =
+        langMobileRef.current && langMobileRef.current.contains(e.target);
+      if (!inDesktopLang && !inMobileLang) {
+        setLangOpen(false);
+      }
     };
 
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const closeMobile = () => setMobileOpen(false);
+  useEffect(() => {
+    if (typeof document === "undefined") return undefined;
+    const prev = document.body.style.overflow;
+    if (mobileOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = prev || "";
+    }
+    return () => {
+      document.body.style.overflow = prev || "";
+    };
+  }, [mobileOpen]);
+
+  const closeMobile = () => {
+    setMobileOpen(false);
+    setLangOpen(false);
+  };
+
+  const languages = [
+    { code: "ru", label: "Русский", flagSrc: "/ru.png" },
+    { code: "en", label: "English", flagSrc: "/eng.png" },
+    { code: "de", label: "Deutsch", flagSrc: "/de.png" },
+    { code: "fr", label: "Français", flagSrc: "/fr.png" },
+  ];
+  const currentLang =
+    languages.find((item) => item.code === lang) || languages[0];
 
   return (
     <nav className={styles.navbar}>
@@ -74,6 +109,16 @@ export default function Navbar() {
           >
             {t.nav.players}
           </NavLink>
+          {user && (claims?.admin === true || claims?.role === "admin") && (
+            <NavLink
+              to="/admin"
+              className={({ isActive }) =>
+                `${styles.link} ${isActive ? styles.active : ""}`
+              }
+            >
+              {t.nav.admin || "Admin"}
+            </NavLink>
+          )}
         </div>
 
         <div className={styles.right}>
@@ -118,6 +163,15 @@ export default function Navbar() {
                 >
                   {t.nav.myProfile || "My profile"}
                 </button>
+                <button
+                  onClick={() => {
+                    setOpen(false);
+                    navigate("/socials");
+                  }}
+                  className={styles.dropdownItem}
+                >
+                  {t.nav.socials || "Socials"}
+                </button>
 
                 <button onClick={handleLogout} className={styles.dropdownItem}>
                   {t.nav.Logout || "Logout"}
@@ -126,24 +180,54 @@ export default function Navbar() {
             </div>
           )}
 
-          <div className={styles.langSwitch}>
+          <div className={styles.langDropdown} ref={langRef}>
             <button
-              className={`${styles.langBtn} ${
-                lang === "en" ? styles.langActive : ""
-              }`}
-              onClick={() => setLang("en")}
+              className={styles.langToggle}
+              onClick={() => setLangOpen((v) => !v)}
+              aria-expanded={langOpen}
+              aria-label="Language selector"
             >
-              EN
+              <img
+                className={styles.langFlagImg}
+                src={currentLang.flagSrc}
+                alt=""
+              />
+              <span className={styles.langCode}>
+                {currentLang.code.toUpperCase()}
+              </span>
+              <span
+                className={`${styles.langChevron} ${
+                  langOpen ? styles.langChevronOpen : ""
+                }`}
+              >
+                v
+              </span>
             </button>
-
-            <button
-              className={`${styles.langBtn} ${
-                lang === "ru" ? styles.langActive : ""
+            <div
+              className={`${styles.langMenu} ${
+                langOpen ? styles.langMenuOpen : ""
               }`}
-              onClick={() => setLang("ru")}
             >
-              RU
-            </button>
+              {languages.map((item) => (
+                <button
+                  key={item.code}
+                  className={`${styles.langOption} ${
+                    lang === item.code ? styles.langOptionActive : ""
+                  }`}
+                  onClick={() => {
+                    setLang(item.code);
+                    setLangOpen(false);
+                  }}
+                >
+                  <img
+                    className={styles.langFlagImg}
+                    src={item.flagSrc}
+                    alt=""
+                  />
+                  <span className={styles.langLabel}>{item.label}</span>
+                </button>
+              ))}
+            </div>
           </div>
 
           <button
@@ -216,6 +300,28 @@ export default function Navbar() {
               {t.nav.myProfile || "My profile"}
             </NavLink>
           )}
+          {user && (
+            <NavLink
+              to="/socials"
+              onClick={closeMobile}
+              className={({ isActive }) =>
+                `${styles.offcanvasLink} ${isActive ? styles.active : ""}`
+              }
+            >
+              {t.nav.socials || "Socials"}
+            </NavLink>
+          )}
+          {user && (claims?.admin === true || claims?.role === "admin") && (
+            <NavLink
+              to="/admin"
+              onClick={closeMobile}
+              className={({ isActive }) =>
+                `${styles.offcanvasLink} ${isActive ? styles.active : ""}`
+              }
+            >
+              {t.nav.admin || "Admin"}
+            </NavLink>
+          )}
         </div>
 
         <div className={styles.offcanvasActions}>
@@ -234,22 +340,56 @@ export default function Navbar() {
         </div>
 
         <div className={styles.offcanvasLang}>
-          <button
-            className={`${styles.langBtn} ${
-              lang === "en" ? styles.langActive : ""
-            }`}
-            onClick={() => setLang("en")}
-          >
-            EN
-          </button>
-          <button
-            className={`${styles.langBtn} ${
-              lang === "ru" ? styles.langActive : ""
-            }`}
-            onClick={() => setLang("ru")}
-          >
-            RU
-          </button>
+          <div className={styles.langDropdown} ref={langMobileRef}>
+            <button
+              className={styles.langToggle}
+              onClick={() => setLangOpen((v) => !v)}
+              aria-expanded={langOpen}
+              aria-label="Language selector"
+            >
+              <img
+                className={styles.langFlagImg}
+                src={currentLang.flagSrc}
+                alt=""
+              />
+              <span className={styles.langCode}>
+                {currentLang.code.toUpperCase()}
+              </span>
+              <span
+                className={`${styles.langChevron} ${
+                  langOpen ? styles.langChevronOpen : ""
+                }`}
+              >
+                v
+              </span>
+            </button>
+            <div
+              className={`${styles.langMenu} ${
+                langOpen ? styles.langMenuOpen : ""
+              }`}
+            >
+              {languages.map((item) => (
+                <button
+                  key={item.code}
+                  className={`${styles.langOption} ${
+                    lang === item.code ? styles.langOptionActive : ""
+                  }`}
+                  onClick={() => {
+                    setLang(item.code);
+                    setLangOpen(false);
+                    closeMobile();
+                  }}
+                >
+                  <img
+                    className={styles.langFlagImg}
+                    src={item.flagSrc}
+                    alt=""
+                  />
+                  <span className={styles.langLabel}>{item.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </aside>
     </nav>

@@ -1,20 +1,17 @@
 ﻿import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import {
   collection,
-  collectionGroup,
   getDocs,
   limit,
   orderBy,
   query,
   startAfter,
-  where,
 } from "firebase/firestore";
 import { db } from "../../firebase";
 import styles from "./MyProfile.module.css";
 import { useLang } from "../../i18n/LanguageContext";
 import { useAuth } from "../../auth/AuthContext";
 
-const GLOBAL_SAMPLE = 800; // последних матчей брать для глобального авг
 const MATCHES_PAGE_SIZE = 80;
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
@@ -160,82 +157,6 @@ export default function MyProfile() {
     fetchHistory(true);
   }, [uid]);
 
-  useEffect(() => {
-    if (!user) return;
-
-    const fetchGlobal = async () => {
-      setLoadingGlobal(true);
-
-      try {
-        const q = query(
-          collectionGroup(db, "players"),
-          orderBy("createdAt", "desc"),
-          limit(GLOBAL_SAMPLE)
-        );
-
-        const snapshot = await getDocs(q);
-
-        const rows = snapshot.docs.map((d) => d.data());
-
-        if (!rows.length) {
-          setGlobalAvg(null);
-          setLoadingGlobal(false);
-          return;
-        }
-
-        const total = rows.reduce(
-          (acc, m) => {
-            acc.count += 1;
-            acc.score += m.score || 0;
-            acc.kills += m.kills || 0;
-            acc.deaths += m.deaths || 0;
-            acc.assists += m.assists || 0;
-            acc.damage += m.damage || 0;
-            acc.damageShare += m.damageShare || 0;
-            return acc;
-          },
-          {
-            count: 0,
-            score: 0,
-            kills: 0,
-            deaths: 0,
-            assists: 0,
-            damage: 0,
-            damageShare: 0,
-          }
-        );
-
-        const avgScore = Math.round(total.score / total.count);
-        const avgKills = Math.round(total.kills / total.count);
-        const avgDeaths = Math.round(total.deaths / total.count);
-        const avgAssists = Math.round(total.assists / total.count);
-        const avgDamage = Math.round(total.damage / total.count);
-        const avgDamageShare = round1(total.damageShare / total.count);
-
-        const kda = round1(
-          safeDiv(total.kills + total.assists, Math.max(1, total.deaths))
-        );
-
-        setGlobalAvg({
-          count: total.count,
-          avgScore,
-          avgKills,
-          avgDeaths,
-          avgAssists,
-          avgDamage,
-          avgDamageShare,
-          kda,
-        });
-      } catch (e) {
-        console.error("GLOBAL AVG FETCH FAILED:", e);
-        setGlobalAvg(null);
-      } finally {
-        setLoadingGlobal(false);
-      }
-    };
-
-    fetchGlobal();
-  }, [user]);
 
   const summary = useMemo(() => {
     if (!matches.length) return null;
@@ -403,6 +324,67 @@ export default function MyProfile() {
     };
   }, [matches, claims, user, uid]);
 
+  useEffect(() => {
+    if (!summary) return;
+    const controller = new AbortController();
+    setLoadingGlobal(true);
+    setGlobalAvg(null);
+    setGlobalMeans(null);
+    setGlobalMatchMeans(null);
+    setGlobalRanks(null);
+    setLoadingRanks(true);
+
+    fetch(`${BACKEND_URL}/stats/percentiles?refresh=1`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        metrics: {
+          matches: summary.matchesCount,
+          wins: summary.wins,
+          losses: summary.losses,
+          avgScore: summary.avgScoreRaw,
+          avgKills: summary.avgKillsRaw,
+          avgDeaths: summary.avgDeathsRaw,
+          avgAssists: summary.avgAssistsRaw,
+          avgDamage: summary.avgDamageRaw,
+          avgDamageShare: summary.avgDamageShareRaw,
+          kda: summary.kdaRaw,
+          winrate: summary.winrateRaw,
+        },
+      }),
+      signal: controller.signal,
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!data) return;
+        setGlobalRanks(data.percentiles || null);
+        setGlobalMeans(data.averages || null);
+        setGlobalMatchMeans(data.matchAverages || null);
+        if (data.matchAverages) {
+          const m = data.matchAverages;
+          setGlobalAvg({
+            count: data.matchCount || 0,
+            avgScore: Math.round(m.avgScore || 0),
+            avgKills: Math.round(m.avgKills || 0),
+            avgDeaths: Math.round(m.avgDeaths || 0),
+            avgAssists: Math.round(m.avgAssists || 0),
+            avgDamage: Math.round(m.avgDamage || 0),
+            avgDamageShare: round1(m.avgDamageShare || 0),
+            kda: round1(m.kda || 0),
+          });
+        }
+      })
+      .catch((e) => {
+        setGlobalAvg(null);
+      })
+      .finally(() => {
+        setLoadingGlobal(false);
+        setLoadingRanks(false);
+      });
+
+    return () => controller.abort();
+  }, [summary]);
+
   const sparkScore = useMemo(() => {
     if (!globalMeans?.avgScore) return [];
     return normalizeSpark(summary?.sparkScoreRaw, globalMeans.avgScore);
@@ -417,47 +399,6 @@ export default function MyProfile() {
   }, [summary, globalMeans]);
   const showRanks =
     !loadingGlobal && !loadingRanks && !!globalAvg && !!globalRanks;
-
-  useEffect(() => {
-    if (!summary) return;
-    const controller = new AbortController();
-    setLoadingRanks(true);
-    setGlobalRanks(null);
-    setGlobalMeans(null);
-    setGlobalMatchMeans(null);
-
-    fetch(`${BACKEND_URL}/stats/percentiles`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-          metrics: {
-            matches: summary.matchesCount,
-            wins: summary.wins,
-            losses: summary.losses,
-            avgScore: summary.avgScoreRaw,
-            avgKills: summary.avgKillsRaw,
-            avgDeaths: summary.avgDeathsRaw,
-            avgAssists: summary.avgAssistsRaw,
-            avgDamage: summary.avgDamageRaw,
-            avgDamageShare: summary.avgDamageShareRaw,
-            kda: summary.kdaRaw,
-            winrate: summary.winrateRaw,
-          },
-      }),
-      signal: controller.signal,
-    })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (!data?.percentiles) return;
-        setGlobalRanks(data.percentiles);
-        setGlobalMeans(data.averages || null);
-        setGlobalMatchMeans(data.matchAverages || null);
-      })
-      .catch(() => {})
-      .finally(() => setLoadingRanks(false));
-
-    return () => controller.abort();
-  }, [summary]);
 
   const activity = useMemo(() => {
     if (!matches.length) return null;

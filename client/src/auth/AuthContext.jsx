@@ -14,6 +14,9 @@ export function AuthProvider({ children }) {
       if (!firebaseUser) {
         setUser(null);
         setClaims(null);
+        if (typeof window !== "undefined") {
+          delete window.__FP_UID;
+        }
         setLoading(false);
         return;
       }
@@ -22,6 +25,9 @@ export function AuthProvider({ children }) {
 
       setUser(firebaseUser);
       setClaims(tokenResult.claims);
+      if (typeof window !== "undefined") {
+        window.__FP_UID = firebaseUser.uid;
+      }
       setLoading(false);
     });
 

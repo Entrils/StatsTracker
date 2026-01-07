@@ -1,0 +1,139 @@
+.wrapper {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 28px 16px;
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  padding: 18px;
+  box-shadow: var(--shadow-strong);
+}
+
+.title {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  color: #f3f4f6;
+}
+
+.hint {
+  font-size: 12px;
+  color: rgba(154, 164, 193, 0.85);
+  margin-bottom: 12px;
+}
+
+.socialsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.socialField {
+  display: grid;
+  gap: 6px;
+}
+
+.socialLabel {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(154, 164, 193, 0.9);
+}
+
+.socialInput {
+  background: rgba(8, 12, 22, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: #f3f6ff;
+  outline: none;
+  transition: border 0.2s ease, box-shadow 0.2s ease;
+}
+
+.socialInput:focus {
+  border-color: rgba(0, 245, 212, 0.45);
+  box-shadow: 0 0 0 2px rgba(0, 245, 212, 0.15);
+}
+
+.socialValue {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(8, 12, 22, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #f3f6ff;
+  font-weight: 600;
+}
+
+.editBtn {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  background: rgba(6, 10, 20, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #9aa4c1;
+  transition: color 0.2s ease, border 0.2s ease, box-shadow 0.2s ease;
+}
+
+.editBtn:hover {
+  color: #ffffff;
+  border-color: rgba(0, 245, 212, 0.45);
+  box-shadow: 0 0 12px rgba(0, 245, 212, 0.35);
+}
+
+.socialsActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.saveBtn {
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #a3ff12, #00f5d4);
+  color: #081016;
+  box-shadow:
+    0 0 16px rgba(163, 255, 18, 0.3),
+    0 0 22px rgba(0, 245, 212, 0.3);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.saveBtn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow:
+    0 0 20px rgba(163, 255, 18, 0.45),
+    0 0 28px rgba(0, 245, 212, 0.4);
+}
+
+.saveBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.socialsStatus {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(154, 164, 193, 0.9);
+}
+
+.good {
+  color: #9bff2e;
+}
+
+.bad {
+  color: #ff4d6d;
+}
