@@ -9,7 +9,7 @@ import MyProfile from "./pages/MyProfile/MyProfile";
 import Admin from "./pages/Admin/Admin";
 import Policy from "./pages/Policy/Policy";
 import Ads from "./pages/Ads/Ads";
-import Socials from "./pages/Socials/Socials";
+import Settings from "./pages/Settings/Settings";
 import Support from "./pages/Support/Support";
 
 export default function App() {
@@ -24,7 +24,7 @@ export default function App() {
           <Route path="/auth/discord/callback" element={<DiscordCallback />} />
           <Route path="/me" element={<MyProfile />} />
           <Route path="/admin" element={<Admin />} />
-          <Route path="/socials" element={<Socials />} />
+          <Route path="/settings" element={<Settings />} />
           <Route path="/policy" element={<Policy />} />
           <Route path="/support" element={<Support />} />
           <Route path="/ads" element={<Ads />} />

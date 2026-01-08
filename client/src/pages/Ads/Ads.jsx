@@ -14,7 +14,7 @@ export default function Ads() {
       </p>
       <div className={styles.contactBox}>
         <div className={styles.contactLabel}>{t.ads?.email || "Email"}</div>
-        <div className={styles.contactValue}>soon</div>
+        <div className={styles.contactValue}>fragpunktracker@gmail.com</div>
       </div>
       <div className={styles.contactBox}>
         <div className={styles.contactLabel}>{t.ads?.discord || "Discord"}</div>

@@ -143,7 +143,11 @@ export default function Support() {
         </label>
         {siteKey ? (
           <div className={styles.recaptchaBox}>
-            <ReCAPTCHA sitekey={siteKey} onChange={setCaptcha} />
+            <ReCAPTCHA
+              sitekey={siteKey}
+              onChange={setCaptcha}
+              theme="dark"
+            />
           </div>
         ) : (
           <div className={styles.errorText}>

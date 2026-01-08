@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import styles from "./Admin.module.css";
 import { useAuth } from "../../auth/AuthContext";
 
@@ -11,6 +11,8 @@ export default function Admin() {
   const [loading, setLoading] = useState(false);
   const [errorLoading, setErrorLoading] = useState(false);
   const [errors, setErrors] = useState([]);
+  const [rankLoading, setRankLoading] = useState(false);
+  const [rankItems, setRankItems] = useState([]);
 
   const isAdmin = claims?.admin === true || claims?.role === "admin";
 
@@ -70,6 +72,47 @@ export default function Admin() {
       setErrorLoading(false);
     }
   };
+
+  const loadRankSubmissions = async () => {
+    if (!user) return;
+    setRankLoading(true);
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch(
+        `${BACKEND_URL}/admin/ranks?status=pending&limit=50`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const data = await res.json().catch(() => null);
+      setRankItems(Array.isArray(data?.rows) ? data.rows : []);
+    } finally {
+      setRankLoading(false);
+    }
+  };
+
+  const decideRank = async (id, decision) => {
+    if (!user) return;
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch(`${BACKEND_URL}/admin/ranks/decision`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ id, decision }),
+      });
+      if (res.ok) {
+        setRankItems((items) => items.filter((r) => r.id !== id));
+      }
+    } catch {
+      // ignore
+    }
+  };
+
+  useEffect(() => {
+    if (!user || !isAdmin) return;
+    loadRankSubmissions();
+  }, [user, isAdmin]);
 
   if (!user) {
     return (
@@ -146,6 +189,71 @@ export default function Admin() {
                 {err.stack && (
                   <pre className={styles.errorStack}>{err.stack}</pre>
                 )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className={styles.section}>
+        <div className={styles.sectionHeader}>
+          <h2 className={styles.sectionTitle}>Rank verification</h2>
+          <button
+            className={styles.smallButton}
+            onClick={loadRankSubmissions}
+            disabled={rankLoading}
+          >
+            {rankLoading ? "Loading..." : "Refresh"}
+          </button>
+        </div>
+
+        {!rankItems.length && (
+          <p className={styles.hint}>No pending submissions.</p>
+        )}
+
+        {!!rankItems.length && (
+          <div className={styles.rankList}>
+            {rankItems.map((item) => (
+              <div key={item.id} className={styles.rankItem}>
+                <div className={styles.rankMeta}>
+                  <div className={styles.rankTitleLine}>
+                    <span className={styles.rankName}>
+                      {item.name || item.uid}
+                    </span>
+                    <span className={styles.rankBadge}>
+                      {String(item.season || "").toUpperCase()}
+                    </span>
+                    <span className={styles.rankBadgeAlt}>
+                      {String(item.rank || "")}
+                    </span>
+                  </div>
+                  <div className={styles.rankSub}>
+                    {item.createdAt?.seconds
+                      ? new Date(item.createdAt.seconds * 1000).toLocaleString()
+                      : "—"}
+                  </div>
+                </div>
+
+                {item.image && (
+                  <div className={styles.rankPreview}>
+                    <img src={item.image} alt="Rank proof" />
+                  </div>
+                )}
+
+                <div className={styles.rankActions}>
+                  <button
+                    className={styles.rankApprove}
+                    onClick={() => decideRank(item.id, "approved")}
+                  >
+                    Approve
+                  </button>
+                  <button
+                    className={styles.rankReject}
+                    onClick={() => decideRank(item.id, "rejected")}
+                  >
+                    Reject
+                  </button>
+                </div>
               </div>
             ))}
           </div>

@@ -164,6 +164,130 @@
   text-shadow: 0 0 10px rgba(0, 245, 212, 0.4);
 }
 
+.rankCard {
+  background: linear-gradient(
+    160deg,
+    rgba(7, 10, 18, 0.95),
+    rgba(16, 22, 36, 0.95)
+  );
+  border-radius: 20px;
+  padding: 20px 24px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: var(--shadow-strong);
+}
+
+.rankTitle {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: #e0e7ff;
+}
+
+.rankGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.rankItem {
+  border-radius: 14px;
+  padding: 12px;
+  background: rgba(8, 12, 22, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  text-align: center;
+  display: grid;
+  grid-template-rows: auto 56px auto;
+  align-items: center;
+  justify-items: center;
+}
+
+.rankEmpty {
+  min-height: 110px;
+  grid-template-rows: auto 1fr;
+}
+
+.rankIcon {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  margin: 8px auto 2px;
+  display: block;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.35));
+}
+
+.rankIconPlaceholder {
+  width: 56px;
+  height: 56px;
+}
+
+.rankEmpty .rankIconPlaceholder {
+  display: none;
+}
+
+.rankSeason {
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #9aa4c1;
+  margin-bottom: 6px;
+}
+
+.rankValue {
+  margin-top: 6px;
+  font-weight: 800;
+  color: #f3f6ff;
+  text-transform: capitalize;
+  min-height: 18px;
+}
+
+.rankEmpty .rankValue {
+  margin-top: 0;
+  margin-bottom: 0;
+  grid-row: 2;
+  align-self: center;
+  justify-self: center;
+}
+
+.rankBronze {
+  color: #d5a16d;
+  text-shadow: 0 0 10px rgba(213, 161, 109, 0.35);
+}
+
+.rankSilver {
+  color: #c7d2e1;
+  text-shadow: 0 0 10px rgba(199, 210, 225, 0.35);
+}
+
+.rankGold {
+  color: #f4c36a;
+  text-shadow: 0 0 12px rgba(244, 195, 106, 0.4);
+}
+
+.rankPlatinum {
+  color: #8be0ff;
+  text-shadow: 0 0 12px rgba(139, 224, 255, 0.4);
+}
+
+.rankDiamond {
+  color: #b794ff;
+  text-shadow: 0 0 12px rgba(183, 148, 255, 0.45);
+}
+
+.rankMaster {
+  color: #b6f06b;
+  text-shadow: 0 0 12px rgba(182, 240, 107, 0.45);
+}
+
+.rankAce {
+  color: #ffd27a;
+  text-shadow: 0 0 14px rgba(255, 210, 122, 0.5);
+}
+
+.rankPunkmaster {
+  color: #ff4d5e;
+  text-shadow: 0 0 14px rgba(255, 77, 94, 0.6);
+}
+
 .socialIcon {
   width: 26px;
   height: 26px;

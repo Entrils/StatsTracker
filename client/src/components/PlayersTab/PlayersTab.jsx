@@ -86,7 +86,7 @@ export default function PlayersTab() {
         avgAssists: row.avgAssists || 0,
         kda: row.kda || 0,
         winrate: row.winrate || 0,
-        socials: row.socials || {},
+        settings: row.settings || {},
       }));
   }, [rawRows]);
 
@@ -202,7 +202,7 @@ export default function PlayersTab() {
               const kda = p.kda.toFixed(2);
               const avgScore = Math.round(p.avgScore);
               const winrate = p.winrate.toFixed(1);
-              const socials = p.socials || {};
+              const socials = p.settings || {};
 
               return (
                 <tr

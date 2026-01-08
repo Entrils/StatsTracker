@@ -1,4 +1,4 @@
-﻿import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import {
   collection,
   getDocs,
@@ -65,6 +65,7 @@ export default function MyProfile() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [lastDoc, setLastDoc] = useState(null);
   const [hasMore, setHasMore] = useState(true);
+  const [profileRanks, setProfileRanks] = useState(null);
 
   const [globalAvg, setGlobalAvg] = useState(null);
   const [loadingGlobal, setLoadingGlobal] = useState(true);
@@ -155,6 +156,18 @@ export default function MyProfile() {
   useEffect(() => {
     if (!uid) return;
     fetchHistory(true);
+  }, [uid]);
+
+  useEffect(() => {
+    if (!uid) return;
+    const controller = new AbortController();
+    fetch(`${BACKEND_URL}/profile/${uid}`, { signal: controller.signal })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        setProfileRanks(data?.ranks || null);
+      })
+      .catch(() => {});
+    return () => controller.abort();
   }, [uid]);
 
 
@@ -1032,6 +1045,41 @@ export default function MyProfile() {
         </div>
       </div>
 
+      <div className={styles.card}>
+        <h2 className={styles.cardTitle}>{t.me?.ranks || "Ranks"}</h2>
+        <div className={styles.rankGrid}>
+          {["s1", "s2", "s3", "s4"].map((season) => (
+            <div
+              key={season}
+              className={`${styles.rankItem} ${
+                profileRanks?.[season]?.rank ? "" : styles.rankEmpty
+              }`}
+            >
+              <div className={styles.rankSeason}>{season.toUpperCase()}</div>
+              {profileRanks?.[season]?.rank ? (
+                <img
+                  className={styles.rankIcon}
+                  src={rankIconSrc(profileRanks[season].rank)}
+                  alt={formatRank(profileRanks[season].rank, t)}
+                />
+              ) : (
+                <div className={styles.rankIconPlaceholder} />
+              )}
+              <div
+                className={`${styles.rankValue} ${
+                  profileRanks?.[season]?.rank
+                    ? styles[`rank${rankClass(profileRanks[season].rank)}`]
+                    : ""
+                }`}
+              >
+                {profileRanks?.[season]?.rank
+                  ? formatRank(profileRanks[season].rank, t)
+                  : t.me?.rankNone || "Not verified"}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
       <div className={`${styles.card} ${styles.fadeIn} ${styles.stagger5}`}>
         <h2 className={styles.cardTitle}>{t.me?.records || "Records"}</h2>
         <div className={styles.recordsGrid}>
@@ -1340,4 +1388,35 @@ function CompareRow({ label, you, global, delta, accent, compareSep }) {
       </div>
     </div>
   );
+}
+
+function formatRank(rank, t) {
+  const key = String(rank || "").toLowerCase();
+  if (key === "bronze") return t.me?.rankBronze || "Bronze";
+  if (key === "silver") return t.me?.rankSilver || "Silver";
+  if (key === "gold") return t.me?.rankGold || "Gold";
+  if (key === "platinum") return t.me?.rankPlatinum || "Platinum";
+  if (key === "diamond") return t.me?.rankDiamond || "Diamond";
+  if (key === "master") return t.me?.rankMaster || "Master";
+  if (key === "ace") return t.me?.rankAce || "Ace";
+  if (key === "punkmaster") return t.me?.rankPunkmaster || "Punkmaster";
+  return rank;
+}
+
+function rankClass(rank) {
+  const key = String(rank || "").toLowerCase();
+  if (key === "bronze") return "Bronze";
+  if (key === "silver") return "Silver";
+  if (key === "gold") return "Gold";
+  if (key === "platinum") return "Platinum";
+  if (key === "diamond") return "Diamond";
+  if (key === "master") return "Master";
+  if (key === "ace") return "Ace";
+  if (key === "punkmaster") return "Punkmaster";
+  return "";
+}
+
+function rankIconSrc(rank) {
+  const key = String(rank || "").toLowerCase();
+  return `/ranks/${key}.png`;
 }
