@@ -65,6 +65,19 @@
   flex-wrap: wrap;
 }
 
+.banBadge {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #ff4d6d;
+  background: rgba(255, 77, 109, 0.15);
+  border: 1px solid rgba(255, 77, 109, 0.5);
+  box-shadow: 0 0 12px rgba(255, 77, 109, 0.3);
+}
+
 .nameSocials {
   display: inline-flex;
   gap: 8px;

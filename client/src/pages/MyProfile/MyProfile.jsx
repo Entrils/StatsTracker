@@ -7,10 +7,27 @@ import {
   query,
   startAfter,
 } from "firebase/firestore";
-import { db } from "../../firebase";
-import styles from "./MyProfile.module.css";
-import { useLang } from "../../i18n/LanguageContext";
-import { useAuth } from "../../auth/AuthContext";
+import { db } from "@/firebase";
+import styles from "@/pages/MyProfile/MyProfile.module.css";
+import { useLang } from "@/i18n/LanguageContext";
+import { useAuth } from "@/auth/AuthContext";
+import Stat from "@/components/MyProfile/StatCard";
+import {
+  IconMatches,
+  IconWin,
+  IconLoss,
+  IconRate,
+  IconScore,
+  IconKills,
+  IconDeaths,
+  IconAssists,
+  IconKda,
+  IconDamage,
+  IconDamageShare,
+} from "@/components/MyProfile/StatIcons";
+import Mini from "@/components/MyProfile/Mini";
+import Record from "@/components/MyProfile/Record";
+import CompareRow from "@/components/MyProfile/CompareRow";
 
 const MATCHES_PAGE_SIZE = 80;
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
@@ -66,6 +83,7 @@ export default function MyProfile() {
   const [lastDoc, setLastDoc] = useState(null);
   const [hasMore, setHasMore] = useState(true);
   const [profileRanks, setProfileRanks] = useState(null);
+  const [banInfo, setBanInfo] = useState(null);
 
   const [globalAvg, setGlobalAvg] = useState(null);
   const [loadingGlobal, setLoadingGlobal] = useState(true);
@@ -165,6 +183,7 @@ export default function MyProfile() {
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         setProfileRanks(data?.ranks || null);
+        setBanInfo(data?.ban || null);
       })
       .catch(() => {});
     return () => controller.abort();
@@ -557,6 +576,18 @@ export default function MyProfile() {
         {summary.name}{" "}
         <span className={styles.meBadge}>{t.me?.meBadge || "Me"}</span>
       </h1>
+      {banInfo?.active && (
+        <div className={styles.banBanner}>
+          <div className={styles.banTitle}>
+            {t.me?.bannedTitle || "YOU ARE BANNED"}
+          </div>
+          <div className={styles.banText}>
+            {banInfo?.reason
+              ? `${t.me?.bannedReason || "Reason"}: ${banInfo.reason}`
+              : t.me?.bannedHint || "You cannot upload screenshots or appear on the leaderboard."}
+          </div>
+        </div>
+      )}
 
       <div className={`${styles.statsSection} ${styles.fadeIn} ${styles.stagger1}`}>
         <div className={styles.statsHeader}>
@@ -1166,228 +1197,6 @@ function formatDate(ts, fallback = "-") {
   if (!ts) return fallback;
   const d = new Date(ts);
   return d.toLocaleString();
-}
-
-function Stat({ label, value, icon, accent, variant, trend, bar, rank, rankLabel }) {
-  const variantClass =
-    variant === "hero"
-      ? styles.statHero
-      : variant === "compact"
-      ? styles.statCompact
-      : "";
-  const rankScore =
-    typeof rank === "number" ? Math.max(1, 100 - Math.min(100, rank) + 1) : null;
-  const barWidth = bar
-    ? `${Math.min(
-        100,
-        rankScore ?? safeDiv(bar.value * 100, bar.max || 1)
-      )}%`
-    : null;
-  return (
-    <div
-      className={`${styles.statCard} ${variantClass} ${
-        accent === "win"
-          ? styles.statWin
-          : accent === "loss"
-          ? styles.statLoss
-          : accent === "rate"
-          ? styles.statRate
-          : ""
-      }`}
-    >
-      {icon ? <div className={styles.statIcon}>{icon}</div> : null}
-      <div className={styles.statLabel}>{label}</div>
-      <div className={styles.statValue}>{value}</div>
-      {rank ? (
-        <div className={styles.statMeta}>
-          {rankLabel || "Top"} {rank}%
-        </div>
-      ) : null}
-      {bar ? (
-        <div className={styles.statBar}>
-          <span className={styles.statBarFill} style={{ width: barWidth }} />
-        </div>
-      ) : null}
-      {variant === "hero" && Array.isArray(trend) && trend.length ? (
-        <div className={styles.statSpark}>
-          <Sparkline data={trend} />
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-function Sparkline({ data }) {
-  const min = Math.min(...data);
-  const max = Math.max(...data);
-  const range = Math.max(1, max - min);
-  const step = data.length > 1 ? 100 / (data.length - 1) : 0;
-  const points = data
-    .map((v, i) => {
-      const x = i * step;
-      const y = 24 - Math.round(((v - min) / range) * 20);
-      return `${x},${y}`;
-    })
-    .join(" ");
-  return (
-    <svg viewBox="0 0 100 28" preserveAspectRatio="none" aria-hidden="true">
-      <polyline points={points} />
-    </svg>
-  );
-}
-
-
-function IconMatches() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <rect x="3" y="4" width="18" height="14" rx="2" />
-      <path d="M7 20h10" />
-      <path d="M9 8h6M9 12h6" />
-    </svg>
-  );
-}
-
-function IconWin() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <circle cx="12" cy="12" r="9" />
-      <path d="M8 12l3 3 5-6" />
-    </svg>
-  );
-}
-
-function IconLoss() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <circle cx="12" cy="12" r="9" />
-      <path d="M9 9l6 6M15 9l-6 6" />
-    </svg>
-  );
-}
-
-function IconRate() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M6 18V6" />
-      <path d="M6 18h12" />
-      <path d="M9 15l3-3 3 2 3-4" />
-    </svg>
-  );
-}
-
-function IconScore() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17l-5.6 3.2 1.1-6.2L3 9.6l6.2-.9z" />
-    </svg>
-  );
-}
-
-function IconKills() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M4 12h16" />
-      <path d="M12 4v16" />
-      <circle cx="12" cy="12" r="6" />
-    </svg>
-  );
-}
-
-function IconDeaths() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M12 3c-4.4 0-8 3-8 7 0 2.8 1.5 5.2 3.8 6.3V19a2 2 0 0 0 2 2h4.4a2 2 0 0 0 2-2v-2.7C18.5 15.2 20 12.8 20 10c0-4-3.6-7-8-7z" />
-      <circle cx="9" cy="11" r="1.4" />
-      <circle cx="15" cy="11" r="1.4" />
-      <path d="M10 15h4" />
-      <path d="M11 17h2" />
-    </svg>
-  );
-}
-
-function IconAssists() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M4 12l4-3 4 4 4-3 4 2" />
-      <path d="M8 9l2-2 4 4" />
-      <path d="M4 12v3h4l3-2" />
-      <path d="M20 11v3h-4l-3-2" />
-    </svg>
-  );
-}
-
-function IconKda() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M4 18V6" />
-      <path d="M10 18V9" />
-      <path d="M16 18V4" />
-      <path d="M20 18H2" />
-    </svg>
-  );
-}
-
-function IconDamage() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M12 2c2.2 2.7 4.8 5.8 4.8 9.2 0 2.7-2.1 4.8-4.8 4.8s-4.8-2.1-4.8-4.8C7.2 7.8 9.8 4.7 12 2z" />
-      <path d="M12 8c.9 1.2 1.8 2.3 1.8 3.8 0 1.3-1 2.2-2.2 2.2S9.4 13 9.4 11.8c0-1.5.9-2.6 2.6-3.8z" />
-    </svg>
-  );
-}
-
-function IconDamageShare() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <circle cx="12" cy="12" r="9" />
-      <path d="M12 3v9l7 7" />
-    </svg>
-  );
-}
-
-function Mini({ label, value, accent }) {
-  return (
-    <div
-      className={`${styles.mini} ${
-        accent === "good" ? styles.good : accent === "bad" ? styles.bad : ""
-      }`}
-    >
-      <div className={styles.miniLabel}>{label}</div>
-      <div className={styles.miniValue}>{value}</div>
-    </div>
-  );
-}
-
-function Record({ label, value, sub }) {
-  return (
-    <div className={styles.record}>
-      <div className={styles.recordLabel}>{label}</div>
-      <div className={styles.recordValue}>{value}</div>
-      <div className={styles.recordSub}>{sub}</div>
-    </div>
-  );
-}
-
-function CompareRow({ label, you, global, delta, accent, compareSep }) {
-  return (
-    <div className={styles.compareRow}>
-      <div className={styles.compareLabel}>{label}</div>
-
-      <div className={styles.compareVals}>
-        <span className={styles.compareYou}>{you}</span>
-        <span className={styles.compareSep}>{compareSep || "vs"}</span>
-        <span className={styles.compareGlobal}>{global}</span>
-      </div>
-
-      <div
-        className={`${styles.compareDelta} ${
-          accent === "good" ? styles.good : accent === "bad" ? styles.bad : ""
-        }`}
-      >
-        {typeof delta === "number" ? `${sign(delta)}${delta}` : delta}
-      </div>
-    </div>
-  );
 }
 
 function formatRank(rank, t) {

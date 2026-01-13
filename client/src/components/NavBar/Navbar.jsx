@@ -1,16 +1,17 @@
 import { useEffect, useRef, useState } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { signOut } from "firebase/auth";
-import styles from "./Navbar.module.css";
-import { useLang } from "../../i18n/LanguageContext";
-import DiscordLoginButton from "../../buttons/DiscordLoginButton/DiscordLoginButton";
-import { useAuth } from "../../auth/AuthContext";
-import { auth } from "../../firebase";
+import styles from "@/components/NavBar/Navbar.module.css";
+import { useLang } from "@/i18n/LanguageContext";
+import DiscordLoginButton from "@/buttons/DiscordLoginButton/DiscordLoginButton";
+import { useAuth } from "@/auth/AuthContext";
+import { auth } from "@/firebase";
 
 export default function Navbar() {
   const { lang, setLang, t } = useLang();
   const { user, claims } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [open, setOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -81,6 +82,8 @@ export default function Navbar() {
   ];
   const currentLang =
     languages.find((item) => item.code === lang) || languages[0];
+  const isPlayersActive =
+    location.pathname === "/" || location.pathname.startsWith("/players");
 
   return (
     <nav className={styles.navbar}>
@@ -92,7 +95,7 @@ export default function Navbar() {
         <div className={styles.links}>
           {user && (
             <NavLink
-              to="/"
+              to="/upload"
               className={({ isActive }) =>
                 `${styles.link} ${isActive ? styles.active : ""}`
               }
@@ -104,7 +107,9 @@ export default function Navbar() {
           <NavLink
             to="/players"
             className={({ isActive }) =>
-              `${styles.link} ${isActive ? styles.active : ""}`
+              `${styles.link} ${
+                isActive || isPlayersActive ? styles.active : ""
+              }`
             }
           >
             {t.nav.players}
@@ -122,7 +127,11 @@ export default function Navbar() {
         </div>
 
         <div className={styles.right}>
-          {!user && <DiscordLoginButton />}
+          {!user && (
+            <div className={styles.desktopLogin}>
+              <DiscordLoginButton />
+            </div>
+          )}
 
           {user && (
             <div className={styles.dropdownWrapper} ref={dropdownRef}>
@@ -271,7 +280,7 @@ export default function Navbar() {
         <div className={styles.offcanvasLinks}>
           {user && (
             <NavLink
-              to="/"
+              to="/upload"
               onClick={closeMobile}
               className={({ isActive }) =>
                 `${styles.offcanvasLink} ${isActive ? styles.active : ""}`
@@ -284,7 +293,9 @@ export default function Navbar() {
             to="/players"
             onClick={closeMobile}
             className={({ isActive }) =>
-              `${styles.offcanvasLink} ${isActive ? styles.active : ""}`
+              `${styles.offcanvasLink} ${
+                isActive || isPlayersActive ? styles.active : ""
+              }`
             }
           >
             {t.nav.players}

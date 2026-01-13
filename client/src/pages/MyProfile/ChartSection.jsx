@@ -7,7 +7,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import styles from "./MyProfile.module.css";
+import styles from "@/pages/MyProfile/MyProfile.module.css";
 
 export default function ChartSection({
   matches,

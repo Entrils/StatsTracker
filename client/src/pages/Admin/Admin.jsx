@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import styles from "./Admin.module.css";
-import { useAuth } from "../../auth/AuthContext";
+import styles from "@/pages/Admin/Admin.module.css";
+import { useAuth } from "@/auth/AuthContext";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
@@ -13,6 +13,10 @@ export default function Admin() {
   const [errors, setErrors] = useState([]);
   const [rankLoading, setRankLoading] = useState(false);
   const [rankItems, setRankItems] = useState([]);
+  const [banLoading, setBanLoading] = useState(false);
+  const [banItems, setBanItems] = useState([]);
+  const [banUid, setBanUid] = useState("");
+  const [banReason, setBanReason] = useState("");
 
   const isAdmin = claims?.admin === true || claims?.role === "admin";
 
@@ -109,9 +113,63 @@ export default function Admin() {
     }
   };
 
+  const loadBans = async () => {
+    if (!user) return;
+    setBanLoading(true);
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch(`${BACKEND_URL}/admin/bans?limit=100`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json().catch(() => null);
+      setBanItems(Array.isArray(data?.rows) ? data.rows : []);
+    } finally {
+      setBanLoading(false);
+    }
+  };
+
+  const submitBan = async () => {
+    if (!user || !banUid.trim()) return;
+    try {
+      const token = await user.getIdToken();
+      await fetch(`${BACKEND_URL}/admin/bans/ban`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ uid: banUid.trim(), reason: banReason.trim() }),
+      });
+      setBanUid("");
+      setBanReason("");
+      loadBans();
+    } catch {
+      // ignore
+    }
+  };
+
+  const submitUnban = async (uid) => {
+    if (!user || !uid) return;
+    try {
+      const token = await user.getIdToken();
+      await fetch(`${BACKEND_URL}/admin/bans/unban`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ uid }),
+      });
+      loadBans();
+    } catch {
+      // ignore
+    }
+  };
+
   useEffect(() => {
     if (!user || !isAdmin) return;
     loadRankSubmissions();
+    loadBans();
   }, [user, isAdmin]);
 
   if (!user) {
@@ -253,6 +311,68 @@ export default function Admin() {
                   >
                     Reject
                   </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className={styles.section}>
+        <div className={styles.sectionHeader}>
+          <h2 className={styles.sectionTitle}>Bans</h2>
+          <button
+            className={styles.smallButton}
+            onClick={loadBans}
+            disabled={banLoading}
+          >
+            {banLoading ? "Loading..." : "Refresh"}
+          </button>
+        </div>
+
+        <div className={styles.banForm}>
+          <input
+            className={styles.banInput}
+            placeholder="User UID"
+            value={banUid}
+            onChange={(e) => setBanUid(e.target.value)}
+          />
+          <input
+            className={styles.banInput}
+            placeholder="Reason (optional)"
+            value={banReason}
+            onChange={(e) => setBanReason(e.target.value)}
+          />
+          <button className={styles.banButton} onClick={submitBan}>
+            Ban user
+          </button>
+        </div>
+
+        {!banItems.length && (
+          <p className={styles.hint}>No bans yet.</p>
+        )}
+
+        {!!banItems.length && (
+          <div className={styles.banList}>
+            {banItems.map((ban) => (
+              <div key={ban.id} className={styles.banItem}>
+                <div className={styles.banMeta}>
+                  <div className={styles.banUid}>{ban.uid || ban.id}</div>
+                  <div className={styles.banReason}>
+                    {ban.reason || "No reason provided"}
+                  </div>
+                </div>
+                <div className={styles.banActions}>
+                  {ban.active ? (
+                    <button
+                      className={styles.banUnban}
+                      onClick={() => submitUnban(ban.uid || ban.id)}
+                    >
+                      Unban
+                    </button>
+                  ) : (
+                    <span className={styles.banInactive}>Inactive</span>
+                  )}
                 </div>
               </div>
             ))}

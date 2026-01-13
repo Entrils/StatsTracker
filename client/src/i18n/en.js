@@ -46,7 +46,7 @@
     hit: "Hit",
     damage: "% DMG",
     selectFile: "Choose screenshot",
-    selectHint: "PNG/JPG, full screen, ONLY ENG",
+    selectHint: "PNG/JPG, full screen, RU/ENG/FR/DE",
     fileReady: "File loaded - ready to analyze",
     fileMissing: "No file selected yet",
     statusOk: "OK (Uploaded)",
@@ -54,6 +54,7 @@
     statusOcrFailed: "Not successful (OCR failed)",
     statusOtherFailed: "Not successful (Other error)",
     statusTooLarge: "File is too large (max 2MB)",
+    statusBanned: "Not successful (Banned)",
     statusMatchIdFailed: "Not successful (Match ID not found)",
     statusPlayerFailed: "Not successful (Player row not recognized)",
     ocrRemaining: "OCR left today: {count}",
@@ -101,6 +102,7 @@
     rankMaster: "Master",
     rankAce: "Ace",
     rankPunkmaster: "Punkmaster",
+    bannedBadge: "Banned",
   },
 
   me: {
@@ -188,6 +190,9 @@
     rankAce: "Ace",
     rankPunkmaster: "Punkmaster",
     rankGrandmaster: "Grandmaster",
+    bannedTitle: "YOU ARE BANNED",
+    bannedHint: "You cannot upload screenshots or appear on the leaderboard.",
+    bannedReason: "Reason",
   },
 
   footer: {

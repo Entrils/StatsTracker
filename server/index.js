@@ -10,6 +10,7 @@ import { registerLeaderboardRoutes } from "./routes/leaderboard.js";
 import { registerProfileRoutes } from "./routes/profile.js";
 import { registerStatsRoutes } from "./routes/stats.js";
 import { registerClientErrorRoutes } from "./routes/clientError.js";
+import { registerBanRoutes } from "./routes/bans.js";
 import { createCorsMiddleware } from "./middleware/cors.js";
 import { createHelmetMiddleware } from "./middleware/helmet.js";
 import { createRateLimiters } from "./middleware/rateLimits.js";
@@ -25,6 +26,7 @@ import {
 } from "./helpers/validation.js";
 import { createClientErrorHelpers } from "./helpers/clientErrors.js";
 import { createStatsHelpers } from "./helpers/stats.js";
+import { createBanHelpers } from "./helpers/bans.js";
 
 dotenv.config();
 
@@ -78,6 +80,8 @@ const CACHE_COLLECTION = "stats_cache";
 const GLOBAL_CACHE_TTL_MS =
   Number.parseInt(process.env.GLOBAL_CACHE_TTL_MS || "900000", 10) ||
   15 * 60 * 1000;
+const BAN_CACHE_TTL_MS =
+  Number.parseInt(process.env.BAN_CACHE_TTL_MS || "30000", 10) || 30 * 1000;
 const PERCENTILES_CACHE_TTL_MS =
   Number.parseInt(process.env.PERCENTILES_CACHE_TTL_MS || "60000", 10) ||
   60 * 1000;
@@ -106,12 +110,19 @@ const ALLOWED_RANKS = new Set([
   "punkmaster",
 ]);
 
+const { getActiveBansSet } = createBanHelpers({
+  db,
+  logger,
+  BAN_CACHE_TTL_MS,
+});
+
 const { getDistributions, getLeaderboardPage, topPercent } = createStatsHelpers({
   admin,
   db,
   logger,
   CACHE_COLLECTION,
   GLOBAL_CACHE_TTL_MS,
+  getActiveBansSet,
 });
 
 const routesDeps = {
@@ -133,6 +144,7 @@ const routesDeps = {
   parseIntParam,
   isValidUid,
   getLeaderboardPage,
+  getActiveBansSet,
   percentilesCache,
   PERCENTILES_CACHE_TTL_MS,
   getDistributions,
@@ -141,6 +153,14 @@ const routesDeps = {
   rotateClientErrorLog,
   CLIENT_ERROR_LOG,
   clientErrorBuffer,
+  invalidateStatsCache: async () => {
+    try {
+      percentilesCache.clear();
+      await db.collection(CACHE_COLLECTION).doc("global").delete();
+    } catch {
+      // ignore cache invalidation errors
+    }
+  },
 };
 
 registerAuthRoutes(app, routesDeps);
@@ -150,10 +170,16 @@ registerLeaderboardRoutes(app, routesDeps);
 registerProfileRoutes(app, routesDeps);
 registerStatsRoutes(app, routesDeps);
 registerClientErrorRoutes(app, routesDeps);
+registerBanRoutes(app, routesDeps);
 
 app.use(payloadTooLargeHandler);
 
-app.listen(process.env.PORT, () => {
-  logger.info(`Backend running on http://localhost:${process.env.PORT}`);
+const PORT = process.env.PORT || 4000;
+const publicUrl = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
+app.listen(PORT, () => {
+  logger.info(
+    { port: PORT, env: process.env.NODE_ENV || "development" },
+    `Backend running on ${publicUrl}`
+  );
 });
 

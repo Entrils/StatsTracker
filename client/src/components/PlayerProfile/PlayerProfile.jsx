@@ -9,8 +9,8 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import styles from "./PlayerProfile.module.css";
-import { useLang } from "../../i18n/LanguageContext";
+import styles from "@/components/PlayerProfile/PlayerProfile.module.css";
+import { useLang } from "@/i18n/LanguageContext";
 
 export default function PlayerProfile() {
   const { t } = useLang();
@@ -22,6 +22,7 @@ export default function PlayerProfile() {
   const [profileSocials, setProfileSocials] = useState(null);
   const [profileName, setProfileName] = useState("");
   const [profileRanks, setProfileRanks] = useState(null);
+  const [banInfo, setBanInfo] = useState(null);
 
   useEffect(() => {
     const fetchHistory = async () => {
@@ -39,6 +40,7 @@ export default function PlayerProfile() {
         setProfileSocials(data?.settings || null);
         setProfileName(data?.name || "");
         setProfileRanks(data?.ranks || null);
+        setBanInfo(data?.ban || null);
       } catch (e) {
         setError(t.profile.empty || "No match history");
       } finally {
@@ -114,6 +116,11 @@ export default function PlayerProfile() {
         <div>
           <div className={styles.nameRow}>
             <h1 className={styles.nickname}>{summary.name}</h1>
+            {banInfo?.active && (
+              <span className={styles.banBadge}>
+                {t.profile?.bannedBadge || "Banned"}
+              </span>
+            )}
             <div className={styles.nameSocials}>
               {renderSocial("twitch", profileSocials?.twitch)}
               {renderSocial("youtube", profileSocials?.youtube)}

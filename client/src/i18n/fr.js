@@ -47,7 +47,7 @@ export default {
     hit: "Touches",
     damage: "% DMG",
     selectFile: "Choisir un screenshot",
-    selectHint: "PNG/JPG, plein écran, ANGLAIS UNIQUEMENT",
+    selectHint: "PNG/JPG, plein écran, RU/ENG/FR/DE",
     fileReady: "Fichier chargé — prêt à analyser",
     fileMissing: "Aucun fichier sélectionné",
     statusOk: "OK (Téléversé)",
@@ -55,6 +55,7 @@ export default {
     statusOcrFailed: "Échec (OCR)",
     statusOtherFailed: "Échec (autre erreur)",
     statusTooLarge: "Fichier trop volumineux (max 2 Mo)",
+    statusBanned: "Échec (banni)",
     statusMatchIdFailed: "Échec (ID de match introuvable)",
     statusPlayerFailed: "Échec (ligne joueur non reconnue)",
     ocrRemaining: "OCR restant aujourd'hui : {count}",
@@ -94,6 +95,7 @@ export default {
     rankMaster: "Maître",
     rankAce: "Ace",
     rankPunkmaster: "Punkmaster",
+    bannedBadge: "Banni",
   },
 
   me: {
@@ -185,6 +187,9 @@ export default {
     rankAce: "Ace",
     rankPunkmaster: "Punkmaster",
     rankGrandmaster: "Grand Maître",
+    bannedTitle: "VOUS ÊTES BANNI",
+    bannedHint: "Vous ne pouvez pas envoyer de captures et n’apparaissez pas dans le classement.",
+    bannedReason: "Raison",
   },
 
   footer: {

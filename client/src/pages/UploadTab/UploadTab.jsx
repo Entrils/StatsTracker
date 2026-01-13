@@ -1,10 +1,10 @@
 ﻿import React, { useRef, useState } from "react";
 import imageCompression from "browser-image-compression";
 import { doc, getDoc, setDoc } from "firebase/firestore";
-import { db } from "../../firebase";
-import styles from "./UploadTab.module.css";
-import { useLang } from "../../i18n/LanguageContext";
-import { useAuth } from "../../auth/AuthContext";
+import { db } from "@/firebase";
+import styles from "@/pages/UploadTab/UploadTab.module.css";
+import { useLang } from "@/i18n/LanguageContext";
+import { useAuth } from "@/auth/AuthContext";
 
 function extractMatchId(text) {
   if (!text) return null;
@@ -410,6 +410,14 @@ export default function UploadTab() {
       );
 
       if (!r.ok) {
+        if (r.status === 403) {
+          const err = await r.json().catch(() => null);
+          if (err?.error === "Banned") {
+            setStatus(t.upload.statusBanned || "Not successful (Banned)");
+            setStatusTone("bad");
+            return;
+          }
+        }
         if (r.status === 413) {
           setStatus(t.upload.statusTooLarge || "File is too large (max 2MB)");
           setStatusTone("bad");

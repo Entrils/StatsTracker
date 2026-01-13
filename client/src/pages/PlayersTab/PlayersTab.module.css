@@ -320,3 +320,28 @@
   margin-bottom: 12px;
   color: #9aa4c1;
 }
+
+@media (max-width: 720px) {
+  .table {
+    min-width: 560px;
+  }
+
+  .gold,
+  .silver,
+  .bronze {
+    background: none;
+    box-shadow: none;
+  }
+
+  .gold td:first-child {
+    box-shadow: inset 4px 0 0 rgba(255, 176, 0, 0.75);
+  }
+
+  .silver td:first-child {
+    box-shadow: inset 4px 0 0 rgba(156, 163, 175, 0.7);
+  }
+
+  .bronze td:first-child {
+    box-shadow: inset 4px 0 0 rgba(255, 120, 80, 0.7);
+  }
+}

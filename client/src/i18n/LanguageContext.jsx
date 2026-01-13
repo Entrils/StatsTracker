@@ -1,8 +1,8 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import ru from "./ru";
-import en from "./en";
-import de from "./de";
-import fr from "./fr";
+import ru from "@/i18n/ru";
+import en from "@/i18n/en";
+import de from "@/i18n/de";
+import fr from "@/i18n/fr";
 
 const translations = { ru, en, de, fr };
 

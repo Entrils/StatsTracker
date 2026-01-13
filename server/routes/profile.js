@@ -17,6 +17,9 @@ export function registerProfileRoutes(app, deps) {
         return res.status(400).json({ error: "Invalid uid" });
       }
 
+      const banSnap = await db.collection("bans").doc(uid).get();
+      const ban = banSnap.exists ? banSnap.data() || null : null;
+
       const limitRaw = parseIntParam(req.query.limit, 200);
       if (limitRaw === null) {
         return res.status(400).json({ error: "Invalid limit" });
@@ -70,6 +73,7 @@ export function registerProfileRoutes(app, deps) {
         name: profileData?.name || null,
         settings,
         ranks,
+        ban,
       });
     } catch (err) {
       logger.error("PLAYER PROFILE ERROR:", err);
@@ -81,6 +85,9 @@ export function registerProfileRoutes(app, deps) {
     try {
       const { uid } = req.params;
       if (!uid) return res.status(400).json({ error: "Missing uid" });
+
+      const banSnap = await db.collection("bans").doc(uid).get();
+      const ban = banSnap.exists ? banSnap.data() || null : null;
 
       const snap = await db.collection("leaderboard_users").doc(uid).get();
       const data = snap.exists ? snap.data() || {} : {};
@@ -115,7 +122,7 @@ export function registerProfileRoutes(app, deps) {
         .get();
       const ranks = ranksSnap.exists ? ranksSnap.data() || null : null;
 
-      return res.json({ uid, settings, ranks, name: data.name || null });
+      return res.json({ uid, settings, ranks, name: data.name || null, ban });
     } catch (err) {
       logger.error("PROFILE ERROR:", err);
       return res.status(500).json({ error: "Failed to load profile" });

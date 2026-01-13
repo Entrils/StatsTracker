@@ -1,7 +1,7 @@
 import { useState } from "react";
 import ReCAPTCHA from "react-google-recaptcha";
-import styles from "./Support.module.css";
-import { useLang } from "../../i18n/LanguageContext";
+import styles from "@/pages/Support/Support.module.css";
+import { useLang } from "@/i18n/LanguageContext";
 
 export default function Support() {
   const { t } = useLang();
