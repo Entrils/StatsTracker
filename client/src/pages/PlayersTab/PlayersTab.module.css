@@ -188,6 +188,38 @@
   color: #e2e8f0;
 }
 
+.rankWrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.rankValue {
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.rankDelta {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.rankUp {
+  color: #a3ff12;
+  text-shadow: 0 0 10px rgba(163, 255, 18, 0.35);
+}
+
+.rankDown {
+  color: #ff2d95;
+  text-shadow: 0 0 10px rgba(255, 45, 149, 0.35);
+}
+
+.rankSame {
+  color: rgba(154, 164, 193, 0.9);
+}
+
 .wlCell {
   font-weight: 600;
   letter-spacing: 0.02em;

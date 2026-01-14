@@ -1,5 +1,5 @@
 .wrapper {
-  max-width: 720px;
+  max-width: 1120px;
   margin: 0 auto;
   padding: 2.5rem 1.5rem;
   text-align: center;
@@ -62,8 +62,20 @@
   text-shadow: 0 0 10px rgba(255, 77, 109, 0.35);
 }
 
-.section {
+.sectionGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.5rem;
   margin-top: 2.5rem;
+}
+
+@media (max-width: 900px) {
+  .sectionGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.section {
   text-align: left;
   background: rgba(8, 12, 22, 0.6);
   border: 1px solid rgba(255, 255, 255, 0.08);
