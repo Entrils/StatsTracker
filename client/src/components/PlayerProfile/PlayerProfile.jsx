@@ -11,10 +11,14 @@ import {
 } from "recharts";
 import styles from "@/components/PlayerProfile/PlayerProfile.module.css";
 import { useLang } from "@/i18n/LanguageContext";
+import { useAuth } from "@/auth/AuthContext";
+
+const backend = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
 export default function PlayerProfile() {
   const { t } = useLang();
   const { id: uid } = useParams();
+  const { user, claims } = useAuth();
 
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -22,13 +26,13 @@ export default function PlayerProfile() {
   const [profileSocials, setProfileSocials] = useState(null);
   const [profileName, setProfileName] = useState("");
   const [profileRanks, setProfileRanks] = useState(null);
+  const [profileAvatar, setProfileAvatar] = useState(null);
   const [banInfo, setBanInfo] = useState(null);
+  const [friendStatus, setFriendStatus] = useState("none");
 
   useEffect(() => {
     const fetchHistory = async () => {
       try {
-        const backend =
-          import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
         const res = await fetch(
           `${backend}/player/${uid}?limit=200`
         );
@@ -40,6 +44,7 @@ export default function PlayerProfile() {
         setProfileSocials(data?.settings || null);
         setProfileName(data?.name || "");
         setProfileRanks(data?.ranks || null);
+        setProfileAvatar(data?.avatar || null);
         setBanInfo(data?.ban || null);
       } catch (e) {
         setError(t.profile.empty || "No match history");
@@ -50,6 +55,89 @@ export default function PlayerProfile() {
 
     fetchHistory();
   }, [uid]);
+
+  useEffect(() => {
+    const fetchStatus = async () => {
+      if (!user || !uid || user.uid === uid) return;
+      try {
+        const token = await user.getIdToken();
+        const res = await fetch(`${backend}/friends/status/${uid}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json().catch(() => null);
+        if (res.ok && data?.status) {
+          setFriendStatus(data.status);
+        }
+      } catch {
+        // ignore
+      }
+    };
+    fetchStatus();
+  }, [user, uid]);
+
+  const handleAddFriend = async () => {
+    if (!user || !uid || user.uid === uid) return;
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch(`${backend}/friends/request`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ uid }),
+      });
+      const data = await res.json().catch(() => null);
+      if (res.ok && data?.status) {
+        setFriendStatus(data.status);
+      }
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleAcceptFriend = async () => {
+    if (!user || !uid) return;
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch(`${backend}/friends/accept`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ uid }),
+      });
+      const data = await res.json().catch(() => null);
+      if (res.ok) {
+        setFriendStatus("friend");
+      } else if (data?.status) {
+        setFriendStatus(data.status);
+      }
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleRejectFriend = async () => {
+    if (!user || !uid) return;
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch(`${backend}/friends/reject`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ uid }),
+      });
+      if (res.ok) {
+        setFriendStatus("none");
+      }
+    } catch {
+      // ignore
+    }
+  };
 
   const summary = useMemo(() => {
     if (!matches.length) return null;
@@ -98,6 +186,28 @@ export default function PlayerProfile() {
     };
   }, [matches]);
 
+  const avatarUrl = useMemo(() => {
+    if (!uid) return null;
+    const isDiscord = uid.startsWith("discord:");
+    const direct =
+      typeof profileAvatar === "string" && profileAvatar.startsWith("http")
+        ? profileAvatar
+        : null;
+    if (direct) return direct;
+
+    if (profileAvatar && isDiscord) {
+      const discordId = uid.replace("discord:", "");
+      return `https://cdn.discordapp.com/avatars/${discordId}/${profileAvatar}.png`;
+    }
+
+    if (user?.uid === uid && claims?.avatar && isDiscord) {
+      const discordId = uid.replace("discord:", "");
+      return `https://cdn.discordapp.com/avatars/${discordId}/${claims.avatar}.png`;
+    }
+
+    return null;
+  }, [profileAvatar, uid, user, claims]);
+
   if (loading) {
     return <p className={styles.wrapper}>{t.profile.loading}</p>;
   }
@@ -115,6 +225,14 @@ export default function PlayerProfile() {
       <div className={styles.header}>
         <div>
           <div className={styles.nameRow}>
+            {avatarUrl && (
+              <img
+                src={avatarUrl}
+                alt={summary.name}
+                className={styles.avatar}
+                loading="lazy"
+              />
+            )}
             <h1 className={styles.nickname}>{summary.name}</h1>
             {banInfo?.active && (
               <span className={styles.banBadge}>
@@ -126,10 +244,61 @@ export default function PlayerProfile() {
               {renderSocial("youtube", profileSocials?.youtube)}
               {renderSocial("tiktok", profileSocials?.tiktok)}
             </div>
+            {user && user.uid !== uid && friendStatus !== "incoming" && (
+              <button
+                className={`${styles.friendButton} ${
+                  friendStatus === "friend"
+                    ? styles.friendButtonDone
+                    : friendStatus === "outgoing"
+                    ? styles.friendButtonPending
+                    : ""
+                }`}
+                onClick={handleAddFriend}
+                disabled={friendStatus !== "none"}
+                aria-label={t.friends?.add || "Add friend"}
+              >
+                {friendStatus === "friend" && (
+                  <span className={styles.friendStatusText}>
+                    {t.friends?.already || "Already friends"}
+                  </span>
+                )}
+                {friendStatus === "outgoing" && (
+                  <span className={styles.friendStatusText}>
+                    {t.friends?.pending || "Request sent"}
+                  </span>
+                )}
+                {friendStatus === "none" && (
+                  <span className={styles.friendIcon} aria-hidden="true">
+                    <svg viewBox="0 0 24 24" role="img">
+                      <path
+                        d="M8.2 12.1a4 4 0 1 1 3.6-6.1 4 4 0 0 1-3.6 6.1Zm7.1-1.6a3 3 0 1 1 0-6 3 3 0 0 1 0 6Zm-6.8 1.6c2.6 0 5.7 1.3 5.7 3.9v1H2.5v-1c0-2.6 3.1-3.9 5.9-3.9Zm6.5.4h1.2v2.2h2.2v1.2h-2.2v2.2H15v-2.2h-2.2v-1.2H15v-2.2Z"
+                        fill="currentColor"
+                      />
+                    </svg>
+                  </span>
+                )}
+              </button>
+            )}
           </div>
           <p className={styles.subtitle}>
             {t.profile.matches}: {summary.matches}
           </p>
+          {user && user.uid !== uid && friendStatus === "incoming" && (
+            <div className={styles.friendActions}>
+              <button
+                className={`${styles.friendButton} ${styles.friendButtonAccept}`}
+                onClick={handleAcceptFriend}
+              >
+                {t.friends?.accept || "Accept"}
+              </button>
+              <button
+                className={`${styles.friendButton} ${styles.friendButtonReject}`}
+                onClick={handleRejectFriend}
+              >
+                {t.friends?.reject || "Reject"}
+              </button>
+            </div>
+          )}
         </div>
         <div className={styles.headerStats}>
           <div className={styles.headerStat}>

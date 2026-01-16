@@ -6,6 +6,7 @@ export default {
     Logout: "Abmelden",
     admin: "Admin",
     settings: "Einstellungen",
+    friends: "Freunde",
   },
 
   leaderboard: {
@@ -124,6 +125,12 @@ export default {
     win: "SIEG",
     loss: "NIEDERLAGE",
     compareSep: "vs",
+    compareTitle: "Vergleichen",
+    compareHint: "Vergleiche deine Statistiken mit einem Freund",
+    compareSelect: "Freund auswählen",
+    compareEmpty: "Keine Freunde zum Vergleichen",
+    compareYou: "Du",
+    compareFriend: "Freund",
     vsGlobal: "Vergleich mit globalem Durchschnitt",
     globalSample: "Stichprobe",
     globalLoading: "Globale Durchschnittswerte werden geladen...",
@@ -198,6 +205,23 @@ export default {
     policy: "Nutzungsrichtlinie",
     support: "Support",
     ads: "Werbung & Kontakte",
+  },
+
+  friends: {
+    title: "Freunde",
+    tabFriends: "In Freunden",
+    tabRequests: "Anfragen",
+    empty: "Noch keine Freunde",
+    emptyRequests: "Noch keine Anfragen",
+    add: "Freund hinzufügen",
+    already: "Bereits Freunde",
+    pending: "Anfrage gesendet",
+    incoming: "Anfrage erhalten",
+    accept: "Annehmen",
+    reject: "Ablehnen",
+    matches: "Matches",
+    loading: "Laden...",
+    login: "Bitte anmelden",
   },
 
   policy: {

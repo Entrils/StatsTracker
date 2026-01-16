@@ -5,6 +5,23 @@
   color: var(--text-main);
 }
 
+.profileHeader {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px solid rgba(0, 245, 212, 0.35);
+  box-shadow:
+    0 0 14px rgba(0, 245, 212, 0.25),
+    0 0 24px rgba(255, 45, 149, 0.2);
+  object-fit: cover;
+}
+
 .nickname {
   display: flex;
   align-items: center;
@@ -55,6 +72,22 @@
 .banText {
   font-size: 12px;
   color: rgba(255, 216, 223, 0.95);
+}
+
+.compareSelectWrap {
+  margin-top: 8px;
+  margin-bottom: 8px;
+}
+
+.compareSelect {
+  width: 100%;
+  background: rgba(8, 12, 22, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 10px 12px;
+  color: #e8eefc;
+  font-weight: 600;
+  outline: none;
 }
 
 .statsGrid {

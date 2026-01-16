@@ -11,6 +11,7 @@ import { registerProfileRoutes } from "./routes/profile.js";
 import { registerStatsRoutes } from "./routes/stats.js";
 import { registerClientErrorRoutes } from "./routes/clientError.js";
 import { registerBanRoutes } from "./routes/bans.js";
+import { registerFriendsRoutes } from "./routes/friends.js";
 import { createCorsMiddleware } from "./middleware/cors.js";
 import { createHelmetMiddleware } from "./middleware/helmet.js";
 import { createRateLimiters } from "./middleware/rateLimits.js";
@@ -179,6 +180,7 @@ registerProfileRoutes(app, routesDeps);
 registerStatsRoutes(app, routesDeps);
 registerClientErrorRoutes(app, routesDeps);
 registerBanRoutes(app, routesDeps);
+registerFriendsRoutes(app, routesDeps);
 
 app.use(payloadTooLargeHandler);
 

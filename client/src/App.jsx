@@ -12,6 +12,7 @@ import Policy from "@/pages/Policy/Policy";
 import Ads from "@/pages/Ads/Ads";
 import Settings from "@/pages/Settings/Settings";
 import Support from "@/pages/Support/Support";
+import Friends from "@/pages/Friends/Friends";
 
 export default function App() {
   useEffect(() => {
@@ -51,6 +52,7 @@ export default function App() {
           <Route path="/auth/discord/callback" element={<DiscordCallback />} />
           <Route path="/me" element={<MyProfile />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/friends" element={<Friends />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/policy" element={<Policy />} />
           <Route path="/support" element={<Support />} />

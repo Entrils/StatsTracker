@@ -1,0 +1,259 @@
+import { useEffect, useMemo, useState } from "react";
+import styles from "@/pages/Friends/Friends.module.css";
+import { useLang } from "@/i18n/LanguageContext";
+import { useAuth } from "@/auth/AuthContext";
+
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+
+const seasonOrder = ["s1", "s2", "s3", "s4"];
+
+const buildAvatarUrl = (uid, avatar, provider) => {
+  if (!avatar) return null;
+  if (typeof avatar === "string" && avatar.startsWith("http")) return avatar;
+  if (provider === "discord" && uid?.startsWith("discord:")) {
+    const discordId = uid.replace("discord:", "");
+    return `https://cdn.discordapp.com/avatars/${discordId}/${avatar}.png`;
+  }
+  return null;
+};
+
+const rankIconSrc = (rank) => `/ranks/${String(rank || "").toLowerCase()}.png`;
+
+export default function Friends() {
+  const { t } = useLang();
+  const { user } = useAuth();
+  const [tab, setTab] = useState("friends");
+  const [friends, setFriends] = useState([]);
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const tokenPromise = async () => {
+    if (!user) return null;
+    return user.getIdToken();
+  };
+
+  const loadFriends = async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      const token = await tokenPromise();
+      const res = await fetch(`${BACKEND_URL}/friends/list`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json().catch(() => null);
+      setFriends(Array.isArray(data?.rows) ? data.rows : []);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadRequests = async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      const token = await tokenPromise();
+      const res = await fetch(`${BACKEND_URL}/friends/requests`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json().catch(() => null);
+      setRequests(Array.isArray(data?.rows) ? data.rows : []);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const acceptRequest = async (uid) => {
+    if (!user || !uid) return;
+    setRequests((items) => items.filter((r) => r.uid !== uid));
+    const token = await tokenPromise();
+    await fetch(`${BACKEND_URL}/friends/accept`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ uid }),
+    });
+    loadRequests();
+    loadFriends();
+  };
+
+  const rejectRequest = async (uid) => {
+    if (!user || !uid) return;
+    setRequests((items) => items.filter((r) => r.uid !== uid));
+    const token = await tokenPromise();
+    await fetch(`${BACKEND_URL}/friends/reject`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ uid }),
+    });
+    loadRequests();
+  };
+
+  useEffect(() => {
+    if (!user) return;
+    loadFriends();
+    loadRequests();
+  }, [user]);
+
+  const emptyText = useMemo(() => {
+    if (tab === "requests") {
+      return t.friends?.emptyRequests || "No requests yet";
+    }
+    return t.friends?.empty || "No friends yet";
+  }, [tab, t]);
+
+  if (!user) {
+    return <div className={styles.wrapper}>{t.friends?.login || "Login required"}</div>;
+  }
+
+  return (
+    <div className={styles.wrapper}>
+      <div className={styles.card}>
+        <div className={styles.header}>
+          <h1 className={styles.title}>{t.friends?.title || "Friends"}</h1>
+          <div className={styles.tabs}>
+            <button
+              className={`${styles.tab} ${
+                tab === "friends" ? styles.tabActive : ""
+              }`}
+              onClick={() => setTab("friends")}
+            >
+              {t.friends?.tabFriends || "In friends"}
+            </button>
+            <button
+              className={`${styles.tab} ${
+                tab === "requests" ? styles.tabActive : ""
+              }`}
+              onClick={() => setTab("requests")}
+            >
+              {t.friends?.tabRequests || "Requests"}
+            </button>
+          </div>
+        </div>
+
+        {loading && (
+          <p className={styles.hint}>{t.friends?.loading || "Loading..."}</p>
+        )}
+
+        {!loading && tab === "friends" && !friends.length && (
+          <p className={styles.hint}>{emptyText}</p>
+        )}
+
+        {!loading && tab === "requests" && !requests.length && (
+          <p className={styles.hint}>{emptyText}</p>
+        )}
+
+        {!loading && tab === "friends" && (
+          <div className={styles.list}>
+            {friends.map((friend) => {
+              const avatarUrl = buildAvatarUrl(
+                friend.uid,
+                friend.avatar,
+                friend.provider
+              );
+              const ranks = friend.ranks || {};
+              return (
+                <div key={friend.uid} className={styles.friendCard}>
+                  {avatarUrl ? (
+                    <img
+                      src={avatarUrl}
+                      alt={friend.name || friend.uid}
+                      className={styles.avatar}
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className={styles.avatarFallback}>
+                      {(friend.name || friend.uid || "?").slice(0, 2).toUpperCase()}
+                    </div>
+                  )}
+                  <div className={styles.info}>
+                    <div className={styles.name}>{friend.name || friend.uid}</div>
+                    <div className={styles.meta}>
+                      {t.friends?.matches || "Matches"}: {friend.matches || 0}
+                    </div>
+                    <div className={styles.rankRow}>
+                      {seasonOrder.map((season) =>
+                        ranks?.[season]?.rank ? (
+                          <img
+                            key={season}
+                            src={rankIconSrc(ranks[season].rank)}
+                            alt={String(ranks[season].rank)}
+                            className={styles.rankIcon}
+                            title={`${season.toUpperCase()} ${ranks[season].rank}`}
+                          />
+                        ) : null
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {!loading && tab === "requests" && (
+          <div className={styles.list}>
+            {requests.map((friend) => {
+              const avatarUrl = buildAvatarUrl(
+                friend.uid,
+                friend.avatar,
+                friend.provider
+              );
+              const ranks = friend.ranks || {};
+              return (
+                <div key={friend.uid} className={styles.friendCard}>
+                  {avatarUrl ? (
+                    <img
+                      src={avatarUrl}
+                      alt={friend.name || friend.uid}
+                      className={styles.avatar}
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className={styles.avatarFallback}>
+                      {(friend.name || friend.uid || "?").slice(0, 2).toUpperCase()}
+                    </div>
+                  )}
+                  <div className={styles.info}>
+                    <div className={styles.name}>{friend.name || friend.uid}</div>
+                    <div className={styles.rankRow}>
+                      {seasonOrder.map((season) =>
+                        ranks?.[season]?.rank ? (
+                          <img
+                            key={season}
+                            src={rankIconSrc(ranks[season].rank)}
+                            alt={String(ranks[season].rank)}
+                            className={styles.rankIcon}
+                            title={`${season.toUpperCase()} ${ranks[season].rank}`}
+                          />
+                        ) : null
+                      )}
+                    </div>
+                  </div>
+                  <div className={styles.actions}>
+                    <button
+                      className={styles.accept}
+                      onClick={() => acceptRequest(friend.uid)}
+                    >
+                      {t.friends?.accept || "Accept"}
+                    </button>
+                    <button
+                      className={styles.reject}
+                      onClick={() => rejectRequest(friend.uid)}
+                    >
+                      {t.friends?.reject || "Reject"}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

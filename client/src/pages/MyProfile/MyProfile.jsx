@@ -91,6 +91,9 @@ export default function MyProfile() {
   const [globalMeans, setGlobalMeans] = useState(null);
   const [globalMatchMeans, setGlobalMatchMeans] = useState(null);
   const [loadingRanks, setLoadingRanks] = useState(false);
+  const [friends, setFriends] = useState([]);
+  const [friendsLoading, setFriendsLoading] = useState(false);
+  const [friendId, setFriendId] = useState("");
   const [chartMetric, setChartMetric] = useState(() => {
     if (typeof window === "undefined") return "all";
     return localStorage.getItem("myProfile.chartMetric") || "all";
@@ -417,6 +420,36 @@ export default function MyProfile() {
     return () => controller.abort();
   }, [summary]);
 
+  useEffect(() => {
+    if (!user) return;
+    let alive = true;
+    const loadFriends = async () => {
+      setFriendsLoading(true);
+      try {
+        const token = await user.getIdToken();
+        const res = await fetch(`${BACKEND_URL}/friends/list`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json().catch(() => null);
+        if (!alive) return;
+        setFriends(Array.isArray(data?.rows) ? data.rows : []);
+      } catch {
+        if (alive) setFriends([]);
+      } finally {
+        if (alive) setFriendsLoading(false);
+      }
+    };
+    loadFriends();
+    return () => {
+      alive = false;
+    };
+  }, [user]);
+
+  useEffect(() => {
+    if (!friends.length) return;
+    setFriendId((prev) => prev || friends[0]?.uid || "");
+  }, [friends]);
+
   const sparkScore = useMemo(() => {
     if (!globalMeans?.avgScore) return [];
     return normalizeSpark(summary?.sparkScoreRaw, globalMeans.avgScore);
@@ -554,6 +587,20 @@ export default function MyProfile() {
     };
   }, [summary, globalAvg]);
 
+  const selectedFriend = useMemo(
+    () => friends.find((f) => f.uid === friendId),
+    [friends, friendId]
+  );
+
+  const profileAvatarUrl = useMemo(() => {
+    if (!user) return null;
+    if (claims?.provider === "discord" && claims?.avatar) {
+      const discordId = user.uid.replace("discord:", "");
+      return `https://cdn.discordapp.com/avatars/${discordId}/${claims.avatar}.png`;
+    }
+    return user.photoURL || null;
+  }, [user, claims]);
+
   if (!user) {
     return (
       <p className={styles.wrapper}>
@@ -572,10 +619,20 @@ export default function MyProfile() {
 
   return (
     <div className={styles.wrapper}>
-      <h1 className={styles.nickname}>
-        {summary.name}{" "}
-        <span className={styles.meBadge}>{t.me?.meBadge || "Me"}</span>
-      </h1>
+      <div className={styles.profileHeader}>
+        {profileAvatarUrl && (
+          <img
+            src={profileAvatarUrl}
+            alt={summary.name}
+            className={styles.avatar}
+            loading="lazy"
+          />
+        )}
+        <h1 className={styles.nickname}>
+          {summary.name}{" "}
+          <span className={styles.meBadge}>{t.me?.meBadge || "Me"}</span>
+        </h1>
+      </div>
       {banInfo?.active && (
         <div className={styles.banBanner}>
           <div className={styles.banTitle}>
@@ -638,9 +695,6 @@ export default function MyProfile() {
           </div>
         </div>
         <div className={styles.statsMosaic}>
-          {/*
-            Top% shows only when global stats are ready.
-          */}
           <Stat
             label={t.me?.matches || "Matches"}
             value={summary.matchesCount}
@@ -948,6 +1002,105 @@ export default function MyProfile() {
             <Mini label={t.me?.assists || "Assists"} value={summary.totalAssists} />
             <Mini label={t.me?.damage || "Damage"} value={summary.totalDamage} />
           </div>
+        </div>
+
+        <div className={styles.card}>
+          <h2 className={styles.cardTitle}>{t.me?.compareTitle || "Compare"}</h2>
+          <p className={styles.hint}>
+            {t.me?.compareHint || "Compare your stats with a friend"}
+          </p>
+          <div className={styles.compareSelectWrap}>
+            <select
+              className={styles.compareSelect}
+              value={friendId}
+              onChange={(e) => setFriendId(e.target.value)}
+              disabled={!friends.length}
+            >
+              <option value="">
+                {t.me?.compareSelect || "Choose a friend"}
+              </option>
+              {friends.map((f) => (
+                <option key={f.uid} value={f.uid}>
+                  {f.name || f.uid}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {friendsLoading && (
+            <p className={styles.hint}>
+              {t.friends?.loading || "Loading..."}
+            </p>
+          )}
+
+          {!friendsLoading && !selectedFriend && (
+            <p className={styles.hint}>
+              {t.me?.compareEmpty || "No friends to compare"}
+            </p>
+          )}
+
+          {!friendsLoading && selectedFriend && (
+            <div className={styles.compareGrid}>
+              <CompareRow
+                label={t.me?.score || "Score"}
+                you={summary.avgScore}
+                global={round1(selectedFriend.avgScore)}
+                delta={round1(summary.avgScore - selectedFriend.avgScore)}
+                accent={diffAccent(summary.avgScore - selectedFriend.avgScore, true)}
+                compareSep={t.me?.compareSep || "vs"}
+              />
+              <CompareRow
+                label={t.me?.kills || "Kills"}
+                you={summary.avgKills}
+                global={round1(selectedFriend.avgKills)}
+                delta={round1(summary.avgKills - selectedFriend.avgKills)}
+                accent={diffAccent(summary.avgKills - selectedFriend.avgKills, true)}
+                compareSep={t.me?.compareSep || "vs"}
+              />
+              <CompareRow
+                label={t.me?.deaths || "Deaths"}
+                you={summary.avgDeaths}
+                global={round1(selectedFriend.avgDeaths)}
+                delta={round1(summary.avgDeaths - selectedFriend.avgDeaths)}
+                accent={diffAccent(summary.avgDeaths - selectedFriend.avgDeaths, false)}
+                compareSep={t.me?.compareSep || "vs"}
+              />
+              <CompareRow
+                label={t.me?.assists || "Assists"}
+                you={summary.avgAssists}
+                global={round1(selectedFriend.avgAssists)}
+                delta={round1(summary.avgAssists - selectedFriend.avgAssists)}
+                accent={diffAccent(summary.avgAssists - selectedFriend.avgAssists, true)}
+                compareSep={t.me?.compareSep || "vs"}
+              />
+              <CompareRow
+                label={t.me?.damage || "Damage"}
+                you={summary.avgDamage}
+                global={round1(selectedFriend.avgDamage)}
+                delta={round1(summary.avgDamage - selectedFriend.avgDamage)}
+                accent={diffAccent(summary.avgDamage - selectedFriend.avgDamage, true)}
+                compareSep={t.me?.compareSep || "vs"}
+              />
+              <CompareRow
+                label={t.me?.kda || "KDA"}
+                you={summary.kda}
+                global={round1(selectedFriend.kda)}
+                delta={round1(summary.kda - selectedFriend.kda)}
+                accent={diffAccent(summary.kda - selectedFriend.kda, true)}
+                compareSep={t.me?.compareSep || "vs"}
+              />
+              <CompareRow
+                label={t.me?.winrate || "Winrate"}
+                you={`${summary.winrate}%`}
+                global={`${round1(selectedFriend.winrate)}%`}
+                delta={`${sign(round1(summary.winrate - selectedFriend.winrate))}${round1(
+                  summary.winrate - selectedFriend.winrate
+                )}%`}
+                accent={diffAccent(summary.winrate - selectedFriend.winrate, true)}
+                compareSep={t.me?.compareSep || "vs"}
+              />
+            </div>
+          )}
         </div>
 
         <div className={styles.card}>
