@@ -147,7 +147,8 @@ export default function Settings() {
     return "";
   };
 
-  const rankIconSrc = (rank) => `/ranks/${String(rank || "").toLowerCase()}.png`;
+  const rankIconSrc = (rank) =>
+    `/ranks/${String(rank || "unranked").toLowerCase()}.png`;
   const currentRank = rankOptions.find((r) => r.value === rankValue) || rankOptions[0];
 
   useEffect(() => {

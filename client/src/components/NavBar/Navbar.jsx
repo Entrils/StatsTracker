@@ -93,9 +93,14 @@ export default function Navbar() {
     };
     loadRequests();
     const id = setInterval(loadRequests, 60 * 1000);
+    const handleRefresh = () => {
+      loadRequests();
+    };
+    window.addEventListener("friends-requests-refresh", handleRefresh);
     return () => {
       alive = false;
       clearInterval(id);
+      window.removeEventListener("friends-requests-refresh", handleRefresh);
     };
   }, [user]);
 
