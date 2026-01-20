@@ -13,6 +13,7 @@ import Ads from "@/pages/Ads/Ads";
 import Settings from "@/pages/Settings/Settings";
 import Support from "@/pages/Support/Support";
 import Friends from "@/pages/Friends/Friends";
+import AchievementsPage from "@/pages/Achievements/Achievements";
 
 export default function App() {
   useEffect(() => {
@@ -53,6 +54,8 @@ export default function App() {
           <Route path="/me" element={<MyProfile />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/friends" element={<Friends />} />
+          <Route path="/achievements" element={<AchievementsPage />} />
+          <Route path="/achievments" element={<AchievementsPage />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/policy" element={<Policy />} />
           <Route path="/support" element={<Support />} />

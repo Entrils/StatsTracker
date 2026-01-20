@@ -7,6 +7,7 @@
     admin: "Админ",
     settings: "Настройки",
     friends: "Друзья",
+    achievements: "Мои достижения",
   },
   leaderboard: {
     title: "Таблица лидеров",
@@ -220,6 +221,23 @@
     matches: "Матчи",
     loading: "Загрузка...",
     login: "Войдите, чтобы видеть друзей",
+  },
+
+  achievements: {
+    title: "Достижения",
+    hint: "Ваш прогресс и даты получения",
+    summaryTitle: "Лучшие достижения",
+    summaryEmpty: "Достижений пока нет",
+    matchesTitle: "Опытный боец",
+    friendsTitle: "Свой круг",
+    killsTitle: "Охотник за фрагами",
+    streakTitle: "Горячая серия",
+    matchesLabel: "матчей",
+    friendsLabel: "друзей",
+    killsLabel: "киллов",
+    streakLabel: "побед подряд",
+    unlockedAt: "Получено",
+    remaining: "Осталось",
   },
 
   policy: {
