@@ -88,6 +88,7 @@ export default function MyProfile() {
 
   const [globalAvg, setGlobalAvg] = useState(null);
   const [loadingGlobal, setLoadingGlobal] = useState(true);
+  const [shareStatus, setShareStatus] = useState("");
   const [globalRanks, setGlobalRanks] = useState(null);
   const [globalMeans, setGlobalMeans] = useState(null);
   const [globalMatchMeans, setGlobalMatchMeans] = useState(null);
@@ -132,6 +133,27 @@ export default function MyProfile() {
   }, [chartMetric]);
 
   const uid = user?.uid;
+
+  const shareUrl = useMemo(() => {
+    if (!uid) return "";
+    return `${BACKEND_URL.replace(/\/+$/, "")}/share/player/${encodeURIComponent(uid)}`;
+  }, [uid]);
+
+  const handleCopyShare = async () => {
+    if (!shareUrl) return;
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(shareUrl);
+      } else {
+        window.prompt(t.me?.sharePrompt || "Copy link:", shareUrl);
+      }
+      setShareStatus(t.me?.shareCopied || "Link copied");
+      window.setTimeout(() => setShareStatus(""), 2000);
+    } catch {
+      setShareStatus(t.me?.shareFailed || "Copy failed");
+      window.setTimeout(() => setShareStatus(""), 2000);
+    }
+  };
 
   const fetchHistory = async (reset = false) => {
     if (!uid) return;
@@ -635,10 +657,31 @@ export default function MyProfile() {
             loading="lazy"
           />
         )}
-        <h1 className={styles.nickname}>
-          {summary.name}{" "}
-          <span className={styles.meBadge}>{t.me?.meBadge || "Me"}</span>
-        </h1>
+        <div className={styles.nameBlock}>
+          <div className={styles.nameRow}>
+            <h1 className={styles.nickname}>
+              {summary.name}{" "}
+              <span className={styles.meBadge}>{t.me?.meBadge || "Me"}</span>
+            </h1>
+            <button
+              type="button"
+              className={styles.shareButton}
+              onClick={handleCopyShare}
+              title={t.me?.share || "Share profile"}
+              aria-label={t.me?.share || "Share profile"}
+            >
+              <svg viewBox="0 0 24 24" role="img" aria-hidden="true">
+                <path
+                  d="M18 16a3 3 0 0 0-2.4 1.2L8.9 13a3.1 3.1 0 0 0 0-2l6.7-4.2A3 3 0 1 0 15 5a3 3 0 0 0 .1.7L8.4 9.9a3 3 0 1 0 0 4.2l6.7 4.2A3 3 0 1 0 18 16Z"
+                  fill="currentColor"
+                />
+              </svg>
+            </button>
+            {shareStatus && (
+              <span className={styles.shareHint}>{shareStatus}</span>
+            )}
+          </div>
+        </div>
       </div>
       {banInfo?.active && (
         <div className={styles.banBanner}>

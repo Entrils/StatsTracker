@@ -3,6 +3,7 @@
     upload: "Upload",
     players: "Players",
     myProfile: "My Profile",
+    loginDiscord: "Login with Discord",
     Logout: "Logout",
     admin: "Admin",
     settings: "Settings",
@@ -49,6 +50,8 @@
     damage: "% DMG",
     selectFile: "Choose screenshot",
     selectHint: "PNG/JPG, full screen, RU/ENG/FR/DE",
+    pasteHint: "Paste: Ctrl+V",
+    pasteReady: "Pasted from clipboard",
     fileReady: "File loaded - ready to analyze",
     fileMissing: "No file selected yet",
     statusOk: "OK (Uploaded)",
@@ -59,6 +62,11 @@
     statusBanned: "Not successful (Banned)",
     statusMatchIdFailed: "Not successful (Match ID not found)",
     statusPlayerFailed: "Not successful (Player row not recognized)",
+    matchCardTitle: "Last match",
+    matchIdLabel: "Match ID",
+    resultVictory: "Victory",
+    resultDefeat: "Defeat",
+    resultUnknown: "Result",
     ocrRemaining: "OCR left today: {count}",
   },
 
@@ -105,6 +113,10 @@
     rankAce: "Ace",
     rankPunkmaster: "Punkmaster",
     bannedBadge: "Banned",
+    share: "Share",
+    shareCopied: "Link copied",
+    shareFailed: "Copy failed",
+    sharePrompt: "Copy link:",
   },
 
   me: {
@@ -141,6 +153,10 @@
     globalSample: "sample",
     globalLoading: "Loading global averages...",
     globalUnavailable: "Global averages unavailable yet.",
+    share: "Share",
+    shareCopied: "Link copied",
+    shareFailed: "Copy failed",
+    sharePrompt: "Copy link:",
     weekdaysShort: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
 
     totals: "Totals",
@@ -178,6 +194,8 @@
     rankVerifyTitle: "Rank verification",
     rankVerifyHint:
       "Select season and rank, then attach a screenshot. One submit per day.",
+    rankChooseFile: "Choose file",
+    rankNoFile: "No file chosen",
     rankSeason: "Season",
     rankLabel: "Rank",
     rankScreenshot: "Screenshot",
@@ -294,4 +312,10 @@
     discord: "Discord",
   },
 };
+
+
+
+
+
+
 

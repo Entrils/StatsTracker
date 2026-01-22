@@ -1,8 +1,9 @@
-export default {
+﻿export default {
   nav: {
     upload: "Upload",
     players: "Joueurs",
     myProfile: "Mon profil",
+    loginDiscord: "Connexion Discord",
     Logout: "Déconnexion",
     admin: "Admin",
     friends: "Amis",
@@ -50,6 +51,8 @@ export default {
     damage: "% DMG",
     selectFile: "Choisir un screenshot",
     selectHint: "PNG/JPG, plein écran, RU/ENG/FR/DE",
+    pasteHint: "Coller: Ctrl+V",
+    pasteReady: "Image collee depuis le presse-papiers",
     fileReady: "Fichier chargé — prêt à analyser",
     fileMissing: "Aucun fichier sélectionné",
     statusOk: "OK (Téléversé)",
@@ -60,6 +63,11 @@ export default {
     statusBanned: "Échec (banni)",
     statusMatchIdFailed: "Échec (ID de match introuvable)",
     statusPlayerFailed: "Échec (ligne joueur non reconnue)",
+    matchCardTitle: "Dernier match",
+    matchIdLabel: "Code de match",
+    resultVictory: "Victoire",
+    resultDefeat: "Défaite",
+    resultUnknown: "Résultat",
     ocrRemaining: "OCR restant aujourd'hui : {count}",
   },
 
@@ -137,6 +145,10 @@ export default {
     globalSample: "échantillon",
     globalLoading: "Chargement des moyennes globales...",
     globalUnavailable: "Moyennes globales indisponibles.",
+    share: "Partager",
+    shareCopied: "Lien copié",
+    shareFailed: "Échec de la copie",
+    sharePrompt: "Copier le lien :",
     weekdaysShort: ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"],
     totals: "Totaux",
     trends: "Tendances (5 derniers vs 5 précédents)",
@@ -175,6 +187,8 @@ export default {
     rankVerifyTitle: "Vérification du rang",
     rankVerifyHint:
       "Choisissez saison et rang, puis joignez un screenshot. 1 envoi par jour.",
+    rankChooseFile: "Choisir un fichier",
+    rankNoFile: "Aucun fichier choisi",
     rankSeason: "Saison",
     rankLabel: "Rang",
     rankScreenshot: "Screenshot",
@@ -196,8 +210,13 @@ export default {
     rankPunkmaster: "Punkmaster",
     rankGrandmaster: "Grand Maître",
     bannedTitle: "VOUS ÊTES BANNI",
-    bannedHint: "Vous ne pouvez pas envoyer de captures et n’apparaissez pas dans le classement.",
+    bannedHint:
+      "Vous ne pouvez pas envoyer de captures et n’apparaissez pas dans le classement.",
     bannedReason: "Raison",
+    share: "Partager",
+    shareCopied: "Lien copié",
+    shareFailed: "Échec de la copie",
+    sharePrompt: "Copier le lien :",
   },
 
   footer: {
@@ -291,6 +310,13 @@ export default {
     discord: "Discord",
   },
 };
+
+
+
+
+
+
+
 
 
 

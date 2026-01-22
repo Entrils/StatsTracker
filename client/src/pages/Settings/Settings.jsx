@@ -27,6 +27,7 @@ export default function Settings() {
   const [rankValue, setRankValue] = useState("bronze");
   const [rankFile, setRankFile] = useState(null);
   const [rankPreview, setRankPreview] = useState("");
+  const [rankFileName, setRankFileName] = useState("");
   const [rankStatus, setRankStatus] = useState("");
   const [rankTone, setRankTone] = useState("");
   const [rankSending, setRankSending] = useState(false);
@@ -177,11 +178,13 @@ export default function Settings() {
       const base64 = await toBase64(compressed);
       setRankFile(base64);
       setRankPreview(base64);
+      setRankFileName(file.name);
       setRankStatus("");
       setRankTone("");
     } catch {
       setRankFile(null);
       setRankPreview("");
+      setRankFileName("");
       setRankStatus(t.me?.rankFileError || "Image processing failed");
       setRankTone("bad");
     }
@@ -222,6 +225,7 @@ export default function Settings() {
         setRankTone("good");
         setRankFile(null);
         setRankPreview("");
+        setRankFileName("");
       }
     } catch {
       setRankStatus(t.me?.rankError || "Submit failed");
@@ -364,12 +368,20 @@ export default function Settings() {
               <span className={styles.socialLabel}>
                 {t.me?.rankScreenshot || "Screenshot"}
               </span>
-              <input
-                className={styles.socialInput}
-                type="file"
-                accept="image/*"
-                onChange={(e) => handleRankFile(e.target.files?.[0] || null)}
-              />
+              <label className={styles.fileControl}>
+                <input
+                  className={styles.fileInput}
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleRankFile(e.target.files?.[0] || null)}
+                />
+                <span className={styles.fileButton}>
+                  {t.me?.rankChooseFile || "Choose file"}
+                </span>
+                <span className={styles.fileName}>
+                  {rankFileName || t.me?.rankNoFile || "No file chosen"}
+                </span>
+              </label>
             </label>
           </div>
 
