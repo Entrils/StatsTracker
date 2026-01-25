@@ -149,6 +149,14 @@ export default function Navbar() {
           >
             {t.nav.players}
           </NavLink>
+          <NavLink
+            to="/help"
+            className={({ isActive }) =>
+              `${styles.link} ${isActive ? styles.active : ""}`
+            }
+          >
+            {t.nav.help || "Help"}
+          </NavLink>
           {user && (claims?.admin === true || claims?.role === "admin") && (
             <NavLink
               to="/admin"
@@ -355,6 +363,15 @@ export default function Navbar() {
             }
           >
             {t.nav.players}
+          </NavLink>
+          <NavLink
+            to="/help"
+            onClick={closeMobile}
+            className={({ isActive }) =>
+              `${styles.offcanvasLink} ${isActive ? styles.active : ""}`
+            }
+          >
+            {t.nav.help || "Help"}
           </NavLink>
           {user && (
             <NavLink

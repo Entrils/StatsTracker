@@ -75,7 +75,7 @@ function perfWidth(ratio) {
 }
 
 export default function MyProfile() {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const { user, claims } = useAuth();
 
   const [matches, setMatches] = useState([]);
@@ -136,8 +136,9 @@ export default function MyProfile() {
 
   const shareUrl = useMemo(() => {
     if (!uid) return "";
-    return `${BACKEND_URL.replace(/\/+$/, "")}/share/player/${encodeURIComponent(uid)}`;
-  }, [uid]);
+    const base = `${BACKEND_URL.replace(/\/+$/, "")}/share/player/${encodeURIComponent(uid)}`;
+    return lang ? `${base}?lang=${encodeURIComponent(lang)}` : base;
+  }, [uid, lang]);
 
   const handleCopyShare = async () => {
     if (!shareUrl) return;

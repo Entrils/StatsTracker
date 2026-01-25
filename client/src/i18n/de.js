@@ -9,6 +9,7 @@
     settings: "Einstellungen",
     friends: "Freunde",
     achievements: "Meine Erfolge",
+    help: "Hilfe",
   },
 
   leaderboard: {
@@ -47,7 +48,7 @@
     deaths: "T",
     assists: "A",
     hit: "Treffer",
-    damage: "% Schaden",
+    damage: "Schaden",
     selectFile: "Screenshot auswählen",
     selectHint: "PNG/JPG, Vollbild, RU/ENG/FR/DE",
     pasteHint: "Einfügen: Ctrl+V",
@@ -261,6 +262,55 @@
     streakLabel: "Siege in Folge",
     unlockedAt: "Freigeschaltet",
     remaining: "Verbleibend",
+  },
+
+  help: {
+    title: "Hilfe",
+    subtitle: "Kurze, praktische Anleitungen ohne Umwege.",
+    uploadTitle: "Screenshot hochladen",
+    uploadBody:
+      "Der Dienst liest die Match-Historie aus deinem Screenshot. Je klarer der Text, desto besser die OCR.",
+    uploadSteps: [
+      "Öffne die Match-Historie und erstelle einen Vollbild‑Screenshot.",
+      "Nutze PNG/JPG ohne Zuschnitt oder UI‑Zoom.",
+      "Lade die Datei hoch oder füge sie per Zwischenablage (Ctrl+V) ein und klicke auf „Match analysieren“.",
+      "Warte auf „OK“ — der Match erscheint im Profil und Leaderboard.",
+    ],
+    uploadTips: [
+      "Verwischte oder überbelichtete Bilder reduzieren die Erkennung.",
+      "RU/EN/FR/DE‑Oberflächen werden unterstützt.",
+      "Bereits hochgeladene Matches werden als Duplikat markiert.",
+    ],
+    uploadAlt: "Guide zum Screenshot-Upload",
+    profileTitle: "Navigation und Menü",
+    profileBody:
+      "In der oberen Leiste findest du die Hauptbereiche und das Account‑Menü. Hier kurz zu jeder Schaltfläche.",
+    profileButtons: [
+      "Upload — Screenshots hochladen/analysieren (nach Login verfügbar).",
+      "Spieler — Leaderboard und Spielersuche.",
+      "Hilfe — diese Seite mit Anleitungen.",
+      "Profil (Dropdown) — schneller Zugriff auf Mein Profil, Freunde, Erfolge, Einstellungen und Logout.",
+      "Sprache — zwischen RU/EN/FR/DE wechseln.",
+    ],
+    profileTips: [
+      "Auf dem Handy liegen diese Punkte im Burger‑Menü rechts.",
+    ],
+    profileAlt: "Guide zur Navigation und zum Menü",
+    playerProfileTitle: "Spielerprofil",
+    playerProfileBody:
+      "Dieser Abschnitt erklärt die wichtigsten Bereiche im Spielerprofil.",
+    playerProfileSteps: [
+      "Oben: Name, Avatar und Socials. Die Icons öffnen das Profil des Spielers.",
+      "Der Freund‑Button erscheint, wenn der Spieler noch nicht in deiner Liste ist.",
+      "Stat‑Blöcke zeigen Durchschnitte, Ergebnisse und Fortschritt.",
+      "Ränge zeigen verifizierte Saison‑Ränge oder „nicht verifiziert“.",
+      "Erfolge zeigen die besten freigeschalteten Auszeichnungen mit Datum.",
+    ],
+    playerProfileTips: [
+      "Bei einem Bann erscheint ein Hinweis und der Spieler wird aus globalen Stats ausgeschlossen.",
+      "Der Vergleich mit Freunden ist in deinem Profil unter „Vergleichen“ verfügbar.",
+    ],
+    playerProfileAlt: "Guide zum Spielerprofil",
   },
 
   policy: {

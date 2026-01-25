@@ -17,7 +17,7 @@ import Achievements from "@/components/Achievements/Achievements";
 const backend = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
 export default function PlayerProfile() {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const { id: uid } = useParams();
   const { user, claims } = useAuth();
 
@@ -240,8 +240,9 @@ export default function PlayerProfile() {
 
   const shareUrl = useMemo(() => {
     if (!uid) return "";
-    return `${backend.replace(/\/+$/, "")}/share/player/${encodeURIComponent(uid)}`;
-  }, [uid]);
+    const base = `${backend.replace(/\/+$/, "")}/share/player/${encodeURIComponent(uid)}`;
+    return lang ? `${base}?lang=${encodeURIComponent(lang)}` : base;
+  }, [uid, lang]);
 
   const handleCopyShare = async () => {
     if (!shareUrl) return;

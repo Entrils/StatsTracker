@@ -9,6 +9,7 @@
     friends: "Amis",
     settings: "Paramètres",
     achievements: "Mes exploits",
+    help: "Aide",
   },
 
   leaderboard: {
@@ -91,7 +92,7 @@
     deaths: "Morts",
     assists: "Assists",
     hit: "Touches",
-    damage: "Dégâts %",
+    damage: "Dégâts",
     progress: "Progression",
     damageShare: "Part des dégâts",
     kda: "KDA",
@@ -265,6 +266,55 @@
     remaining: "Restant",
   },
 
+  help: {
+    title: "Aide",
+    subtitle: "Des instructions claires et utiles, sans blabla.",
+    uploadTitle: "Envoyer un screenshot",
+    uploadBody:
+      "Le service lit l’historique de match depuis une capture. Un texte net et grand améliore l’OCR.",
+    uploadSteps: [
+      "Ouvre l’historique et fais une capture en plein écran.",
+      "Utilise un PNG/JPG sans recadrage ni zoom.",
+      "Téléverse le fichier ou colle depuis le presse‑papiers (Ctrl+V), puis clique sur « Analyser le match ».",
+      "Attends « OK » — le match apparaîtra dans ton profil et le classement.",
+    ],
+    uploadTips: [
+      "Les images floues ou trop claires réduisent la précision.",
+      "Interfaces RU/EN/FR/DE prises en charge.",
+      "Un match déjà envoyé affiche un statut de doublon.",
+    ],
+    uploadAlt: "Guide d’envoi de capture",
+    profileTitle: "Navigation et menu",
+    profileBody:
+      "La barre du haut contient les sections principales et le menu du compte. Voici chaque bouton.",
+    profileButtons: [
+      "Upload — téléverser/analyser des captures (après connexion).",
+      "Joueurs — classement et recherche de joueurs.",
+      "Aide — cette page d’instructions.",
+      "Profil (menu) — accès rapide à Mon profil, Amis, Exploits, Paramètres et Déconnexion.",
+      "Langue — passer entre RU/EN/FR/DE.",
+    ],
+    profileTips: [
+      "Sur mobile, ces éléments sont dans le menu burger à droite.",
+    ],
+    profileAlt: "Guide de navigation et menu",
+    playerProfileTitle: "Profil du joueur",
+    playerProfileBody:
+      "Cette section explique comment lire le profil et ses blocs clés.",
+    playerProfileSteps: [
+      "En haut : pseudo, avatar et réseaux sociaux. Les icônes ouvrent le profil du joueur.",
+      "Le bouton d’ajout apparaît si le joueur n’est pas encore dans vos amis.",
+      "Les blocs de stats montrent les moyennes, résultats et la progression.",
+      "Les rangs affichent les saisons vérifiées ou « non vérifié ».",
+      "Les succès listent les meilleures récompenses avec la date d’obtention.",
+    ],
+    playerProfileTips: [
+      "En cas de bannissement, un bandeau apparaît et le joueur est exclu des stats globales.",
+      "La comparaison avec un ami se fait dans votre profil (onglet « Comparer »).",
+    ],
+    playerProfileAlt: "Guide du profil joueur",
+  },
+
   policy: {
     title: "Politique d'utilisation",
     p1:
@@ -310,10 +360,6 @@
     discord: "Discord",
   },
 };
-
-
-
-
 
 
 
