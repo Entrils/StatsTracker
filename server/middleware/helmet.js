@@ -45,7 +45,11 @@ export function createHelmetMiddleware() {
   });
 
   return (req, res, next) => {
-    if (req.method === "GET" && req.path === "/admin") {
+    if (
+      req.method === "GET" &&
+      (req.path === "/admin" ||
+        req.path.startsWith("/share/"))
+    ) {
       return relaxedHelmet(req, res, next);
     }
     return strictHelmet(req, res, next);

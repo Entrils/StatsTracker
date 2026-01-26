@@ -69,7 +69,8 @@
     resultVictory: "Victoire",
     resultDefeat: "Défaite",
     resultUnknown: "Résultat",
-    ocrRemaining: "OCR restant aujourd'hui : {count}",
+    helpLink: "Aide pour l’envoi de screenshot",
+    ocrRemaining: "OCR restant aujourd’hui : {count}",
   },
 
   profile: {
@@ -360,7 +361,6 @@
     discord: "Discord",
   },
 };
-
 
 
 

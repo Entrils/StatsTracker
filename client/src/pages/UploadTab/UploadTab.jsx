@@ -554,7 +554,12 @@ export default function UploadTab() {
 
   return (
     <div className={styles.container}>
-      <h1 className={styles.title}>{t.upload.title}</h1>
+      <div className={styles.titleRow}>
+        <h1 className={styles.title}>{t.upload.title}</h1>
+        <a href="/help" className={styles.helpIcon} title={t.upload?.helpLink}>
+          ?
+        </a>
+      </div>
 
       <div className={styles.card}>
         <input
