@@ -3,18 +3,14 @@
 /* GLOBAL BASE STYLES*/
 @layer base {
   :root {
-    /* Backgrounds */
     --bg-main: #020617;
     --bg-soft: #0b1220;
 
-    /* Borders */
     --border-soft: #1e293b;
 
-    /* Text */
     --text-main: #e5e7eb;
     --text-muted: #94a3b8;
 
-    /* Accents */
     --accent-cyan: #22d3ee;
     --accent-purple: #a855f7;
     --accent-green: #22c55e;
@@ -75,7 +71,6 @@
   }
 }
 
-/*NORMALIZATION*/
 @layer base {
   *,
   *::before,
@@ -84,7 +79,6 @@
   }
 }
 
-/*SCROLLBAR*/
 ::-webkit-scrollbar {
   width: 8px;
 }

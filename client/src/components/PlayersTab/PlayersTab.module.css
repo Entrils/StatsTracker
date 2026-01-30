@@ -185,3 +185,14 @@
   color: #ffffff;
   text-shadow: 0 0 12px rgba(34, 211, 238, 0.9);
 }
+
+.authInfo {
+  margin-bottom: 12px;
+  color: #22d3ee;
+  font-weight: 600;
+}
+
+.authInfoMuted {
+  margin-bottom: 12px;
+  color: #94a3b8;
+}

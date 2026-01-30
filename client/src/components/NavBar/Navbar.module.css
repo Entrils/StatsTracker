@@ -71,6 +71,11 @@
   width: 100%;
 }
 
+.right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
 
 .langSwitch {
   display: flex;
@@ -103,4 +108,91 @@
   color: #ffffff;
   background: linear-gradient(135deg, #6366f1, #22d3ee);
   box-shadow: 0 0 12px rgba(99, 102, 241, 0.7);
+}
+
+.dropdownWrapper {
+  position: relative;
+}
+
+.userButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 10px;
+  transition: background 0.2s ease;
+}
+
+.userButton:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+}
+
+.username {
+  font-size: 14px;
+  font-weight: 500;
+  opacity: 0.9;
+}
+
+.chevron {
+  font-size: 12px;
+  opacity: 0.7;
+  transition: transform 0.2s ease;
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+.dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+
+  background: #121212;
+  border: 1px solid #2a2a2a;
+  border-radius: 10px;
+  min-width: 150px;
+
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  z-index: 100;
+
+  opacity: 0;
+  transform: translateY(-6px) scale(0.98);
+  pointer-events: none;
+
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
+}
+
+.dropdownOpen {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+.dropdownItem {
+  width: 100%;
+  padding: 10px 14px;
+  background: transparent;
+  border: none;
+  color: #e5e7eb;
+  text-align: left;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.15s ease;
+}
+
+.dropdownItem:hover {
+  background: #1f1f1f;
 }

@@ -4,12 +4,17 @@ import { collection, onSnapshot } from "firebase/firestore";
 import { Link } from "react-router-dom";
 import styles from "./PlayersTab.module.css";
 import { useLang } from "../../i18n/LanguageContext";
+import { auth } from "../../firebase";
+import { onAuthStateChanged } from "firebase/auth";
 
 const SORTS = {
   SCORE: "score",
   KILLS: "kills",
   KDA: "kda",
 };
+
+
+
 
 export default function PlayersTab() {
   const { t } = useLang();
@@ -29,6 +34,27 @@ export default function PlayersTab() {
 
     return () => unsub();
   }, []);
+
+
+  const [user, setUser] = useState(null);
+
+useEffect(() => {
+  const unsubAuth = onAuthStateChanged(auth, (u) => {
+    setUser(u);
+  });
+
+  return () => unsubAuth();
+}, []);
+
+  {user ? (
+  <div className={styles.authInfo}>
+    Logged in as <b>{user.uid.replace("discord:", "")}</b>
+  </div>
+) : (
+  <div className={styles.authInfoMuted}>
+    Not logged in
+  </div>
+)}
 
   const filteredAndSorted = useMemo(() => {
     const filtered = players.filter((p) =>
