@@ -25,6 +25,7 @@
     wins: "Wins",
     wl: "W/L",
     winrate: "Winrate",
+    newLabel: "NEW",
     refresh: "Refresh",
     loadMore: "Load more",
     loading: "Loading...",
@@ -53,6 +54,14 @@
     selectHint: "PNG/JPG, full screen, RU/ENG/FR/DE",
     pasteHint: "Paste: Ctrl+V",
     pasteReady: "Pasted from clipboard",
+    batchHint: "Batch up to 10 shots",
+    batchNote: "Batch runs one by one — slower but steady.",
+    batchTitle: "Batch recap",
+    batchSummary: "OK {ok} • Err {err} • Skip {skip}",
+    fileLabel: "Shot",
+    achievementToast: "Unlocked: {title} — {value}",
+    testToast: "Test toast",
+    achievementToastTest: "Achievement unlocked!",
     fileReady: "File loaded - ready to analyze",
     fileMissing: "No file selected yet",
     statusOk: "OK (Uploaded)",
@@ -363,4 +372,3 @@
     discord: "Discord",
   },
 };
-

@@ -1,10 +1,20 @@
 ﻿import React, { useCallback, useEffect, useRef, useState } from "react";
 import imageCompression from "browser-image-compression";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  limit,
+  orderBy,
+  query,
+  setDoc,
+} from "firebase/firestore";
 import { db } from "@/firebase";
 import styles from "@/pages/UploadTab/UploadTab.module.css";
 import { useLang } from "@/i18n/LanguageContext";
 import { useAuth } from "@/auth/AuthContext";
+import { buildAchievements } from "@/utils/achievements";
 
 function extractMatchId(text) {
   if (!text) return null;
@@ -179,12 +189,16 @@ export default function UploadTab() {
   const [imageUrl, setImageUrl] = useState(null);
   const [fileName, setFileName] = useState("");
   const [selectedFile, setSelectedFile] = useState(null);
+  const [selectedFiles, setSelectedFiles] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
   const [status, setStatus] = useState("");
   const [statusTone, setStatusTone] = useState("");
   const [lastMatch, setLastMatch] = useState(null);
   const [ocrRemaining, setOcrRemaining] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [batchResults, setBatchResults] = useState([]);
+  const [previewUrls, setPreviewUrls] = useState([]);
+  const [toasts, setToasts] = useState([]);
 
   const tesseractRef = useRef(null);
   const tesseractInitRef = useRef(null);
@@ -205,18 +219,89 @@ export default function UploadTab() {
     return tesseractInitRef.current;
   }, []);
 
+  const playUnlockSound = useCallback(() => {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const gain = ctx.createGain();
+      gain.gain.value = 0.04;
+      gain.connect(ctx.destination);
+
+      const now = ctx.currentTime;
+      const notes = [
+        { freq: 440, dur: 0.08 },
+        { freq: 554.37, dur: 0.08 },
+        { freq: 659.25, dur: 0.08 },
+        { freq: 880, dur: 0.14 },
+      ];
+
+      let t = now;
+      notes.forEach((note) => {
+        const osc = ctx.createOscillator();
+        osc.type = "sawtooth";
+        osc.frequency.value = note.freq;
+        osc.connect(gain);
+        osc.start(t);
+        osc.stop(t + note.dur);
+        t += note.dur;
+      });
+
+      setTimeout(() => ctx.close(), 600);
+    } catch {
+      // ignore audio errors
+    }
+  }, []);
+
+  const pushToast = useCallback(
+    (message, tone = "good", icon = null) => {
+      const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      setToasts((prev) => [...prev, { id, message, tone, icon }]);
+      if (tone === "good") {
+        playUnlockSound();
+      }
+      setTimeout(() => {
+        setToasts((prev) => prev.filter((t) => t.id !== id));
+      }, 4200);
+    },
+    [playUnlockSound]
+  );
+
   const handleFile = useCallback(
-    (file) => {
-      setSelectedFile(file || null);
-      setImageUrl(file ? URL.createObjectURL(file) : null);
-      setFileName(file ? file.name : "");
-      if (file) {
+    (input) => {
+      const files = Array.isArray(input)
+        ? input.filter(Boolean)
+        : input
+        ? [input]
+        : [];
+      const limited = files.slice(0, 10);
+      const primary = limited[0] || null;
+
+      setSelectedFiles(limited);
+      setSelectedFile(primary);
+      setImageUrl(primary ? URL.createObjectURL(primary) : null);
+      if (limited.length > 1) {
+        const label =
+          (t.upload?.filesSelected || "Selected files") + `: ${limited.length}`;
+        setFileName(label);
+      } else {
+        setFileName(primary ? primary.name : "");
+      }
+
+      if (files.length > 10) {
+        setStatus(
+          t.upload?.batchLimit || "Only first 10 files will be processed"
+        );
+        setStatusTone("bad");
+      }
+
+      if (primary) {
         ensureTesseract().catch(() => {
           // handled on analyze
         });
       }
     },
-    [ensureTesseract]
+    [ensureTesseract, t]
   );
 
     const handlePaste = useCallback(
@@ -245,6 +330,18 @@ export default function UploadTab() {
     window.addEventListener("paste", handlePaste);
     return () => window.removeEventListener("paste", handlePaste);
   }, [handlePaste]);
+
+  useEffect(() => {
+    const urls = (selectedFiles || []).map((file) =>
+      file ? URL.createObjectURL(file) : null
+    );
+    setPreviewUrls(urls.filter(Boolean));
+    return () => {
+      urls.forEach((url) => {
+        if (url) URL.revokeObjectURL(url);
+      });
+    };
+  }, [selectedFiles]);
 
   if (!user) {
     return (
@@ -295,257 +392,395 @@ export default function UploadTab() {
   };
 
   const handleAnalyze = async () => {
-    if (!selectedFile) return;
+    const queue = selectedFiles.length ? selectedFiles : selectedFile ? [selectedFile] : [];
+    if (!queue.length) return;
 
     setLoading(true);
     setStatus(t.upload.processing || "Processing...");
     setStatusTone("neutral");
     setOcrRemaining(null);
+    setBatchResults([]);
 
     let opencvWorker = null;
 
     try {
+      const total = queue.length;
       const worker = await ensureTesseract();
-      setStatus(t.upload.compressing);
-      const compressed = await imageCompression(selectedFile, {
-        maxSizeMB: 0.9,
-        maxWidthOrHeight: 1280,
-        useWebWorker: true,
-      });
-
-      const bitmap = await createImageBitmap(compressed);
-
-      setStatus(t.upload.ocr || "OCR...");
-      setStatusTone("neutral");
-
-      const resultCanvas = document.createElement("canvas");
-      resultCanvas.width = Math.max(1, Math.floor(bitmap.width * 0.5));
-      resultCanvas.height = Math.max(1, Math.floor(bitmap.height * 0.18));
-
-      const rctx = resultCanvas.getContext("2d");
-
-      const sx = Math.floor(bitmap.width * 0.25);
-      const sy = 0;
-      const sw = Math.floor(bitmap.width * 0.5);
-      const sh = resultCanvas.height;
-
-      rctx.drawImage(bitmap, sx, sy, sw, sh, 0, 0, resultCanvas.width, resultCanvas.height);
-
-      const resultProcessed = preprocessForOCR(resultCanvas);
-      const resultBlob = await new Promise((r) => resultProcessed.toBlob(r, "image/png"));
-
-      await worker.setParameters({
-        // Latin + Cyrillic uppercase for result text (VICTORY/DEFEAT, ПОБЕДА/ПОРАЖЕНИЕ)
-        tessedit_char_whitelist:
-          "ABCDEFGHIJKLMNOPQRSTUVWXYZÉÈÊËÀÂÎÏÔÛÙÜÇÄÖÜßАБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЫЬЭЮЯ",
-        preserve_interword_spaces: "1",
-      });
-
-      const resultOCR = await worker.recognize(resultBlob);
-      const resultText = resultOCR?.data?.text || "";
-
-      const matchResult = parseMatchResult(resultText);
-
-      await worker.setParameters({
-        tessedit_char_whitelist: "0123456789abcdef",
-        preserve_interword_spaces: "1",
-      });
-
-      setStatus(t.upload.ocr || "OCR...");
-      setStatusTone("neutral");
-
-      const matchCanvas = document.createElement("canvas");
-      matchCanvas.width = bitmap.width;
-      matchCanvas.height = Math.floor(bitmap.height * 0.45);
-
-      const mctx = matchCanvas.getContext("2d");
-      mctx.drawImage(
-        bitmap,
-        0,
-        0,
-        bitmap.width,
-        matchCanvas.height,
-        0,
-        0,
-        matchCanvas.width,
-        matchCanvas.height
+      const uid = user.uid;
+      const matchesSnap = await getDocs(
+        query(
+          collection(db, "users", uid, "matches"),
+          orderBy("createdAt", "asc"),
+          limit(2000)
+        )
       );
-
-      const processed = preprocessForMatchId(matchCanvas);
-      const matchBlob = await new Promise((r) => processed.toBlob(r, "image/png"));
-
-      await worker.setParameters({
-        tessedit_char_whitelist: "0123456789abcdef",
-        preserve_interword_spaces: "1",
+      let matchesList = matchesSnap.docs.map((doc) => doc.data());
+      const friendsSnap = await getDocs(collection(db, "users", uid, "friends"));
+      const friendDates = friendsSnap.docs
+        .map((doc) => doc.data()?.createdAt)
+        .filter(Boolean);
+      let baseAchievements = buildAchievements({
+        matches: matchesList,
+        friendDates,
+        friendCount: friendsSnap.size,
       });
 
-      const { data } = await worker.recognize(matchBlob);
-
-      const matchId = extractMatchId(data.text);
-
-      if (!matchId) {
-        setStatus(
-          t.upload.statusMatchIdFailed ||
-            "Not successful (Match ID not found)"
-        );
-        setStatusTone("bad");
-        return;
-      }
-
-      setStatus(t.upload.processing || "Processing...");
-      setStatusTone("neutral");
-
-      const canvas = document.createElement("canvas");
-      canvas.width = bitmap.width;
-      canvas.height = bitmap.height;
-
-      const ctx = canvas.getContext("2d", { willReadFrequently: true });
-      ctx.drawImage(bitmap, 0, 0);
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-
-      opencvWorker = new Worker(new URL("../../workers/opencvWorker.js", import.meta.url), {
-        type: "classic",
-      });
-
-      const opencvResult = await new Promise((res, rej) => {
-        opencvWorker.onerror = rej;
-        opencvWorker.onmessage = (e) => res(e.data);
-        opencvWorker.postMessage({ imageData });
-      });
-
-      const { blob, error } = opencvResult || {};
-      if (error || !blob) {
-        throw new Error(error || "OpenCV failed to crop player row");
-      }
-
-      setStatus(t.upload.ocr || "OCR...");
-      setStatusTone("neutral");
-
-      const reader = new FileReader();
-      const base64Image = await new Promise((resolve, reject) => {
-        reader.onerror = () => reject(reader.error);
-        reader.onload = () => resolve(reader.result);
-        reader.readAsDataURL(blob);
-      });
-
-      const idToken = user ? await user.getIdToken() : null;
-      const headers = {
-        "Content-Type": "application/json",
-        ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
-      };
-      const r = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL || "http://localhost:4000"}/ocr`,
-        {
-          method: "POST",
-          headers,
-          body: JSON.stringify({
-            base64Image,
-            lang:
-              lang === "ru"
-                ? "rus"
-                : lang === "fr"
-                ? "fre"
-                : lang === "de"
-                ? "ger"
-                : "eng",
-          }),
-        }
-      );
-
-      if (!r.ok) {
-        if (r.status === 403) {
-          const err = await r.json().catch(() => null);
-          if (err?.error === "Banned") {
-            setStatus(t.upload.statusBanned || "Not successful (Banned)");
-            setStatusTone("bad");
-            return;
-          }
-        }
-        if (r.status === 413) {
-          setStatus(t.upload.statusTooLarge || "File is too large (max 2MB)");
-          setStatusTone("bad");
-          return;
-        }
-        const err = await r.json().catch(() => null);
-        if (err?.remaining !== undefined) {
-          setOcrRemaining(err.remaining);
-        }
-        setStatus(t.upload.statusOcrFailed || "Not successful (OCR failed)");
-        setStatusTone("bad");
-        return;
-      }
-
-      const ocrJson = await r.json();
-      if (ocrJson?.remaining !== undefined) {
-        setOcrRemaining(ocrJson.remaining);
-      }
-      if (ocrJson?.IsErroredOnProcessing) {
-        setStatus(t.upload.statusOcrFailed || "Not successful (OCR failed)");
-        setStatusTone("bad");
-        return;
-      }
-      const pt = ocrJson.ParsedResults?.[0]?.ParsedText || "";
-
-      const parsed = parseFragpunkText(pt);
-      if (!parsed) {
-        setStatus(
-          t.upload.statusPlayerFailed ||
-            "Not successful (Player row not recognized)"
-        );
-        setStatusTone("bad");
-        return;
-      }
-
-      const userMatchRef = doc(db, "users", user.uid, "matches", matchId);
-      if ((await getDoc(userMatchRef)).exists()) {
-        setStatus(t.upload.statusAlready || "Match already uploaded earlier");
-        setStatusTone("bad");
-        return;
-      }
-
-      const matchRef = doc(db, "matches", matchId);
-      if (!(await getDoc(matchRef)).exists()) {
-        await setDoc(matchRef, {
-          createdAt: Date.now(),
-          result: matchResult ?? null,
+      const getUnlockedIds = (ach) => {
+        const ids = new Set();
+        Object.entries(ach || {}).forEach(([key, list]) => {
+          (list || []).forEach((item) => {
+            if (item.unlocked) ids.add(`${key}:${item.value}`);
+          });
         });
-      }
+        return ids;
+      };
 
-      const playerRef = doc(db, "matches", matchId, "players", user.uid);
-      if (!(await getDoc(playerRef)).exists()) {
-        await setDoc(playerRef, parsed);
-      }
+      const formatAchievementValue = (key, value) => {
+        if (key === "matches") {
+          return `${value} ${t.achievements?.matchesLabel || "matches"}`;
+        }
+        if (key === "friends") {
+          return `${value} ${t.achievements?.friendsLabel || "friends"}`;
+        }
+        if (key === "kills") {
+          return `${value} ${t.achievements?.killsLabel || "kills"}`;
+        }
+        return `${value} ${t.achievements?.streakLabel || "wins"}`;
+      };
 
-      await setDoc(userMatchRef, {
-        matchId,
-        result: matchResult ?? null,
-        ...parsed,
-      });
+      const categoryTitle = (key) => {
+        if (key === "matches") return t.achievements?.matchesTitle || "Uploaded matches";
+        if (key === "friends") return t.achievements?.friendsTitle || "Friends";
+        if (key === "kills") return t.achievements?.killsTitle || "Max kills";
+        return t.achievements?.streakTitle || "Win streak";
+      };
 
-      try {
+      let unlockedIds = getUnlockedIds(baseAchievements);
+      for (let index = 0; index < queue.length; index += 1) {
+        const file = queue[index];
+        const suffix = total > 1 ? ` (${index + 1}/${total})` : "";
+        const displayName = file?.name || `${t.upload.fileLabel || "File"} ${index + 1}`;
+        setSelectedFile(file);
+        setImageUrl(file ? URL.createObjectURL(file) : null);
+
+        setStatus(`${t.upload.compressing}${suffix}`);
+        const compressed = await imageCompression(file, {
+          maxSizeMB: 0.9,
+          maxWidthOrHeight: 1280,
+          useWebWorker: true,
+        });
+
+        const bitmap = await createImageBitmap(compressed);
+
+        setStatus(`${t.upload.ocr || "OCR..."}${suffix}`);
+        setStatusTone("neutral");
+
+        const resultCanvas = document.createElement("canvas");
+        resultCanvas.width = Math.max(1, Math.floor(bitmap.width * 0.5));
+        resultCanvas.height = Math.max(1, Math.floor(bitmap.height * 0.18));
+
+        const rctx = resultCanvas.getContext("2d");
+
+        const sx = Math.floor(bitmap.width * 0.25);
+        const sy = 0;
+        const sw = Math.floor(bitmap.width * 0.5);
+        const sh = resultCanvas.height;
+
+        rctx.drawImage(
+          bitmap,
+          sx,
+          sy,
+          sw,
+          sh,
+          0,
+          0,
+          resultCanvas.width,
+          resultCanvas.height
+        );
+
+        const resultProcessed = preprocessForOCR(resultCanvas);
+        const resultBlob = await new Promise((r) =>
+          resultProcessed.toBlob(r, "image/png")
+        );
+
+        await worker.setParameters({
+          // Latin + Cyrillic uppercase for result text (VICTORY/DEFEAT, ПОБЕДА/ПОРАЖЕНИЕ)
+          tessedit_char_whitelist:
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZÉÈÊËÀÂÎÏÔÛÙÜÇÄÖÜßАБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЫЬЭЮЯ",
+          preserve_interword_spaces: "1",
+        });
+
+        const resultOCR = await worker.recognize(resultBlob);
+        const resultText = resultOCR?.data?.text || "";
+
+        const matchResult = parseMatchResult(resultText);
+
+        await worker.setParameters({
+          tessedit_char_whitelist: "0123456789abcdef",
+          preserve_interword_spaces: "1",
+        });
+
+        setStatus(`${t.upload.ocr || "OCR..."}${suffix}`);
+        setStatusTone("neutral");
+
+        const matchCanvas = document.createElement("canvas");
+        matchCanvas.width = bitmap.width;
+        matchCanvas.height = Math.floor(bitmap.height * 0.45);
+
+        const mctx = matchCanvas.getContext("2d");
+        mctx.drawImage(
+          bitmap,
+          0,
+          0,
+          bitmap.width,
+          matchCanvas.height,
+          0,
+          0,
+          matchCanvas.width,
+          matchCanvas.height
+        );
+
+        const processed = preprocessForMatchId(matchCanvas);
+        const matchBlob = await new Promise((r) =>
+          processed.toBlob(r, "image/png")
+        );
+
+        await worker.setParameters({
+          tessedit_char_whitelist: "0123456789abcdef",
+          preserve_interword_spaces: "1",
+        });
+
+        const { data } = await worker.recognize(matchBlob);
+
+        const matchId = extractMatchId(data.text);
+
+        if (!matchId) {
+          setStatus(
+            `${t.upload.statusMatchIdFailed || "Not successful (Match ID not found)"}${suffix}`
+          );
+          setStatusTone("bad");
+          setBatchResults((prev) => [
+            ...prev,
+            { name: displayName, status: "error", message: t.upload.statusMatchIdFailed || "Match ID not found" },
+          ]);
+          continue;
+        }
+
+        setStatus(`${t.upload.processing || "Processing..."}${suffix}`);
+        setStatusTone("neutral");
+
+        const canvas = document.createElement("canvas");
+        canvas.width = bitmap.width;
+        canvas.height = bitmap.height;
+
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
+        ctx.drawImage(bitmap, 0, 0);
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+        opencvWorker = new Worker(
+          new URL("../../workers/opencvWorker.js", import.meta.url),
+          { type: "classic" }
+        );
+
+        const opencvResult = await new Promise((res, rej) => {
+          opencvWorker.onerror = rej;
+          opencvWorker.onmessage = (e) => res(e.data);
+          opencvWorker.postMessage({ imageData });
+        });
+
+        const { blob, error } = opencvResult || {};
+        if (error || !blob) {
+          throw new Error(error || "OpenCV failed to crop player row");
+        }
+
+        setStatus(`${t.upload.ocr || "OCR..."}${suffix}`);
+        setStatusTone("neutral");
+
+        const reader = new FileReader();
+        const base64Image = await new Promise((resolve, reject) => {
+          reader.onerror = () => reject(reader.error);
+          reader.onload = () => resolve(reader.result);
+          reader.readAsDataURL(blob);
+        });
+
         const idToken = user ? await user.getIdToken() : null;
         const headers = {
           "Content-Type": "application/json",
           ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
         };
-        await fetch(
-          `${import.meta.env.VITE_BACKEND_URL || "http://localhost:4000"}/leaderboard/update`,
+        const r = await fetch(
+          `${import.meta.env.VITE_BACKEND_URL || "http://localhost:4000"}/ocr`,
           {
             method: "POST",
             headers,
-            body: JSON.stringify({ matchId }),
+            body: JSON.stringify({
+              base64Image,
+              lang:
+                lang === "ru"
+                  ? "rus"
+                  : lang === "fr"
+                  ? "fre"
+                  : lang === "de"
+                  ? "ger"
+                  : "eng",
+            }),
           }
         );
-      } catch {
-        // best-effort; leaderboard will update on next successful call
-      }
 
-      setStatus(t.upload.statusOk || "OK (Uploaded)");
-      setStatusTone("good");
-      setLastMatch({ matchId, result: matchResult ?? null, ...parsed });
+        if (!r.ok) {
+          if (r.status === 403) {
+            const err = await r.json().catch(() => null);
+            if (err?.error === "Banned") {
+              setStatus(`${t.upload.statusBanned || "Not successful (Banned)"}${suffix}`);
+              setStatusTone("bad");
+              setBatchResults((prev) => [
+                ...prev,
+                { name: displayName, status: "error", message: t.upload.statusBanned || "Banned" },
+              ]);
+              continue;
+            }
+          }
+          if (r.status === 413) {
+            setStatus(
+              `${t.upload.statusTooLarge || "File is too large (max 2MB)"}${suffix}`
+            );
+            setStatusTone("bad");
+            setBatchResults((prev) => [
+              ...prev,
+              { name: displayName, status: "error", message: t.upload.statusTooLarge || "File too large" },
+            ]);
+            continue;
+          }
+          const err = await r.json().catch(() => null);
+          if (err?.remaining !== undefined) {
+            setOcrRemaining(err.remaining);
+          }
+          setStatus(`${t.upload.statusOcrFailed || "Not successful (OCR failed)"}${suffix}`);
+          setStatusTone("bad");
+          setBatchResults((prev) => [
+            ...prev,
+            { name: displayName, status: "error", message: t.upload.statusOcrFailed || "OCR failed" },
+          ]);
+          continue;
+        }
+
+        const ocrJson = await r.json();
+        if (ocrJson?.remaining !== undefined) {
+          setOcrRemaining(ocrJson.remaining);
+        }
+        if (ocrJson?.IsErroredOnProcessing) {
+          setStatus(`${t.upload.statusOcrFailed || "Not successful (OCR failed)"}${suffix}`);
+          setStatusTone("bad");
+          setBatchResults((prev) => [
+            ...prev,
+            { name: displayName, status: "error", message: t.upload.statusOcrFailed || "OCR failed" },
+          ]);
+          continue;
+        }
+        const pt = ocrJson.ParsedResults?.[0]?.ParsedText || "";
+
+        const parsed = parseFragpunkText(pt);
+        if (!parsed) {
+          setStatus(
+            `${t.upload.statusPlayerFailed || "Not successful (Player row not recognized)"}${suffix}`
+          );
+          setStatusTone("bad");
+          setBatchResults((prev) => [
+            ...prev,
+            { name: displayName, status: "error", message: t.upload.statusPlayerFailed || "Player row not recognized" },
+          ]);
+          continue;
+        }
+
+        const userMatchRef = doc(db, "users", user.uid, "matches", matchId);
+        if ((await getDoc(userMatchRef)).exists()) {
+          setStatus(`${t.upload.statusAlready || "Match already uploaded earlier"}${suffix}`);
+          setStatusTone("bad");
+          setBatchResults((prev) => [
+            ...prev,
+            { name: displayName, status: "skip", message: t.upload.statusAlready || "Already uploaded" },
+          ]);
+          continue;
+        }
+
+        const matchRef = doc(db, "matches", matchId);
+        if (!(await getDoc(matchRef)).exists()) {
+          await setDoc(matchRef, {
+            createdAt: Date.now(),
+            result: matchResult ?? null,
+          });
+        }
+
+        const playerRef = doc(db, "matches", matchId, "players", user.uid);
+        if (!(await getDoc(playerRef)).exists()) {
+          await setDoc(playerRef, parsed);
+        }
+
+        const finalMatch = {
+          matchId,
+          result: matchResult ?? null,
+          ...parsed,
+        };
+        await setDoc(userMatchRef, finalMatch);
+
+        try {
+          const idToken = user ? await user.getIdToken() : null;
+          const headers = {
+            "Content-Type": "application/json",
+            ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
+          };
+          await fetch(
+            `${import.meta.env.VITE_BACKEND_URL || "http://localhost:4000"}/leaderboard/update`,
+            {
+              method: "POST",
+              headers,
+              body: JSON.stringify({ matchId }),
+            }
+          );
+        } catch {
+          // best-effort; leaderboard will update on next successful call
+        }
+
+        setStatus(`${t.upload.statusOk || "OK (Uploaded)"}${suffix}`);
+        setStatusTone("good");
+        setLastMatch(finalMatch);
+        setBatchResults((prev) => [
+          ...prev,
+          { name: displayName, status: "ok", message: t.upload.statusOk || "Uploaded" },
+        ]);
+
+        matchesList = [...matchesList, finalMatch];
+        const newAchievements = buildAchievements({
+          matches: matchesList,
+          friendDates,
+          friendCount: friendsSnap.size,
+        });
+        const nextUnlocked = getUnlockedIds(newAchievements);
+        Object.entries(newAchievements).forEach(([key, list]) => {
+          (list || []).forEach((item) => {
+            const id = `${key}:${item.value}`;
+            if (item.unlocked && !unlockedIds.has(id)) {
+              const title = categoryTitle(key);
+              const valueText = formatAchievementValue(key, item.value);
+              const tpl =
+                t.upload?.achievementToast ||
+                "Achievement unlocked: {title} — {value}";
+              const message = tpl
+                .replace("{title}", title)
+                .replace("{value}", valueText);
+              pushToast(message, "good", item.image);
+            }
+          });
+        });
+        unlockedIds = nextUnlocked;
+      }
     } catch (e) {
       setStatus(t.upload.statusOtherFailed || "Not successful (Other error)");
       setStatusTone("bad");
+      setBatchResults((prev) => [
+        ...prev,
+        { name: t.upload.fileLabel || "File", status: "error", message: t.upload.statusOtherFailed || "Other error" },
+      ]);
     } finally {
       setLoading(false);
       if (opencvWorker) opencvWorker.terminate();
@@ -554,6 +789,25 @@ export default function UploadTab() {
 
   return (
     <div className={styles.container}>
+      {toasts.length > 0 && (
+        <div className={styles.toastStack}>
+          {toasts.map((toast) => (
+            <div
+              key={toast.id}
+              className={`${styles.toast} ${
+                toast.tone === "bad" ? styles.toastBad : styles.toastGood
+              }`}
+            >
+              {toast.icon && (
+                <span className={styles.toastIcon}>
+                  <img src={toast.icon} alt="" />
+                </span>
+              )}
+              <span className={styles.toastText}>{toast.message}</span>
+            </div>
+          ))}
+        </div>
+      )}
       <div className={styles.titleRow}>
         <h1 className={styles.title}>{t.upload.title}</h1>
         <a href="/help" className={styles.helpIcon} title={t.upload?.helpLink}>
@@ -567,9 +821,10 @@ export default function UploadTab() {
           type="file"
           accept="image/*"
           className={styles.fileInput}
+          multiple
           onChange={(e) => {
-            const file = e.target.files[0];
-            handleFile(file);
+            const files = Array.from(e.target.files || []);
+            handleFile(files);
           }}
         />
 
@@ -595,8 +850,8 @@ export default function UploadTab() {
           onDrop={(e) => {
             e.preventDefault();
             setIsDragging(false);
-            const file = e.dataTransfer.files?.[0];
-            if (file) handleFile(file);
+            const files = Array.from(e.dataTransfer.files || []);
+            if (files.length) handleFile(files);
           }}
         >
           <div className={styles.uploadIcon}>UP</div>
@@ -604,7 +859,12 @@ export default function UploadTab() {
             {t.upload.selectFile || "Choose screenshot"}
           </div>
           <div className={styles.uploadHint}>
-            {(t.upload.selectHint || "PNG/JPG, preferably full screen") + " | " + (t.upload.pasteHint || "Paste: Ctrl+V")}
+            {(t.upload.selectHint || "PNG/JPG, preferably full screen") +
+              " | " +
+              (t.upload.pasteHint || "Paste: Ctrl+V")}
+          </div>
+          <div className={styles.uploadHintSecondary}>
+            {t.upload.batchHint || "You can upload up to 10 screenshots at once"}
           </div>
           {fileName && <div className={styles.fileName}>{fileName}</div>}
         </label>
@@ -625,6 +885,21 @@ export default function UploadTab() {
         </div>
 
         {imageUrl && <img src={imageUrl} alt="preview" className={styles.preview} />}
+        {previewUrls.length > 1 && (
+          <div className={styles.previewGrid}>
+            {previewUrls.map((url, idx) => (
+              <div
+                key={`${url}-${idx}`}
+                className={`${styles.previewThumb} ${
+                  idx === 0 ? styles.previewThumbActive : ""
+                }`}
+                title={`${t.upload.fileLabel || "File"} ${idx + 1}`}
+              >
+                <img src={url} alt={`preview-${idx + 1}`} />
+              </div>
+            ))}
+          </div>
+        )}
 
         <button
           onClick={handleAnalyze}
@@ -633,6 +908,12 @@ export default function UploadTab() {
         >
           {loading ? t.upload.processing : t.upload.analyze}
         </button>
+        {previewUrls.length > 1 && (
+          <p className={styles.batchNote}>
+            {t.upload.batchNote ||
+              "Batch upload is processed sequentially, so it may take longer."}
+          </p>
+        )}
 
         <p
           className={`${styles.status} ${
@@ -645,6 +926,45 @@ export default function UploadTab() {
         >
           {status}
         </p>
+        {batchResults.length > 0 && (
+          <div className={styles.batchPanel}>
+            <div className={styles.batchTitle}>
+              {t.upload.batchTitle || "Batch results"}
+            </div>
+            <div className={styles.batchSummary}>
+              {(t.upload.batchSummary || "OK: {ok} • Errors: {err} • Skipped: {skip}")
+                .replace(
+                  "{ok}",
+                  String(batchResults.filter((r) => r.status === "ok").length)
+                )
+                .replace(
+                  "{err}",
+                  String(batchResults.filter((r) => r.status === "error").length)
+                )
+                .replace(
+                  "{skip}",
+                  String(batchResults.filter((r) => r.status === "skip").length)
+                )}
+            </div>
+            <ul className={styles.batchList}>
+              {batchResults.map((item, idx) => (
+                <li
+                  key={`${item.name}-${idx}`}
+                  className={`${styles.batchItem} ${
+                    item.status === "ok"
+                      ? styles.batchItemOk
+                      : item.status === "skip"
+                      ? styles.batchItemSkip
+                      : styles.batchItemErr
+                  }`}
+                >
+                  <span className={styles.batchItemName}>{item.name}</span>
+                  <span className={styles.batchItemMsg}>{item.message}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         {typeof ocrRemaining === "number" && (
           <p
             className={`${styles.ocrRemaining} ${
