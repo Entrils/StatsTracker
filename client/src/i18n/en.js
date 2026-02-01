@@ -2,7 +2,10 @@ export default {
   nav: {
     upload: "Upload",
     players: "Players",
+    myProfile: "My Profile",
+    Logout: "Logout",
   },
+
   leaderboard: {
     title: "Leaderboard",
     search: "Search player...",
@@ -13,6 +16,7 @@ export default {
     empty: "No data yet",
     notFound: "Player not found",
   },
+
   upload: {
     title: "Upload screenshot",
     analyze: "Analyze match",
@@ -30,7 +34,8 @@ export default {
     hit: "Hit",
     damage: "% DMG",
   },
-    profile: {
+
+  profile: {
     loading: "Loading profile...",
     empty: "No match history",
     back: "Back",
@@ -41,5 +46,32 @@ export default {
     hit: "Hit Enemy",
     damage: "Damage %",
     progress: "Progress",
+  },
+
+  me: {
+    title: "My Profile",
+    loginRequired: "Login required",
+    loading: "Loading your stats...",
+    empty: "No match history yet",
+
+    matches: "Matches",
+    score: "Score",
+    kills: "Kills",
+    deaths: "Deaths",
+    assists: "Assists",
+    damage: "Damage",
+    damageShare: "Dmg share",
+
+    totals: "Totals",
+    trends: "Trends (last 5 vs prev 5)",
+    trendsHint: "Difference between average of last 5 matches and previous 5.",
+    records: "Records",
+    bestScore: "Best score",
+    worstScore: "Worst score",
+    maxKills: "Max kills",
+    maxDamage: "Max damage",
+    progress: "Progress",
+    lastMatches: "Last 10 matches",
+    date: "Date",
   },
 };

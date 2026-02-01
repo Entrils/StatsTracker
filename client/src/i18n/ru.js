@@ -2,6 +2,8 @@ export default {
   nav: {
     upload: "Загрузка",
     players: "Игроки",
+    myProfile: "Мой профиль",
+    Logout: "Выйти",
   },
   leaderboard: {
     title: "Таблица лидеров",
@@ -41,5 +43,32 @@ export default {
     hit: "Попадания",
     damage: "% урона",
     progress: "Прогресс",
+  },
+    me: {
+    title: "Мой профиль",
+    loginRequired: "Необходимо войти",
+    loading: "Загружаем вашу статистику...",
+    empty: "История матчей пока пуста",
+
+    matches: "Матчи",
+    score: "Счёт",
+    kills: "Убийства",
+    deaths: "Смерти",
+    assists: "Ассисты",
+    damage: "Урон",
+    damageShare: "Доля урона",
+
+    totals: "Всего",
+    trends: "Тренды (последние 5 vs предыдущие 5)",
+    trendsHint:
+      "Разница между средними значениями последних 5 матчей и предыдущих 5.",
+    records: "Рекорды",
+    bestScore: "Лучший счёт",
+    worstScore: "Худший счёт",
+    maxKills: "Макс. убийств",
+    maxDamage: "Макс. урон",
+    progress: "Прогресс",
+    lastMatches: "Последние 10 матчей",
+    date: "Дата",
   },
 };

@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom"; // ✅ useNavigate
 import styles from "./Navbar.module.css";
 import { useLang } from "../../i18n/LanguageContext";
 import DiscordLoginButton from "../../buttons/DiscordLoginButton/DiscordLoginButton";
@@ -10,6 +10,7 @@ import { useEffect, useRef, useState } from "react";
 export default function Navbar() {
   const { lang, setLang, t } = useLang();
   const { user, claims } = useAuth();
+  const navigate = useNavigate(); // ✅
 
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -104,10 +105,20 @@ export default function Navbar() {
               }`}
             >
               <button
+                onClick={() => {
+                  setOpen(false);
+                  navigate("/me");
+                }}
+                className={styles.dropdownItem}
+              >
+                {t.nav.myProfile || "My profile"}
+              </button>
+
+              <button
                 onClick={handleLogout}
                 className={styles.dropdownItem}
               >
-                Logout
+                {t.nav.Logout || "Logout"}
               </button>
             </div>
           </div>
