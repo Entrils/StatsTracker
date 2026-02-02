@@ -1,4 +1,4 @@
-﻿export default {
+export default {
   nav: {
     upload: "Загрузка",
     players: "Игроки",
@@ -36,11 +36,20 @@
     fileReady: "Файл загружен — можно анализировать",
     fileMissing: "Файл еще не выбран",
   },
-   profile: {
+  profile: {
     loading: "Загрузка профиля...",
     empty: "Нет истории матчей",
     back: "Назад",
     matches: "Матчи",
+    wins: "Победы",
+    losses: "Поражения",
+    winrate: "Винрейт",
+    overview: "Обзор",
+    overviewHint: "Результаты и стабильность",
+    averages: "Средние",
+    averagesHint: "Показатели за матч",
+    index: "№",
+    unknown: "-",
     score: "Счёт",
     kills: "Убийства",
     deaths: "Смерти",
@@ -51,20 +60,38 @@
     damageShare: "Доля урона",
     kda: "KDA",
   },
-    me: {
+  me: {
     title: "Мой профиль",
     loginRequired: "Необходимо войти",
     loading: "Загружаем вашу статистику...",
     empty: "История матчей пока пуста",
-
+    overview: "Обзор",
+    overviewHint: "Результаты и стабильность",
     matches: "Матчи",
+    wins: "Победы",
+    losses: "Поражения",
+    winrate: "Винрейт",
+    averages: "Средние",
+    averagesHint: "Показатели за матч",
+    index: "№",
+    unknown: "-",
     score: "Счёт",
     kills: "Убийства",
     deaths: "Смерти",
     assists: "Ассисты",
     damage: "Урон",
     damageShare: "Доля урона",
-
+    kda: "KDA",
+    meBadge: "Я",
+    result: "Результат",
+    win: "ПОБЕДА",
+    loss: "ПОРАЖЕНИЕ",
+    compareSep: "против",
+    vsGlobal: "Сравнение со средним",
+    globalSample: "выборка",
+    globalLoading: "Загружаем глобальные средние...",
+    globalUnavailable: "Глобальные средние пока недоступны.",
+    weekdaysShort: ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"],
     totals: "Всего",
     trends: "Тренды (последние 5 vs предыдущие 5)",
     trendsHint:
@@ -75,9 +102,11 @@
     maxKills: "Макс. убийств",
     maxDamage: "Макс. урон",
     progress: "Прогресс",
+    chartSelect: "Показать",
+    chartAll: "Все",
+    activity: "Активность",
+    activityHint: "Последние 90 дней",
     lastMatches: "Последние 10 матчей",
     date: "Дата",
   },
 };
-
-

@@ -14,6 +14,218 @@ admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });
 
+const db = admin.firestore();
+const GLOBAL_CACHE_TTL_MS = 15 * 60 * 1000;
+let globalCache = {
+  updatedAt: 0,
+  distributions: null,
+  countPlayers: 0,
+};
+
+function percentileRank(sorted, value) {
+  if (!sorted?.length || typeof value !== "number" || Number.isNaN(value)) {
+    return null;
+  }
+  let lo = 0;
+  let hi = sorted.length - 1;
+  let idx = -1;
+  while (lo <= hi) {
+    const mid = Math.floor((lo + hi) / 2);
+    if (sorted[mid] <= value) {
+      idx = mid;
+      lo = mid + 1;
+    } else {
+      hi = mid - 1;
+    }
+  }
+  if (idx < 0) return 1;
+  return Math.round(((idx + 1) / sorted.length) * 100);
+}
+
+function topPercent(sorted, value, preferHigher = true) {
+  const pct = percentileRank(sorted, value);
+  if (!pct) return null;
+  return preferHigher ? Math.max(1, 100 - pct + 1) : Math.max(1, pct);
+}
+
+async function buildDistributions() {
+  const players = new Map();
+  const matchTotals = {
+    count: 0,
+    wins: 0,
+    losses: 0,
+    score: 0,
+    kills: 0,
+    deaths: 0,
+    assists: 0,
+    damage: 0,
+    damageShare: 0,
+  };
+  let lastDoc = null;
+  const baseQuery = db
+    .collectionGroup("matches")
+    .orderBy(admin.firestore.FieldPath.documentId())
+    .limit(1000);
+
+  while (true) {
+    const query = lastDoc ? baseQuery.startAfter(lastDoc) : baseQuery;
+    const snap = await query.get();
+    if (snap.empty) break;
+
+    for (const doc of snap.docs) {
+      const m = doc.data();
+      const owner =
+        doc.ref?.parent?.parent?.id || m.ownerUid || m.uid || m.userId;
+      if (!owner) continue;
+      matchTotals.count += 1;
+      matchTotals.score += m.score || 0;
+      matchTotals.kills += m.kills || 0;
+      matchTotals.deaths += m.deaths || 0;
+      matchTotals.assists += m.assists || 0;
+      matchTotals.damage += m.damage || 0;
+      matchTotals.damageShare += m.damageShare || 0;
+      if (m.result === "victory") matchTotals.wins += 1;
+      else if (m.result === "defeat") matchTotals.losses += 1;
+
+      const prev = players.get(owner) || {
+        count: 0,
+        wins: 0,
+        losses: 0,
+        score: 0,
+        kills: 0,
+        deaths: 0,
+        assists: 0,
+        damage: 0,
+        damageShare: 0,
+      };
+      prev.count += 1;
+      prev.score += m.score || 0;
+      prev.kills += m.kills || 0;
+      prev.deaths += m.deaths || 0;
+      prev.assists += m.assists || 0;
+      prev.damage += m.damage || 0;
+      prev.damageShare += m.damageShare || 0;
+      if (m.result === "victory") prev.wins += 1;
+      else if (m.result === "defeat") prev.losses += 1;
+      players.set(owner, prev);
+    }
+
+    lastDoc = snap.docs[snap.docs.length - 1];
+  }
+
+  const dist = {
+    matches: [],
+    wins: [],
+    losses: [],
+    avgScore: [],
+    avgKills: [],
+    avgDeaths: [],
+    avgAssists: [],
+    avgDamage: [],
+    avgDamageShare: [],
+    kda: [],
+    winrate: [],
+  };
+  const sums = {
+    matches: 0,
+    wins: 0,
+    losses: 0,
+    avgScore: 0,
+    avgKills: 0,
+    avgDeaths: 0,
+    avgAssists: 0,
+    avgDamage: 0,
+    avgDamageShare: 0,
+    kda: 0,
+    winrate: 0,
+  };
+
+  for (const p of players.values()) {
+    if (!p.count) continue;
+    const avgScore = p.score / p.count;
+    const avgKills = p.kills / p.count;
+    const avgDeaths = p.deaths / p.count;
+    const avgAssists = p.assists / p.count;
+    const avgDamage = p.damage / p.count;
+    const avgDamageShare = p.damageShare / p.count;
+    const kda = (p.kills + p.assists) / Math.max(1, p.deaths);
+    const winrate = ((p.wins / Math.max(1, p.wins + p.losses)) * 100) || 0;
+
+    dist.matches.push(p.count);
+    dist.wins.push(p.wins);
+    dist.losses.push(p.losses);
+    dist.avgScore.push(avgScore);
+    dist.avgKills.push(avgKills);
+    dist.avgDeaths.push(avgDeaths);
+    dist.avgAssists.push(avgAssists);
+    dist.avgDamage.push(avgDamage);
+    dist.avgDamageShare.push(avgDamageShare);
+    dist.kda.push(kda);
+    dist.winrate.push(winrate);
+
+    sums.matches += p.count;
+    sums.wins += p.wins;
+    sums.losses += p.losses;
+    sums.avgScore += avgScore;
+    sums.avgKills += avgKills;
+    sums.avgDeaths += avgDeaths;
+    sums.avgAssists += avgAssists;
+    sums.avgDamage += avgDamage;
+    sums.avgDamageShare += avgDamageShare;
+    sums.kda += kda;
+    sums.winrate += winrate;
+  }
+
+  for (const key of Object.keys(dist)) {
+    dist[key] = dist[key].filter((v) => Number.isFinite(v)).sort((a, b) => a - b);
+  }
+
+  const countPlayers = dist.avgScore.length;
+  const averages = {};
+  if (countPlayers) {
+    for (const key of Object.keys(sums)) {
+      averages[key] = sums[key] / countPlayers;
+    }
+  }
+
+  const matchAverages = matchTotals.count
+    ? {
+        avgScore: matchTotals.score / matchTotals.count,
+        avgKills: matchTotals.kills / matchTotals.count,
+        avgDeaths: matchTotals.deaths / matchTotals.count,
+        avgAssists: matchTotals.assists / matchTotals.count,
+        avgDamage: matchTotals.damage / matchTotals.count,
+        avgDamageShare: matchTotals.damageShare / matchTotals.count,
+        kda:
+          (matchTotals.kills + matchTotals.assists) /
+          Math.max(1, matchTotals.deaths),
+        winrate:
+          (matchTotals.wins / Math.max(1, matchTotals.wins + matchTotals.losses)) *
+            100 || 0,
+      }
+    : null;
+
+  return { dist, countPlayers, averages, matchAverages };
+}
+
+async function getDistributions() {
+  const now = Date.now();
+  if (globalCache.distributions && now - globalCache.updatedAt < GLOBAL_CACHE_TTL_MS) {
+    return globalCache;
+  }
+
+  const { dist, countPlayers, averages, matchAverages } =
+    await buildDistributions();
+  globalCache = {
+    updatedAt: now,
+    distributions: dist,
+    countPlayers,
+    averages,
+    matchAverages,
+  };
+  return globalCache;
+}
+
 app.post("/auth/discord", async (req, res) => {
   const { code } = req.body;
 
@@ -85,6 +297,47 @@ app.post("/auth/discord", async (req, res) => {
       error: "OAuth failed",
       details: err.message,
     });
+  }
+});
+
+app.post("/stats/percentiles", async (req, res) => {
+  try {
+    const metrics = req.body?.metrics;
+    if (!metrics) {
+      return res.status(400).json({ error: "Missing metrics" });
+    }
+
+    const cache = await getDistributions();
+    const dist = cache.distributions;
+
+    const percentiles = {
+      matches: topPercent(dist.matches, metrics.matches, true),
+      wins: topPercent(dist.wins, metrics.wins, true),
+      losses: topPercent(dist.losses, metrics.losses, false),
+      winrate: topPercent(dist.winrate, metrics.winrate, true),
+      avgScore: topPercent(dist.avgScore, metrics.avgScore, true),
+      avgKills: topPercent(dist.avgKills, metrics.avgKills, true),
+      avgDeaths: topPercent(dist.avgDeaths, metrics.avgDeaths, false),
+      avgAssists: topPercent(dist.avgAssists, metrics.avgAssists, true),
+      avgDamage: topPercent(dist.avgDamage, metrics.avgDamage, true),
+      avgDamageShare: topPercent(
+        dist.avgDamageShare,
+        metrics.avgDamageShare,
+        true
+      ),
+      kda: topPercent(dist.kda, metrics.kda, true),
+    };
+
+    return res.json({
+      updatedAt: cache.updatedAt,
+      countPlayers: cache.countPlayers,
+      averages: cache.averages,
+      matchAverages: cache.matchAverages,
+      percentiles,
+    });
+  } catch (err) {
+    console.error("PERCENTILES ERROR:", err);
+    return res.status(500).json({ error: "Failed to compute percentiles" });
   }
 });
 

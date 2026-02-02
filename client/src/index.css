@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Oxanium:wght@300;400;600;700;800&family=Rajdhani:wght@400;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700&family=Oxanium:wght@300;400;600;700;800&family=Rajdhani:wght@400;600;700&display=swap");
 @import "tailwindcss";
 
 /* GLOBAL BASE STYLES */
@@ -56,7 +56,11 @@
         transparent 12px
       );
     color: var(--text-main);
-    font-family: "Oxanium", "Rajdhani", "Segoe UI", sans-serif;
+    font-family:
+      "Noto Sans",
+      "Segoe UI",
+      "Arial",
+      sans-serif;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
     overflow-x: hidden;
@@ -100,6 +104,11 @@
   h3,
   h4,
   h5 {
+    font-family:
+      "Oxanium",
+      "Noto Sans",
+      "Segoe UI",
+      sans-serif;
     font-weight: 700;
     letter-spacing: 0.04em;
     text-transform: uppercase;
@@ -125,6 +134,11 @@
   textarea {
     font-family: inherit;
   }
+}
+
+html[data-lang="ru"] body,
+html[data-lang="ru"] body * {
+  font-family: "Noto Sans", "Segoe UI", "Arial", sans-serif !important;
 }
 
 @layer base {
