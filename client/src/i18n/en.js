@@ -33,12 +33,17 @@ export default {
     assists: "A",
     hit: "Hit",
     damage: "% DMG",
+    selectFile: "Choose screenshot",
+    selectHint: "PNG/JPG, preferably full screen",
+    fileReady: "File loaded — ready to analyze",
+    fileMissing: "No file selected yet",
   },
 
   profile: {
     loading: "Loading profile...",
     empty: "No match history",
     back: "Back",
+    matches: "Matches",
     score: "Score",
     kills: "Kills",
     deaths: "Deaths",
@@ -46,6 +51,8 @@ export default {
     hit: "Hit Enemy",
     damage: "Damage %",
     progress: "Progress",
+    damageShare: "Dmg share",
+    kda: "KDA",
   },
 
   me: {

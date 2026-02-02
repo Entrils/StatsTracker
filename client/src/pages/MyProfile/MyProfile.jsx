@@ -317,7 +317,6 @@ export default function MyProfile() {
         {summary.name} <span className={styles.meBadge}>ME</span>
       </h1>
 
-      {/* quick stats */}
       <div className={styles.statsGrid}>
         <Stat label={t.me?.matches || "Matches"} value={summary.matchesCount} />
         <Stat label="Wins" value={summary.wins} />
@@ -482,7 +481,7 @@ export default function MyProfile() {
               yAxisId="left"
               type="monotone"
               dataKey="score"
-              stroke="#6366f1"
+              stroke="#00f5d4"
               strokeWidth={2}
               dot={false}
             />
@@ -490,7 +489,7 @@ export default function MyProfile() {
               yAxisId="left"
               type="monotone"
               dataKey="kills"
-              stroke="#22d3ee"
+              stroke="#a3ff12"
               strokeWidth={2}
               dot={false}
             />
@@ -498,12 +497,12 @@ export default function MyProfile() {
               yAxisId="left"
               type="monotone"
               dataKey="damage"
-              stroke="#f97316"
+              stroke="#ff2d95"
               strokeWidth={2}
               dot={false}
             />
 
-            <CartesianGrid stroke="#374151" strokeDasharray="4 4" />
+            <CartesianGrid stroke="rgba(255,255,255,0.1)" strokeDasharray="4 4" />
             <XAxis dataKey="index" />
             <YAxis yAxisId="left" />
             <YAxis yAxisId="right" orientation="right" domain={[0, 1]} ticks={[0, 1]} />

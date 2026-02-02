@@ -2,7 +2,7 @@
   max-width: 1100px;
   margin: 0 auto;
   padding: 28px 16px 64px;
-  color: #e5e7eb;
+  color: var(--text-main);
 }
 
 .nickname {
@@ -13,6 +13,10 @@
   font-weight: 800;
   letter-spacing: 0.3px;
   margin: 8px 0 18px;
+  text-transform: uppercase;
+  text-shadow:
+    0 0 18px rgba(0, 245, 212, 0.4),
+    0 0 36px rgba(255, 45, 149, 0.35);
 }
 
 .meBadge {
@@ -25,9 +29,9 @@
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.6px;
-  background: rgba(99, 102, 241, 0.18);
-  border: 1px solid rgba(99, 102, 241, 0.35);
-  color: #c7d2fe;
+  background: rgba(0, 245, 212, 0.18);
+  border: 1px solid rgba(0, 245, 212, 0.35);
+  color: #bffcf0;
 }
 
 .statsGrid {
@@ -38,8 +42,8 @@
 }
 
 .statCard {
-  background: rgba(17, 24, 39, 0.55);
-  border: 1px solid rgba(55, 65, 81, 0.7);
+  background: var(--bg-glass);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 14px;
   padding: 14px 14px 12px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.28);
@@ -49,7 +53,7 @@
 
 .statLabel {
   font-size: 12px;
-  color: rgba(229, 231, 235, 0.7);
+  color: rgba(154, 164, 193, 0.8);
   margin-bottom: 6px;
 }
 
@@ -67,11 +71,11 @@
 }
 
 .card {
-  background: rgba(17, 24, 39, 0.55);
-  border: 1px solid rgba(55, 65, 81, 0.7);
+  background: var(--bg-card);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 16px;
   padding: 16px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.28);
+  box-shadow: var(--shadow-strong);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
 }
@@ -92,14 +96,14 @@
 
 .mini {
   border-radius: 14px;
-  border: 1px solid rgba(55, 65, 81, 0.7);
-  background: rgba(3, 7, 18, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(5, 9, 18, 0.45);
   padding: 12px;
 }
 
 .miniLabel {
   font-size: 12px;
-  color: rgba(229, 231, 235, 0.7);
+  color: rgba(154, 164, 193, 0.9);
   margin-bottom: 4px;
 }
 
@@ -110,20 +114,20 @@
 }
 
 .good {
-  border-color: rgba(34, 211, 238, 0.35);
-  background: rgba(34, 211, 238, 0.08);
+  border-color: rgba(0, 245, 212, 0.45);
+  background: rgba(0, 245, 212, 0.08);
 }
 
 .bad {
-  border-color: rgba(244, 63, 94, 0.35);
-  background: rgba(244, 63, 94, 0.08);
+  border-color: rgba(255, 45, 149, 0.45);
+  background: rgba(255, 45, 149, 0.08);
 }
 
 .hint {
   margin: 10px 0 0;
   font-size: 12px;
   line-height: 1.35;
-  color: rgba(229, 231, 235, 0.6);
+  color: rgba(154, 164, 193, 0.8);
 }
 
 .recordsGrid {
@@ -134,14 +138,14 @@
 
 .record {
   border-radius: 14px;
-  border: 1px solid rgba(55, 65, 81, 0.7);
-  background: rgba(3, 7, 18, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(5, 9, 18, 0.45);
   padding: 12px;
 }
 
 .recordLabel {
   font-size: 12px;
-  color: rgba(229, 231, 235, 0.7);
+  color: rgba(154, 164, 193, 0.8);
   margin-bottom: 6px;
 }
 
@@ -154,16 +158,16 @@
 
 .recordSub {
   font-size: 12px;
-  color: rgba(229, 231, 235, 0.55);
+  color: rgba(154, 164, 193, 0.75);
 }
 
 .chartCard {
-  background: rgba(17, 24, 39, 0.55);
-  border: 1px solid rgba(55, 65, 81, 0.7);
+  background: var(--bg-card);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 16px;
   padding: 16px;
   margin: 18px 0;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.28);
+  box-shadow: var(--shadow-strong);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
 }
@@ -179,8 +183,8 @@
   width: 100%;
   overflow-x: auto;
   border-radius: 14px;
-  border: 1px solid rgba(55, 65, 81, 0.7);
-  background: rgba(3, 7, 18, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(5, 9, 18, 0.55);
 }
 
 .table {
@@ -193,10 +197,10 @@
   text-align: left;
   font-size: 12px;
   font-weight: 800;
-  color: rgba(229, 231, 235, 0.8);
+  color: rgba(154, 164, 193, 0.9);
   padding: 12px 12px;
-  background: rgba(17, 24, 39, 0.45);
-  border-bottom: 1px solid rgba(55, 65, 81, 0.7);
+  background: rgba(10, 14, 26, 0.8);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   position: sticky;
   top: 0;
   z-index: 1;
@@ -205,13 +209,13 @@
 .table tbody td {
   padding: 12px 12px;
   font-size: 13px;
-  color: rgba(243, 244, 246, 0.9);
-  border-bottom: 1px solid rgba(55, 65, 81, 0.45);
+  color: rgba(243, 244, 246, 0.92);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   white-space: nowrap;
 }
 
 .table tbody tr:hover {
-  background: rgba(99, 102, 241, 0.10);
+  background: rgba(0, 245, 212, 0.08);
 }
 
 .table tbody tr:last-child td {
@@ -232,13 +236,13 @@
   gap: 12px;
 
   padding: 10px 12px;
-  background: #111827;
+  background: rgba(10, 14, 24, 0.9);
   border-radius: 10px;
 }
 
 .compareLabel {
   font-size: 13px;
-  color: #9ca3af;
+  color: #9aa4c1;
   font-weight: 500;
 }
 
@@ -252,38 +256,38 @@
 }
 
 .compareYou {
-  color: #e5e7eb;
+  color: #f2f4ff;
   font-weight: 600;
 }
 
 .compareSep {
-  color: #6b7280;
+  color: #64708d;
   font-size: 12px;
 }
 
 .compareGlobal {
-  color: #9ca3af;
+  color: #9aa4c1;
 }
 
 .compareDelta {
   text-align: right;
   font-size: 14px;
   font-weight: 600;
-  color: #9ca3af;
+  color: #9aa4c1;
 }
 
 .good {
-  color: #22c55e !important;
+  color: #a3ff12 !important;
 }
 
 .bad {
-  color: #ef4444 !important;
+  color: #ff2d95 !important;
 }
 
 .smallNote {
   font-size: 12px;
   font-weight: 400;
-  color: #9ca3af;
+  color: #9aa4c1;
   margin-left: 6px;
 }
 

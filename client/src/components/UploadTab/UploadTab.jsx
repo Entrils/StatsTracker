@@ -60,6 +60,9 @@ export default function UploadTab() {
   const { user, claims } = useAuth();
 
   const [imageUrl, setImageUrl] = useState(null);
+  const [fileName, setFileName] = useState("");
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
   const [status, setStatus] = useState("");
   const [debugText, setDebugText] = useState("");
   const [debugImage, setDebugImage] = useState(null);
@@ -78,6 +81,12 @@ export default function UploadTab() {
   const debugPlayerUrl = useRef(null);
   const debugMatchUrl = useRef(null);
   const debugResultUrl = useRef(null);
+
+  const handleFile = (file) => {
+    setSelectedFile(file || null);
+    setImageUrl(file ? URL.createObjectURL(file) : null);
+    setFileName(file ? file.name : "");
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -157,8 +166,7 @@ export default function UploadTab() {
   };
 
   const handleAnalyze = async () => {
-    const input = document.querySelector('input[type="file"]');
-    if (!input?.files?.length) return;
+    if (!selectedFile) return;
 
     if (!tesseractRef.current) {
       setStatus("Tesseract is not ready yet. Please try again in a second.");
@@ -195,7 +203,7 @@ export default function UploadTab() {
 
     try {
       setStatus(t.upload.compressing);
-      const compressed = await imageCompression(input.files[0], {
+      const compressed = await imageCompression(selectedFile, {
         maxSizeMB: 0.9,
         maxWidthOrHeight: 1280,
         useWebWorker: true,
@@ -385,13 +393,64 @@ export default function UploadTab() {
 
       <div className={styles.card}>
         <input
+          id="upload-file"
           type="file"
           accept="image/*"
           className={styles.fileInput}
-          onChange={(e) =>
-            setImageUrl(e.target.files[0] ? URL.createObjectURL(e.target.files[0]) : null)
-          }
+          onChange={(e) => {
+            const file = e.target.files[0];
+            handleFile(file);
+          }}
         />
+
+        <label
+          htmlFor="upload-file"
+          className={`${styles.uploadArea} ${
+            isDragging ? styles.uploadAreaDrag : ""
+          }`}
+          onDragEnter={(e) => {
+            e.preventDefault();
+            setIsDragging(true);
+          }}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setIsDragging(true);
+          }}
+          onDragLeave={(e) => {
+            e.preventDefault();
+            setIsDragging(false);
+          }}
+          onDrop={(e) => {
+            e.preventDefault();
+            setIsDragging(false);
+            const file = e.dataTransfer.files?.[0];
+            if (file) handleFile(file);
+          }}
+        >
+          <div className={styles.uploadIcon}>UP</div>
+          <div className={styles.uploadText}>
+            {t.upload.selectFile || "Choose screenshot"}
+          </div>
+          <div className={styles.uploadHint}>
+            {t.upload.selectHint || "PNG/JPG, preferably full screen"}
+          </div>
+          {fileName && <div className={styles.fileName}>{fileName}</div>}
+        </label>
+
+        <div
+          className={`${styles.fileStatus} ${
+            selectedFile ? styles.fileStatusReady : styles.fileStatusEmpty
+          }`}
+        >
+          <span className={styles.fileStatusIcon}>
+            {selectedFile ? "OK" : "!"}
+          </span>
+          <span className={styles.fileStatusText}>
+            {selectedFile
+              ? t.upload.fileReady || "File loaded - ready to analyze"
+              : t.upload.fileMissing || "No file selected yet"}
+          </span>
+        </div>
 
         {imageUrl && <img src={imageUrl} alt="preview" className={styles.preview} />}
 
@@ -430,7 +489,11 @@ export default function UploadTab() {
           </>
         )}
 
-        <button onClick={handleAnalyze} disabled={loading} className={styles.button}>
+        <button
+          onClick={handleAnalyze}
+          disabled={loading || !selectedFile}
+          className={`${styles.button} ${selectedFile ? styles.buttonReady : ""}`}
+        >
           {loading ? t.upload.processing : t.upload.analyze}
         </button>
 
@@ -441,3 +504,6 @@ export default function UploadTab() {
     </div>
   );
 }
+
+
+
