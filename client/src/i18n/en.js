@@ -34,7 +34,7 @@ export default {
     hit: "Hit",
     damage: "% DMG",
     selectFile: "Choose screenshot",
-    selectHint: "PNG/JPG, preferably full screen",
+    selectHint: "PNG/JPG, full screen",
     fileReady: "File loaded — ready to analyze",
     fileMissing: "No file selected yet",
   },
