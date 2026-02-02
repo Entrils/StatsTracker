@@ -737,6 +737,28 @@
   border-bottom: none;
 }
 
+.loadMoreWrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 14px;
+}
+
+.loadMoreBtn {
+  padding: 10px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(12, 16, 30, 0.7);
+  color: #f2f4ff;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border 0.2s ease, box-shadow 0.2s ease;
+}
+
+.loadMoreBtn:hover {
+  border-color: rgba(0, 245, 212, 0.5);
+  box-shadow: 0 0 14px rgba(0, 245, 212, 0.3);
+}
+
 .mobileList {
   display: none;
   gap: 10px;

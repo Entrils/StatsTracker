@@ -6,6 +6,7 @@ import {
   limit,
   orderBy,
   query,
+  startAfter,
   where,
 } from "firebase/firestore";
 import { db } from "../../firebase";
@@ -14,6 +15,7 @@ import { useLang } from "../../i18n/LanguageContext";
 import { useAuth } from "../../auth/AuthContext";
 
 const GLOBAL_SAMPLE = 800; // последних матчей брать для глобального авг
+const MATCHES_PAGE_SIZE = 80;
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
 const ChartSection = lazy(() => import("./ChartSection"));
@@ -63,6 +65,9 @@ export default function MyProfile() {
 
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [lastDoc, setLastDoc] = useState(null);
+  const [hasMore, setHasMore] = useState(true);
 
   const [globalAvg, setGlobalAvg] = useState(null);
   const [loadingGlobal, setLoadingGlobal] = useState(true);
@@ -108,17 +113,24 @@ export default function MyProfile() {
 
   const uid = user?.uid;
 
-  useEffect(() => {
+  const fetchHistory = async (reset = false) => {
     if (!uid) return;
-
-    const fetchHistory = async () => {
+    if (reset) {
       setLoading(true);
+      setMatches([]);
+      setLastDoc(null);
+      setHasMore(true);
+    } else {
+      setLoadingMore(true);
+    }
 
-      const q = query(
+    try {
+      const base = query(
         collection(db, "users", uid, "matches"),
-        orderBy("createdAt", "asc")
+        orderBy("createdAt", "asc"),
+        limit(MATCHES_PAGE_SIZE)
       );
-
+      const q = !reset && lastDoc ? query(base, startAfter(lastDoc)) : base;
       const snapshot = await getDocs(q);
 
       const data = snapshot.docs.map((d, i) => {
@@ -131,11 +143,21 @@ export default function MyProfile() {
         };
       });
 
-      setMatches(data);
+      setMatches((prev) => {
+        const merged = reset ? data : [...prev, ...data];
+        return merged.map((m, idx) => ({ ...m, index: idx + 1 }));
+      });
+      setLastDoc(snapshot.docs[snapshot.docs.length - 1] || null);
+      setHasMore(snapshot.docs.length === MATCHES_PAGE_SIZE);
+    } finally {
       setLoading(false);
-    };
+      setLoadingMore(false);
+    }
+  };
 
-    fetchHistory();
+  useEffect(() => {
+    if (!uid) return;
+    fetchHistory(true);
   }, [uid]);
 
   useEffect(() => {
@@ -408,20 +430,19 @@ export default function MyProfile() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        metrics: {
-          matches: summary.matchesCount,
-          wins: summary.wins,
-          losses: summary.losses,
-          winrate: summary.winrate,
-          avgScore: summary.avgScoreRaw,
-          avgKills: summary.avgKillsRaw,
-          avgDeaths: summary.avgDeathsRaw,
-          avgAssists: summary.avgAssistsRaw,
-          avgDamage: summary.avgDamageRaw,
-          avgDamageShare: summary.avgDamageShareRaw,
-          kda: summary.kdaRaw,
-          winrate: summary.winrateRaw,
-        },
+          metrics: {
+            matches: summary.matchesCount,
+            wins: summary.wins,
+            losses: summary.losses,
+            avgScore: summary.avgScoreRaw,
+            avgKills: summary.avgKillsRaw,
+            avgDeaths: summary.avgDeathsRaw,
+            avgAssists: summary.avgAssistsRaw,
+            avgDamage: summary.avgDamageRaw,
+            avgDamageShare: summary.avgDamageShareRaw,
+            kda: summary.kdaRaw,
+            winrate: summary.winrateRaw,
+          },
       }),
       signal: controller.signal,
     })
@@ -1135,6 +1156,19 @@ export default function MyProfile() {
           formatDate={formatDate}
         />
       </Suspense>
+      {hasMore && (
+        <div className={styles.loadMoreWrap}>
+          <button
+            className={styles.loadMoreBtn}
+            onClick={() => fetchHistory(false)}
+            disabled={loadingMore}
+          >
+            {loadingMore
+              ? t.me?.loadingMore || "Loading..."
+              : t.me?.loadMore || "Load more"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

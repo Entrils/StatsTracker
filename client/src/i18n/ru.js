@@ -1,4 +1,4 @@
-export default {
+﻿export default {
   nav: {
     upload: "Загрузка",
     players: "Игроки",
@@ -12,6 +12,16 @@ export default {
     kills: "Убийства",
     deaths: "Смерти",
     assists: "Ассисты",
+    avgScore: "Средний счёт",
+    kda: "KDA",
+    matches: "Матчи",
+    wins: "Победы",
+    wl: "W/L",
+    winrate: "Винрейт",
+    refresh: "Обновить",
+    loadMore: "Загрузить ещё",
+    loading: "Загрузка...",
+    indexHint: "Нет индекса для сортировки. Показаны несортированные данные.",
     empty: "Пока нет данных",
     notFound: "Игрок не найден",
   },
@@ -108,5 +118,7 @@ export default {
     activityHint: "Последние 90 дней",
     lastMatches: "Последние 10 матчей",
     date: "Дата",
+    loadMore: "Загрузить ещё",
+    loadingMore: "Загрузка...",
   },
 };
