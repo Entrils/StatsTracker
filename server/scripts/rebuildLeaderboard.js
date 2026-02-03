@@ -1,7 +1,10 @@
 import dotenv from "dotenv";
 import admin from "firebase-admin";
+import pino from "pino";
 
 dotenv.config();
+
+const logger = pino({ level: process.env.LOG_LEVEL || "info" });
 
 const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON
   ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON)
@@ -25,7 +28,7 @@ async function deleteCollection(collRef) {
 }
 
 async function rebuild() {
-  console.log("Rebuilding leaderboard_users from users/*/matches...");
+  logger.info("Rebuilding leaderboard_users from users/*/matches...");
 
   const players = new Map();
   let lastDoc = null;
@@ -79,10 +82,13 @@ async function rebuild() {
     lastDoc = snap.docs[snap.docs.length - 1];
   }
 
-  console.log(`Found ${players.size} players. Clearing old leaderboard_users...`);
+  logger.info(
+    { count: players.size },
+    "Found players. Clearing old leaderboard_users..."
+  );
   await deleteCollection(db.collection("leaderboard_users"));
 
-  console.log("Writing leaderboard_users...");
+  logger.info("Writing leaderboard_users...");
   const batchSize = 500;
   let batch = db.batch();
   let i = 0;
@@ -114,11 +120,11 @@ async function rebuild() {
     await batch.commit();
   }
 
-  console.log("Done.");
+  logger.info("Done.");
   process.exit(0);
 }
 
 rebuild().catch((err) => {
-  console.error("Rebuild failed:", err);
+  logger.error({ err }, "Rebuild failed");
   process.exit(1);
 });

@@ -1,11 +1,14 @@
 import dotenv from "dotenv";
 import admin from "firebase-admin";
+import pino from "pino";
 
 dotenv.config();
 
+const logger = pino({ level: process.env.LOG_LEVEL || "info" });
+
 const uid = process.argv[2];
 if (!uid) {
-  console.error("Usage: node scripts/makeAdmin.js <uid>");
+  logger.error("Usage: node scripts/makeAdmin.js <uid>");
   process.exit(1);
 }
 
@@ -21,11 +24,11 @@ admin.initializeApp({
 
 async function run() {
   await admin.auth().setCustomUserClaims(uid, { admin: true });
-  console.log(`Admin claim set for ${uid}`);
+  logger.info({ uid }, "Admin claim set");
   process.exit(0);
 }
 
 run().catch((err) => {
-  console.error("Failed to set admin claim:", err);
+  logger.error({ err }, "Failed to set admin claim");
   process.exit(1);
 });

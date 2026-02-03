@@ -300,7 +300,6 @@ export default function UploadTab() {
 
       const resultOCR = await worker.recognize(resultBlob);
       const resultText = resultOCR?.data?.text || "";
-      console.log("[DEBUG] OCR RESULT AREA:", resultText);
 
       const matchResult = parseMatchResult(resultText);
 
@@ -338,7 +337,6 @@ export default function UploadTab() {
       });
 
       const { data } = await worker.recognize(matchBlob);
-      console.log("[DEBUG] OCR MATCH AREA:", data?.text || "");
 
       const matchId = extractMatchId(data.text);
 
