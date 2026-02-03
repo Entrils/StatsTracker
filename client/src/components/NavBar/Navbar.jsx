@@ -166,11 +166,11 @@ export default function Navbar() {
                 <button
                   onClick={() => {
                     setOpen(false);
-                    navigate("/socials");
+                    navigate("/settings");
                   }}
                   className={styles.dropdownItem}
                 >
-                  {t.nav.socials || "Socials"}
+                  {t.nav.settings || "Settings"}
                 </button>
 
                 <button onClick={handleLogout} className={styles.dropdownItem}>
@@ -302,13 +302,13 @@ export default function Navbar() {
           )}
           {user && (
             <NavLink
-              to="/socials"
+              to="/settings"
               onClick={closeMobile}
               className={({ isActive }) =>
                 `${styles.offcanvasLink} ${isActive ? styles.active : ""}`
               }
             >
-              {t.nav.socials || "Socials"}
+              {t.nav.settings || "Settings"}
             </NavLink>
           )}
           {user && (claims?.admin === true || claims?.role === "admin") && (

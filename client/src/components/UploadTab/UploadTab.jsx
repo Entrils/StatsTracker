@@ -13,7 +13,11 @@ function extractMatchId(text) {
   const lines = raw.split("\n").map((l) => l.trim());
   for (let i = 0; i < lines.length; i += 1) {
     const line = lines[i];
-    if (/(match\s*id|matchid|код\s*матча)/.test(line)) {
+    if (
+      /(match\s*id|matchid|код\s*матча|code\s*de\s*correspondance|match-?nummer)/.test(
+        line
+      )
+    ) {
       const candidateLine =
         line + " " + (lines[i + 1] || "") + " " + (lines[i + 2] || "");
       const token = candidateLine.match(/[a-z0-9]{6,32}/i);
@@ -23,7 +27,7 @@ function extractMatchId(text) {
     }
   }
   const labelHit = raw.match(
-    /(?:match\s*id|matchid|код\s*матча)\s*[:#-]?\s*([a-f0-9]{6,32})/
+    /(?:match\s*id|matchid|код\s*матча|code\s*de\s*correspondance|match-?nummer)\s*[:#-]?\s*([a-f0-9]{6,32})/
   );
   if (labelHit) return labelHit[1];
 
@@ -41,7 +45,7 @@ function extractMatchId(text) {
     .replace(/[ф]/g, "f");
 
   const labelNormalized = normalized.match(
-    /(matchid|кодматча)([a-f0-9]{6,32})/
+    /(matchid|кодматча|codedecorrespondance|matchnummer)([a-f0-9]{6,32})/
   );
   if (labelNormalized) return labelNormalized[2];
 
@@ -52,6 +56,7 @@ function extractMatchId(text) {
 function parseMatchResult(text) {
   if (!text) return null;
   const t = String(text).toUpperCase();
+  const normalized = t.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   const latin = t.replace(/[^A-Z]/g, "");
   const cyrA = t
     .replace(/[A]/g, "А")
@@ -88,6 +93,8 @@ function parseMatchResult(text) {
 
   if (
     latin.includes("VICTORY") ||
+    normalized.includes("VICTOIRE") ||
+    t.includes("SIEG") ||
     cyrA.includes("ПОБЕД") ||
     cyrA.includes("ПОБЕ") ||
     cyrB.includes("ПОБЕД") ||
@@ -97,6 +104,8 @@ function parseMatchResult(text) {
     return "victory";
   if (
     latin.includes("DEFEAT") ||
+    normalized.includes("DEFAITE") ||
+    t.includes("VERLUST") ||
     cyrA.includes("ПОРАЖ") ||
     cyrA.includes("ПОРА") ||
     cyrB.includes("ПОРАЖ") ||
@@ -171,7 +180,7 @@ export default function UploadTab() {
     if (!tesseractInitRef.current) {
       tesseractInitRef.current = (async () => {
         const { createWorker } = await import("tesseract.js");
-        const worker = await createWorker("eng+rus");
+        const worker = await createWorker("eng+rus+fra+deu");
         await worker.setParameters({
           tessedit_char_whitelist: "0123456789abcdef",
           preserve_interword_spaces: "1",
@@ -285,7 +294,7 @@ export default function UploadTab() {
       await worker.setParameters({
         // Latin + Cyrillic uppercase for result text (VICTORY/DEFEAT, ПОБЕДА/ПОРАЖЕНИЕ)
         tessedit_char_whitelist:
-          "ABCDEFGHIJKLMNOPQRSTUVWXYZАБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЫЬЭЮЯ",
+          "ABCDEFGHIJKLMNOPQRSTUVWXYZÉÈÊËÀÂÎÏÔÛÙÜÇÄÖÜßАБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЫЬЭЮЯ",
         preserve_interword_spaces: "1",
       });
 
@@ -390,7 +399,14 @@ export default function UploadTab() {
           headers,
           body: JSON.stringify({
             base64Image,
-            lang: lang === "ru" ? "rus" : "eng",
+            lang:
+              lang === "ru"
+                ? "rus"
+                : lang === "fr"
+                ? "fre"
+                : lang === "de"
+                ? "ger"
+                : "eng",
           }),
         }
       );

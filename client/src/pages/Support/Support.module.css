@@ -68,6 +68,9 @@
   justify-content: flex-start;
 }
 
+.recaptchaBox > div {
+}
+
 .submit {
   padding: 10px 16px;
   border-radius: 12px;

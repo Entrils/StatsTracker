@@ -23,6 +23,7 @@
     var(--neon-pink),
     var(--neon-amber)
   );
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
