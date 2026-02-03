@@ -16,6 +16,8 @@ import { useLang } from "@/i18n/LanguageContext";
 import { useAuth } from "@/auth/AuthContext";
 import { buildAchievements } from "@/utils/achievements";
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+
 function extractMatchId(text) {
   if (!text) return null;
 
@@ -180,6 +182,29 @@ function preprocessForMatchId(srcCanvas) {
 
   ctx.putImageData(img, 0, 0);
   return c;
+}
+
+async function loadBitmapSafe(fileLike) {
+  if (typeof createImageBitmap === "function") {
+    try {
+      return await createImageBitmap(fileLike);
+    } catch {
+      // fallback below
+    }
+  }
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(fileLike);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(img);
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Image decode failed"));
+    };
+    img.src = url;
+  });
 }
 
 export default function UploadTab() {
@@ -377,16 +402,42 @@ export default function UploadTab() {
     }
 
     const [kills, deaths, assists] = kda.split("/").map(Number);
+    const parsedScore = Number(score);
+    const parsedDamage = Number(dmg);
+    const parsedShareRaw = parseFloat(share.replace("%", "").replace(",", "."));
+
+    if (
+      !Number.isFinite(parsedScore) ||
+      !Number.isFinite(parsedDamage) ||
+      !Number.isFinite(kills) ||
+      !Number.isFinite(deaths) ||
+      !Number.isFinite(assists)
+    ) {
+      return null;
+    }
+
+    let parsedShare = parsedShareRaw;
+    // OCR can return 441 instead of 44.1; normalize into [0..100] for Firestore rules.
+    while (
+      Number.isFinite(parsedShare) &&
+      parsedShare > 100 &&
+      parsedShare <= 1000
+    ) {
+      parsedShare /= 10;
+    }
+    if (!Number.isFinite(parsedShare) || parsedShare < 0 || parsedShare > 100) {
+      return null;
+    }
 
     return {
       ownerUid: user.uid,
       name: claims?.username || user.displayName || user.email || user.uid,
-      score: Number(score),
+      score: parsedScore,
       kills,
       deaths,
       assists,
-      damage: Number(dmg),
-      damageShare: parseFloat(share.replace("%", "").replace(",", ".")),
+      damage: parsedDamage,
+      damageShare: Math.round(parsedShare * 10) / 10,
       createdAt: Date.now(),
     };
   };
@@ -415,14 +466,24 @@ export default function UploadTab() {
         )
       );
       let matchesList = matchesSnap.docs.map((doc) => doc.data());
-      const friendsSnap = await getDocs(collection(db, "users", uid, "friends"));
-      const friendDates = friendsSnap.docs
-        .map((doc) => doc.data()?.createdAt)
-        .filter(Boolean);
+      const idToken = user ? await user.getIdToken() : null;
+      let friendDates = [];
+      let friendCount = 0;
+      try {
+        const friendsRes = await fetch(`${BACKEND_URL}/friends/list`, {
+          headers: idToken ? { Authorization: `Bearer ${idToken}` } : {},
+        });
+        const friendsJson = await friendsRes.json().catch(() => null);
+        const friendRows = Array.isArray(friendsJson?.rows) ? friendsJson.rows : [];
+        friendCount = friendRows.length;
+        friendDates = friendRows.map((f) => f?.createdAt).filter(Boolean);
+      } catch {
+        // keep achievements logic working even if friends endpoint is unavailable
+      }
       let baseAchievements = buildAchievements({
         matches: matchesList,
         friendDates,
-        friendCount: friendsSnap.size,
+        friendCount,
       });
 
       const getUnlockedIds = (ach) => {
@@ -470,7 +531,7 @@ export default function UploadTab() {
           useWebWorker: true,
         });
 
-        const bitmap = await createImageBitmap(compressed);
+        const bitmap = await loadBitmapSafe(compressed);
 
         setStatus(`${t.upload.ocr || "OCR..."}${suffix}`);
         setStatusTone("neutral");
@@ -603,29 +664,47 @@ export default function UploadTab() {
           reader.readAsDataURL(blob);
         });
 
-        const idToken = user ? await user.getIdToken() : null;
         const headers = {
           "Content-Type": "application/json",
           ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
         };
-        const r = await fetch(
-          `${import.meta.env.VITE_BACKEND_URL || "http://localhost:4000"}/ocr`,
-          {
-            method: "POST",
-            headers,
-            body: JSON.stringify({
-              base64Image,
-              lang:
-                lang === "ru"
-                  ? "rus"
-                  : lang === "fr"
-                  ? "fre"
-                  : lang === "de"
-                  ? "ger"
-                  : "eng",
-            }),
-          }
-        );
+        let r;
+        try {
+          r = await fetch(
+          `${BACKEND_URL}/ocr`,
+            {
+              method: "POST",
+              headers,
+              body: JSON.stringify({
+                base64Image,
+                lang:
+                  lang === "ru"
+                    ? "rus"
+                    : lang === "fr"
+                    ? "fre"
+                    : lang === "de"
+                    ? "ger"
+                    : "eng",
+              }),
+            }
+          );
+        } catch (fetchError) {
+          setStatus(
+            `${t.upload.statusOtherFailed || "Not successful (Other error)"}${suffix}`
+          );
+          setStatusTone("bad");
+          setBatchResults((prev) => [
+            ...prev,
+            {
+              name: displayName,
+              status: "error",
+              message:
+                t.upload.backendUnavailable ||
+                "Backend unavailable / network error",
+            },
+          ]);
+          continue;
+        }
 
         if (!r.ok) {
           if (r.status === 403) {
@@ -724,13 +803,12 @@ export default function UploadTab() {
         await setDoc(userMatchRef, finalMatch);
 
         try {
-          const idToken = user ? await user.getIdToken() : null;
           const headers = {
             "Content-Type": "application/json",
             ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
           };
           await fetch(
-            `${import.meta.env.VITE_BACKEND_URL || "http://localhost:4000"}/leaderboard/update`,
+            `${BACKEND_URL}/leaderboard/update`,
             {
               method: "POST",
               headers,
@@ -753,7 +831,7 @@ export default function UploadTab() {
         const newAchievements = buildAchievements({
           matches: matchesList,
           friendDates,
-          friendCount: friendsSnap.size,
+          friendCount,
         });
         const nextUnlocked = getUnlockedIds(newAchievements);
         Object.entries(newAchievements).forEach(([key, list]) => {
@@ -775,11 +853,37 @@ export default function UploadTab() {
         unlockedIds = nextUnlocked;
       }
     } catch (e) {
-      setStatus(t.upload.statusOtherFailed || "Not successful (Other error)");
+      console.error("UploadTab analyze failed:", e);
+      if (e?.code === "permission-denied") {
+        setStatus(
+          t.upload.statusPermissionDenied ||
+            "Not successful (Data rejected by server rules)"
+        );
+        setStatusTone("bad");
+        setBatchResults((prev) => [
+          ...prev,
+          {
+            name: t.upload.fileLabel || "File",
+            status: "error",
+            message:
+              t.upload.statusPermissionDenied ||
+              "Data rejected by server rules",
+          },
+        ]);
+        return;
+      }
+      const reason = e?.message ? ` (${e.message})` : "";
+      setStatus(
+        `${t.upload.statusOtherFailed || "Not successful (Other error)"}${reason}`
+      );
       setStatusTone("bad");
       setBatchResults((prev) => [
         ...prev,
-        { name: t.upload.fileLabel || "File", status: "error", message: t.upload.statusOtherFailed || "Other error" },
+        {
+          name: t.upload.fileLabel || "File",
+          status: "error",
+          message: t.upload.statusOtherFailed || "Other error",
+        },
       ]);
     } finally {
       setLoading(false);
