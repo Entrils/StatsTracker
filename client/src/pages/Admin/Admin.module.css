@@ -1,0 +1,131 @@
+.wrapper {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: linear-gradient(90deg, #00f5d4, #ff2d95, #ffb703);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.hint {
+  color: var(--text-muted);
+  margin-bottom: 1.5rem;
+}
+
+.button {
+  display: inline-block;
+  padding: 0.85rem 2rem;
+  border-radius: 0.9rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #a3ff12, #00f5d4);
+  color: #081016;
+  box-shadow:
+    0 0 18px rgba(163, 255, 18, 0.35),
+    0 0 28px rgba(0, 245, 212, 0.45);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow:
+    0 0 22px rgba(0, 245, 212, 0.55),
+    0 0 32px rgba(163, 255, 18, 0.45);
+}
+
+.status {
+  margin-top: 1rem;
+  color: var(--text-muted);
+}
+
+.statusOk {
+  color: #9bff2e;
+  text-shadow: 0 0 10px rgba(163, 255, 18, 0.35);
+}
+
+.statusBad {
+  color: #ff4d6d;
+  text-shadow: 0 0 10px rgba(255, 77, 109, 0.35);
+}
+
+.section {
+  margin-top: 2.5rem;
+  text-align: left;
+  background: rgba(8, 12, 22, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 1.5rem;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.sectionTitle {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #f8fafc;
+  margin: 0;
+}
+
+.smallButton {
+  padding: 0.4rem 0.9rem;
+  border-radius: 0.7rem;
+  font-weight: 700;
+  background: rgba(0, 245, 212, 0.2);
+  color: #e6fffb;
+  border: 1px solid rgba(0, 245, 212, 0.35);
+}
+
+.smallButton:disabled {
+  opacity: 0.6;
+}
+
+.errorList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.errorItem {
+  padding: 0.9rem 1rem;
+  border-radius: 12px;
+  background: rgba(6, 10, 20, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.errorMessage {
+  font-weight: 700;
+  color: #ffb4c4;
+}
+
+.errorMeta {
+  margin-top: 0.35rem;
+  font-size: 0.78rem;
+  color: #9aa4c1;
+}
+
+.errorStack {
+  margin-top: 0.5rem;
+  font-size: 0.72rem;
+  color: #cbd5f5;
+  white-space: pre-wrap;
+}

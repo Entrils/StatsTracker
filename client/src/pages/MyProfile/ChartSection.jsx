@@ -105,7 +105,7 @@ export default function ChartSection({
             className={chartMetric === "score" ? styles.chartLineActive : undefined}
           />
           <Line
-            yAxisId="left"
+            yAxisId="kills"
             type="linear"
             dataKey="kills"
             stroke="#a3ff12"
@@ -142,6 +142,12 @@ export default function ChartSection({
           <CartesianGrid stroke="rgba(255,255,255,0.1)" strokeDasharray="4 4" />
           <XAxis dataKey="index" hide />
           <YAxis yAxisId="left" />
+          <YAxis
+            yAxisId="kills"
+            orientation="right"
+            domain={["dataMin - 2", "dataMax + 2"]}
+            hide
+          />
           <YAxis yAxisId="right" orientation="right" domain={[0, 1]} ticks={[0, 1]} />
           <Tooltip
             contentStyle={{

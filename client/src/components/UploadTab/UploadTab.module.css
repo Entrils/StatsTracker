@@ -195,6 +195,28 @@
   color: var(--text-muted);
 }
 
+.statusOk {
+  color: #9bff2e;
+  text-shadow: 0 0 10px rgba(163, 255, 18, 0.35);
+}
+
+.statusError {
+  color: #ff4d6d;
+  text-shadow: 0 0 10px rgba(255, 77, 109, 0.35);
+}
+
+.ocrRemaining {
+  margin-top: 0.35rem;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.ocrRemainingLow {
+  color: #ffb84d;
+  text-shadow: 0 0 10px rgba(255, 184, 77, 0.35);
+}
+
 .tableWrapper {
   margin-top: 2rem;
   overflow-x: auto;

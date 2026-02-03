@@ -1,9 +1,11 @@
-export default {
+﻿export default {
   nav: {
     upload: "Upload",
     players: "Players",
     myProfile: "My Profile",
     Logout: "Logout",
+    admin: "Admin",
+    socials: "Socials",
   },
 
   leaderboard: {
@@ -44,9 +46,17 @@ export default {
     hit: "Hit",
     damage: "% DMG",
     selectFile: "Choose screenshot",
-    selectHint: "PNG/JPG, full screen",
+    selectHint: "PNG/JPG, full screen, ONLY ENG",
     fileReady: "File loaded - ready to analyze",
     fileMissing: "No file selected yet",
+    statusOk: "OK (Uploaded)",
+    statusAlready: "Match already uploaded earlier",
+    statusOcrFailed: "Not successful (OCR failed)",
+    statusOtherFailed: "Not successful (Other error)",
+    statusTooLarge: "File is too large (max 2MB)",
+    statusMatchIdFailed: "Not successful (Match ID not found)",
+    statusPlayerFailed: "Not successful (Player row not recognized)",
+    ocrRemaining: "OCR left today: {count}",
   },
 
   profile: {
@@ -57,6 +67,7 @@ export default {
     wins: "Wins",
     losses: "Losses",
     winrate: "Winrate",
+    socials: "Socials",
     overview: "Overview",
     overviewHint: "Match results and consistency",
     averages: "Averages",
@@ -110,6 +121,7 @@ export default {
     globalSample: "sample",
     globalLoading: "Loading global averages...",
     globalUnavailable: "Global averages unavailable yet.",
+    weekdaysShort: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
 
     totals: "Totals",
     trends: "Trends (last 5 vs prev 5)",
@@ -128,6 +140,70 @@ export default {
     date: "Date",
     loadMore: "Load more",
     loadingMore: "Loading...",
+    socials: "Socials",
+    socialsHint: "Add links to your channels. Usernames or full URLs are accepted.",
+    twitch: "Twitch",
+    youtube: "YouTube",
+    tiktok: "TikTok",
+    save: "Save",
+    saving: "Saving...",
+    saved: "Saved",
+    saveError: "Save failed",
+    edit: "Edit",
+  },
+
+  footer: {
+    brand: "FragPunk Tracker",
+    text:
+      "All rights reserved. Site materials are intended for personal use only.",
+    policy: "Policy of use",
+    support: "Support",
+    ads: "Advertising & contacts",
+  },
+
+  policy: {
+    title: "Policy of use",
+    p1:
+      "By using FragPunk Tracker, you accept that the service is provided “as is” and may be unavailable or inaccurate at times.",
+    p2:
+      "Do not attempt to hack, scrape at scale, or automate requests in a way that impacts stability.",
+    p3:
+      "We may change features, limits, or availability without notice.",
+    p4:
+      "<strong>UNOFFICIAL PRODUCT</strong>. FragPunk Tracker is a fan-made project and is not affiliated with or endorsed by FragPunk or its publishers.",
+    p5:
+      "This application does not use or access official game code, servers, or networks.",
+  },
+
+  ads: {
+    title: "Advertising & contacts",
+    intro:
+      "For partnerships and advertising placements, contact us:",
+    email: "Email",
+    discord: "Discord",
+  },
+
+  support: {
+    title: "Support",
+    intro: "If you need help or have questions, contact us:",
+    emailLabel: "Your email",
+    messageLabel: "Message",
+    send: "Send",
+    sending: "Sending...",
+    sent: "Message sent",
+    error: "Send failed",
+    invalid: "Please check the form fields",
+    blocked: "Spam protection triggered",
+    cooldown: "Please wait a minute and try again",
+    emailError: "Enter a valid email",
+    messageError: "Message must be 10-2000 characters",
+    recaptchaLabel: "Spam protection",
+    recaptchaError: "Please complete the captcha",
+    missingKey: "reCAPTCHA site key is not configured",
+    missing: "Form endpoint is not configured",
+    discordHint: "Or contact directly via Discord",
+    email: "Email",
+    discord: "Discord",
   },
 };
 

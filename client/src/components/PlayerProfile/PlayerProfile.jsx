@@ -1,14 +1,6 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
-  collectionGroup,
-  getDocs,
-  query,
-  where,
-  orderBy,
-} from "firebase/firestore";
-import { db } from "../../firebase";
-import {
   LineChart,
   Line,
   CartesianGrid,
@@ -26,24 +18,30 @@ export default function PlayerProfile() {
 
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [profileSocials, setProfileSocials] = useState(null);
+  const [profileName, setProfileName] = useState("");
 
   useEffect(() => {
     const fetchHistory = async () => {
-      const q = query(
-        collectionGroup(db, "players"),
-        where("ownerUid", "==", uid),
-        orderBy("createdAt", "asc")
-      );
-
-      const snapshot = await getDocs(q);
-
-      const data = snapshot.docs.map((doc, i) => ({
-        index: i + 1,
-        ...doc.data(),
-      }));
-
-      setMatches(data);
-      setLoading(false);
+      try {
+        const backend =
+          import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+        const res = await fetch(
+          `${backend}/player/${uid}?limit=200`
+        );
+        if (!res.ok) {
+          throw new Error("Failed to load");
+        }
+        const data = await res.json();
+        setMatches(Array.isArray(data?.matches) ? data.matches : []);
+        setProfileSocials(data?.socials || null);
+        setProfileName(data?.name || "");
+      } catch (e) {
+        setError(t.profile.empty || "No match history");
+      } finally {
+        setLoading(false);
+      }
     };
 
     fetchHistory();
@@ -51,6 +49,9 @@ export default function PlayerProfile() {
 
   const summary = useMemo(() => {
     if (!matches.length) return null;
+
+    let wins = 0;
+    let losses = 0;
 
     const total = matches.reduce(
       (acc, m) => {
@@ -60,6 +61,8 @@ export default function PlayerProfile() {
         acc.assists += m.assists;
         acc.damage += m.damage;
         acc.damageShare += m.damageShare;
+        if (m.result === "victory") wins += 1;
+        else if (m.result === "defeat") losses += 1;
         return acc;
       },
       {
@@ -73,8 +76,11 @@ export default function PlayerProfile() {
     );
 
     return {
-      name: matches[0].name,
+      name: profileName || matches[0].name,
       matches: matches.length,
+      wins,
+      losses,
+      winrate: ((wins / Math.max(1, wins + losses)) * 100).toFixed(1),
       avgScore: Math.round(total.score / matches.length),
       avgKills: Math.round(total.kills / matches.length),
       avgDeaths: Math.round(total.deaths / matches.length),
@@ -93,7 +99,7 @@ export default function PlayerProfile() {
   }
 
   if (!matches.length || !summary) {
-    return <p className={styles.wrapper}>{t.profile.empty}</p>;
+    return <p className={styles.wrapper}>{error || t.profile.empty}</p>;
   }
 
   return (
@@ -102,10 +108,41 @@ export default function PlayerProfile() {
         {t.profile.back}
       </Link>
 
-      <h1 className={styles.nickname}>{summary.name}</h1>
+      <div className={styles.header}>
+        <div>
+          <div className={styles.nameRow}>
+            <h1 className={styles.nickname}>{summary.name}</h1>
+            <div className={styles.nameSocials}>
+              {renderSocial("twitch", profileSocials?.twitch)}
+              {renderSocial("youtube", profileSocials?.youtube)}
+              {renderSocial("tiktok", profileSocials?.tiktok)}
+            </div>
+          </div>
+          <p className={styles.subtitle}>
+            {t.profile.matches}: {summary.matches}
+          </p>
+        </div>
+        <div className={styles.headerStats}>
+          <div className={styles.headerStat}>
+            <span className={styles.headerLabel}>{t.profile.wins}</span>
+            <span className={`${styles.headerValue} ${styles.good}`}>
+              {summary.wins}
+            </span>
+          </div>
+          <div className={styles.headerStat}>
+            <span className={styles.headerLabel}>{t.profile.losses}</span>
+            <span className={`${styles.headerValue} ${styles.bad}`}>
+              {summary.losses}
+            </span>
+          </div>
+          <div className={styles.headerStat}>
+            <span className={styles.headerLabel}>{t.profile.winrate}</span>
+            <span className={styles.headerValue}>{summary.winrate}%</span>
+          </div>
+        </div>
+      </div>
 
       <div className={styles.statsGrid}>
-        <Stat label={t.profile.matches} value={summary.matches} />
         <Stat label={t.profile.score} value={summary.avgScore} />
         <Stat label={t.profile.kills} value={summary.avgKills} />
         <Stat label={t.profile.deaths} value={summary.avgDeaths} />
@@ -124,21 +161,46 @@ export default function PlayerProfile() {
         <ResponsiveContainer width="100%" height={300}>
           <LineChart data={matches}>
             <Line
+              yAxisId="left"
               type="monotone"
               dataKey="score"
               stroke="#6366f1"
               strokeWidth={2}
             />
             <Line
+              yAxisId="right"
               type="monotone"
               dataKey="kills"
               stroke="#22d3ee"
               strokeWidth={2}
             />
+            <Line
+              yAxisId="right"
+              type="monotone"
+              dataKey="deaths"
+              stroke="#ef4444"
+              strokeWidth={2}
+            />
             <CartesianGrid stroke="#374151" strokeDasharray="4 4" />
             <XAxis dataKey="index" />
-            <YAxis />
-            <Tooltip />
+            <YAxis yAxisId="left" />
+            <YAxis
+              yAxisId="right"
+              orientation="right"
+              domain={["dataMin - 2", "dataMax + 2"]}
+            />
+            <Tooltip
+              labelFormatter={() => ""}
+              contentStyle={{
+                background: "rgba(9, 12, 20, 0.92)",
+                border: "1px solid rgba(255,255,255,0.12)",
+                borderRadius: "10px",
+                boxShadow: "0 10px 24px rgba(0,0,0,0.45)",
+                color: "#e2e8f0",
+              }}
+              labelStyle={{ color: "#94a3b8" }}
+              itemStyle={({ color }) => ({ color })}
+            />
           </LineChart>
         </ResponsiveContainer>
       </div>
@@ -153,5 +215,51 @@ function Stat({ label, value }) {
       <div className={styles.statValue}>{value}</div>
     </div>
   );
+}
+
+function renderSocial(type, value) {
+  if (!value) return null;
+  const url = normalizeSocialUrl(type, value);
+  const label =
+    type === "twitch" ? "Twitch" : type === "youtube" ? "YouTube" : "TikTok";
+  return (
+    <a
+      key={type}
+      className={`${styles.socialIcon} ${
+        styles[
+          type === "twitch"
+            ? "socialTwitch"
+            : type === "youtube"
+            ? "socialYouTube"
+            : "socialTikTok"
+        ]
+      }`}
+      href={url}
+      target="_blank"
+      rel="noreferrer"
+      aria-label={label}
+      title={label}
+    >
+      <img
+        src={
+          type === "twitch"
+            ? "/twitch.png"
+            : type === "youtube"
+            ? "/yt.png"
+            : "/tiktok.png"
+        }
+        alt={label}
+      />
+    </a>
+  );
+}
+
+function normalizeSocialUrl(type, value) {
+  const v = String(value).trim();
+  if (!v) return "#";
+  if (v.startsWith("http://") || v.startsWith("https://")) return v;
+  if (type === "twitch") return `https://twitch.tv/${v.replace(/^@/, "")}`;
+  if (type === "youtube") return `https://youtube.com/${v.replace(/^@/, "@")}`;
+  return `https://tiktok.com/${v.replace(/^@/, "")}`;
 }
 

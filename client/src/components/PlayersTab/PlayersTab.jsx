@@ -1,13 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  collectionGroup,
-  getDocs,
-  limit,
-  orderBy,
-  query,
-  startAfter,
-} from "firebase/firestore";
-import { db } from "../../firebase";
 import { Link } from "react-router-dom";
 import styles from "./PlayersTab.module.css";
 import { useLang } from "../../i18n/LanguageContext";
@@ -23,20 +14,18 @@ const PAGE_SIZE = 300;
 export default function PlayersTab() {
   const { t } = useLang();
 
+  const backendUrl = import.meta.env.VITE_BACKEND_URL;
   const [rawRows, setRawRows] = useState([]);
   const [sortBy, setSortBy] = useState(SORTS.MATCHES);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [lastDoc, setLastDoc] = useState(null);
   const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState("");
-  const [disableCreatedAtOrder, setDisableCreatedAtOrder] = useState(false);
 
   const fetchPage = async (reset = false) => {
     if (reset) {
       setLoading(true);
-      setLastDoc(null);
       setHasMore(true);
       setRawRows([]);
       setError("");
@@ -45,60 +34,29 @@ export default function PlayersTab() {
     }
 
     try {
-      const base = disableCreatedAtOrder
-        ? query(collectionGroup(db, "matches"), limit(PAGE_SIZE))
-        : query(
-            collectionGroup(db, "matches"),
-            orderBy("createdAt", "desc"),
-            limit(PAGE_SIZE)
-          );
-      const q =
-        !reset && lastDoc && !disableCreatedAtOrder
-          ? query(base, startAfter(lastDoc))
-          : base;
-
-      try {
-        const snapshot = await getDocs(q);
-        const data = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ownerUid: doc.ref?.parent?.parent?.id,
-          ...doc.data(),
-        }));
-
-        setRawRows((prev) => (reset ? data : [...prev, ...data]));
-        setLastDoc(
-          !disableCreatedAtOrder
-            ? snapshot.docs[snapshot.docs.length - 1] || null
-            : null
-        );
-        setHasMore(
-          disableCreatedAtOrder ? false : snapshot.docs.length === PAGE_SIZE
-        );
-      } catch (err) {
-        const msg = String(err?.message || "");
-        if (msg.includes("COLLECTION_GROUP_DESC") || msg.includes("index")) {
-          setDisableCreatedAtOrder(true);
-          setError(
-            t.leaderboard.indexHint ||
-              "Index missing for sorting. Showing unsorted data."
-          );
-          if (reset) {
-            const fallbackSnap = await getDocs(
-              query(collectionGroup(db, "matches"), limit(PAGE_SIZE))
-            );
-            const data = fallbackSnap.docs.map((doc) => ({
-              id: doc.id,
-              ownerUid: doc.ref?.parent?.parent?.id,
-              ...doc.data(),
-            }));
-            setRawRows(data);
-            setLastDoc(null);
-            setHasMore(false);
-          }
-          return;
-        }
-        throw err;
+      if (!backendUrl) {
+        throw new Error("Backend URL not configured");
       }
+
+      const offset = reset ? 0 : rawRows.length;
+      const res = await fetch(
+        `${backendUrl}/leaderboard?limit=${PAGE_SIZE}&offset=${offset}`
+      );
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || "Failed to load leaderboard");
+      }
+
+      const payload = await res.json();
+      const data = Array.isArray(payload.rows) ? payload.rows : [];
+      const total = Number.isFinite(payload.total) ? payload.total : data.length;
+
+      setRawRows((prev) => (reset ? data : [...prev, ...data]));
+      setHasMore(offset + data.length < total);
+    } catch (err) {
+      setError(
+        err?.message || t.leaderboard.error || "Failed to load leaderboard"
+      );
     } finally {
       setLoading(false);
       setLoadingMore(false);
@@ -110,56 +68,26 @@ export default function PlayersTab() {
   }, []);
 
   const players = useMemo(() => {
-    const map = new Map();
-
-    for (const row of rawRows) {
-      const uid = row.ownerUid || row.uid || row.userId;
-      if (!uid) continue;
-
-      if (!map.has(uid)) {
-        map.set(uid, {
-          uid,
-          name: row.name || row.playerName || row.username || "Unknown",
-          score: 0,
-          kills: 0,
-          deaths: 0,
-          assists: 0,
-          wins: 0,
-          losses: 0,
-          matches: 0,
-        });
-      }
-
-      const p = map.get(uid);
-      p.score += row.score || 0;
-      p.kills += row.kills || 0;
-      p.deaths += row.deaths || 0;
-      p.assists += row.assists || 0;
-      if (row.result === "victory" || row.win === 1 || row.win === true) {
-        p.wins += 1;
-      } else if (row.result === "defeat" || row.win === 0) {
-        p.losses += 1;
-      }
-      p.matches += 1;
-    }
-
-    return Array.from(map.values()).map((p) => {
-      const avgScore = p.matches ? p.score / p.matches : 0;
-      const avgKills = p.matches ? p.kills / p.matches : 0;
-      const avgDeaths = p.matches ? p.deaths / p.matches : 0;
-      const avgAssists = p.matches ? p.assists / p.matches : 0;
-      const kda = (p.kills + p.assists) / Math.max(1, p.deaths);
-      const winrate = (p.wins / Math.max(1, p.matches)) * 100 || 0;
-      return {
-        ...p,
-        avgScore,
-        avgKills,
-        avgDeaths,
-        avgAssists,
-        kda,
-        winrate,
-      };
-    });
+    return rawRows
+      .filter((row) => row && (row.uid || row.ownerUid || row.userId))
+      .map((row) => ({
+        uid: row.uid || row.ownerUid || row.userId,
+        name: row.name || row.playerName || row.username || "Unknown",
+        score: row.score || 0,
+        kills: row.kills || 0,
+        deaths: row.deaths || 0,
+        assists: row.assists || 0,
+        wins: row.wins || 0,
+        losses: row.losses || 0,
+        matches: row.matches || 0,
+        avgScore: row.avgScore || 0,
+        avgKills: row.avgKills || 0,
+        avgDeaths: row.avgDeaths || 0,
+        avgAssists: row.avgAssists || 0,
+        kda: row.kda || 0,
+        winrate: row.winrate || 0,
+        socials: row.socials || {},
+      }));
   }, [rawRows]);
 
   const filteredAndSorted = useMemo(() => {
@@ -176,6 +104,9 @@ export default function PlayersTab() {
   }, [players, sortBy, search]);
 
   if (!players.length && !loading) {
+    if (error) {
+      return <p className={styles.empty}>{error}</p>;
+    }
     return <p className={styles.empty}>{t.leaderboard.empty}</p>;
   }
 
@@ -256,6 +187,7 @@ export default function PlayersTab() {
         <table className={styles.table}>
           <thead>
             <tr>
+              <th>#</th>
               <th>{t.upload.player}</th>
               <th>{t.leaderboard.matches || "Matches"}</th>
               <th>{t.leaderboard.wl || "W/L"}</th>
@@ -270,6 +202,7 @@ export default function PlayersTab() {
               const kda = p.kda.toFixed(2);
               const avgScore = Math.round(p.avgScore);
               const winrate = p.winrate.toFixed(1);
+              const socials = p.socials || {};
 
               return (
                 <tr
@@ -284,13 +217,21 @@ export default function PlayersTab() {
                       : ""
                   }`}
                 >
+                  <td className={styles.rankCell}>{index + 1}</td>
                   <td>
-                    <Link
-                      to={`/player/${p.uid}`}
-                      className={styles.playerLink}
-                    >
-                      {p.name}
-                    </Link>
+                    <div className={styles.playerCell}>
+                      <Link
+                        to={`/player/${p.uid}`}
+                        className={styles.playerLink}
+                      >
+                        {p.name}
+                      </Link>
+                      <div className={styles.socialIcons}>
+                        {renderSocialIcon("twitch", socials.twitch)}
+                        {renderSocialIcon("youtube", socials.youtube)}
+                        {renderSocialIcon("tiktok", socials.tiktok)}
+                      </div>
+                    </div>
                   </td>
                   <td>{p.matches}</td>
                   <td className={styles.wlCell}>
@@ -329,4 +270,43 @@ export default function PlayersTab() {
       )}
     </div>
   );
+}
+
+function renderSocialIcon(type, value) {
+  if (!value) return null;
+  const url = normalizeSocialUrl(type, value);
+  const label =
+    type === "twitch" ? "Twitch" : type === "youtube" ? "YouTube" : "TikTok";
+  return (
+    <a
+      key={type}
+      className={`${styles.socialIcon} ${styles[`social${label}`] || ""}`}
+      href={url}
+      target="_blank"
+      rel="noreferrer"
+      aria-label={label}
+      title={label}
+    >
+      <img
+        src={
+          type === "twitch"
+            ? "/twitch.png"
+            : type === "youtube"
+            ? "/yt.png"
+            : "/tiktok.png"
+        }
+        alt={label}
+        loading="lazy"
+      />
+    </a>
+  );
+}
+
+function normalizeSocialUrl(type, value) {
+  const v = String(value).trim();
+  if (!v) return "#";
+  if (v.startsWith("http://") || v.startsWith("https://")) return v;
+  if (type === "twitch") return `https://twitch.tv/${v.replace(/^@/, "")}`;
+  if (type === "youtube") return `https://youtube.com/${v.replace(/^@/, "@")}`;
+  return `https://tiktok.com/${v.replace(/^@/, "")}`;
 }
