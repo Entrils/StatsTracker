@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import imageCompression from "browser-image-compression";
-import styles from "./Settings.module.css";
-import { useAuth } from "../../auth/AuthContext";
-import { useLang } from "../../i18n/LanguageContext";
+import styles from "@/pages/Settings/Settings.module.css";
+import { useAuth } from "@/auth/AuthContext";
+import { useLang } from "@/i18n/LanguageContext";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 

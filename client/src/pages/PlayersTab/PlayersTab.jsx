@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import styles from "./PlayersTab.module.css";
-import { useLang } from "../../i18n/LanguageContext";
+import styles from "@/pages/PlayersTab/PlayersTab.module.css";
+import { useLang } from "@/i18n/LanguageContext";
 
 const SORTS = {
   AVG_SCORE: "avgScore",

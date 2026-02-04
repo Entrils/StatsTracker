@@ -8,6 +8,7 @@ export function registerLeaderboardRoutes(app, deps) {
     statsLimiter,
     getLeaderboardPage,
     parseIntParam,
+    getActiveBansSet,
   } = deps;
 
   app.post("/leaderboard/update", authLimiter, requireAuth, async (req, res) => {
@@ -16,6 +17,10 @@ export function registerLeaderboardRoutes(app, deps) {
       const uid = req.user?.uid;
       if (!uid || !matchId) {
         return res.status(400).json({ error: "Missing uid or matchId" });
+      }
+      const banSnap = await db.collection("bans").doc(uid).get();
+      if (banSnap.exists && banSnap.data()?.active) {
+        return res.status(403).json({ error: "Banned" });
       }
 
       const matchRef = db
@@ -84,6 +89,7 @@ export function registerLeaderboardRoutes(app, deps) {
         return res.status(403).json({ error: "Forbidden" });
       }
 
+      const bannedSet = getActiveBansSet ? await getActiveBansSet() : null;
       let lastDoc = null;
       const players = new Map();
       const baseQuery = db
@@ -100,6 +106,7 @@ export function registerLeaderboardRoutes(app, deps) {
           const m = doc.data() || {};
           const uid = doc.ref?.parent?.parent?.id || m.ownerUid || m.uid || m.userId;
           if (!uid) continue;
+          if (bannedSet && bannedSet.has(uid)) continue;
 
           const prev = players.get(uid) || {
             uid,

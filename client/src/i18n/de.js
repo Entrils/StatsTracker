@@ -46,7 +46,7 @@ export default {
     hit: "Treffer",
     damage: "% Schaden",
     selectFile: "Screenshot auswählen",
-    selectHint: "PNG/JPG, Vollbild, NUR ENGLISCH",
+    selectHint: "PNG/JPG, Vollbild, RU/ENG/FR/DE",
     fileReady: "Datei geladen – bereit zur Analyse",
     fileMissing: "Noch keine Datei ausgewählt",
     statusOk: "OK (Hochgeladen)",
@@ -54,6 +54,7 @@ export default {
     statusOcrFailed: "Nicht erfolgreich (OCR fehlgeschlagen)",
     statusOtherFailed: "Nicht erfolgreich (anderer Fehler)",
     statusTooLarge: "Datei zu groß (max. 2 MB)",
+    statusBanned: "Nicht erfolgreich (gesperrt)",
     statusMatchIdFailed: "Nicht erfolgreich (Match-ID nicht gefunden)",
     statusPlayerFailed: "Nicht erfolgreich (Spielerzeile nicht erkannt)",
     ocrRemaining: "OCR übrig heute: {count}",
@@ -93,6 +94,7 @@ export default {
     rankMaster: "Master",
     rankAce: "Ace",
     rankPunkmaster: "Punkmaster",
+    bannedBadge: "Gesperrt",
   },
 
   me: {
@@ -184,6 +186,9 @@ export default {
     rankAce: "Ace",
     rankPunkmaster: "Punkmaster",
     rankGrandmaster: "Großmeister",
+    bannedTitle: "DU BIST GESPERRT",
+    bannedHint: "Du kannst keine Screenshots hochladen und erscheinst nicht im Leaderboard.",
+    bannedReason: "Grund",
   },
 
   footer: {

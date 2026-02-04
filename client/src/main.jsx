@@ -1,9 +1,9 @@
 ﻿import React from "react";
 import ReactDOM from "react-dom/client";
-import App from "./App";
-import { LanguageProvider } from "./i18n/LanguageContext";
-import "./index.css";
-import { AuthProvider } from "./auth/AuthContext";
+import App from "@/App";
+import { LanguageProvider } from "@/i18n/LanguageContext";
+import "@/index.css";
+import { AuthProvider } from "@/auth/AuthContext";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 

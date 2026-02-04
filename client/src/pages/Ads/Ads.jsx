@@ -1,5 +1,5 @@
-import styles from "./Ads.module.css";
-import { useLang } from "../../i18n/LanguageContext";
+import styles from "@/pages/Ads/Ads.module.css";
+import { useLang } from "@/i18n/LanguageContext";
 
 export default function Ads() {
   const { t } = useLang();

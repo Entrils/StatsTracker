@@ -1,5 +1,5 @@
-import styles from "./Policy.module.css";
-import { useLang } from "../../i18n/LanguageContext";
+import styles from "@/pages/Policy/Policy.module.css";
+import { useLang } from "@/i18n/LanguageContext";
 
 export default function Policy() {
   const { t } = useLang();

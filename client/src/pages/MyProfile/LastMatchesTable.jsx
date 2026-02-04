@@ -1,4 +1,4 @@
-import styles from "./MyProfile.module.css";
+import styles from "@/pages/MyProfile/MyProfile.module.css";
 
 export default function LastMatchesTable({ last10, t, round1, formatDate }) {
   return (

@@ -1,7 +1,7 @@
 ﻿import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { signInWithCustomToken } from "firebase/auth";
-import { auth } from "../firebase";
+import { auth } from "@/firebase";
 
 export default function DiscordCallback() {
   const navigate = useNavigate();
@@ -29,7 +29,9 @@ export default function DiscordCallback() {
 
     const login = async () => {
       try {
-        const res = await fetch("http://localhost:4000/auth/discord", {
+      const backendUrl =
+        import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+      const res = await fetch(`${backendUrl}/auth/discord`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ code }),

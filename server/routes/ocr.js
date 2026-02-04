@@ -6,10 +6,18 @@ export function registerOcrRoutes(app, deps) {
     ocrDailyLimiter,
     isValidBase64Image,
     OCR_DAILY_LIMIT,
+    db,
   } = deps;
 
   app.post("/ocr", ocrLimiter, requireAuth, ocrDailyLimiter, async (req, res) => {
     try {
+      const uid = req.user?.uid;
+      if (uid) {
+        const banSnap = await db.collection("bans").doc(uid).get();
+        if (banSnap.exists && banSnap.data()?.active) {
+          return res.status(403).json({ error: "Banned" });
+        }
+      }
       const { base64Image, lang } = req.body || {};
       if (!base64Image) {
         return res.status(400).json({ error: "Missing base64Image" });

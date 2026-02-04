@@ -165,6 +165,11 @@
   z-index: 2;
 }
 
+.desktopLogin {
+  display: inline-flex;
+  align-items: center;
+}
+
 .langDropdown {
   position: relative;
 }
@@ -491,7 +496,8 @@
 
 @media (max-width: 920px) {
   .links,
-  .right .langDropdown {
+  .right .langDropdown,
+  .desktopLogin {
     display: none;
   }
 

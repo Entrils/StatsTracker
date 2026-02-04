@@ -1,5 +1,5 @@
-import styles from "./Footer.module.css";
-import { useLang } from "../../i18n/LanguageContext";
+import styles from "@/components/Footer/Footer.module.css";
+import { useLang } from "@/i18n/LanguageContext";
 
 export default function Footer() {
   const { t } = useLang();

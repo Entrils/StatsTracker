@@ -4,6 +4,7 @@ export function createStatsHelpers({
   logger,
   CACHE_COLLECTION,
   GLOBAL_CACHE_TTL_MS,
+  getActiveBansSet,
 }) {
   let globalCache = {
     updatedAt: 0,
@@ -63,6 +64,7 @@ export function createStatsHelpers({
   }
 
   async function buildDistributions() {
+    const bannedSet = getActiveBansSet ? await getActiveBansSet() : null;
     const players = new Map();
     const matchTotals = {
       count: 0,
@@ -89,6 +91,7 @@ export function createStatsHelpers({
       for (const doc of snap.docs) {
         const m = doc.data() || {};
         const owner = doc.id;
+        if (bannedSet && bannedSet.has(owner)) continue;
         const matches = Number(m.matches || 0);
         if (!owner || !matches) continue;
 
@@ -247,12 +250,13 @@ export function createStatsHelpers({
   }
 
   async function getLeaderboardPage(limit, offset) {
+    const bannedSet = getActiveBansSet ? await getActiveBansSet() : null;
     const baseQuery = db
       .collection("leaderboard_users")
       .orderBy("matches", "desc");
     const pageQuery = baseQuery.offset(offset).limit(limit);
     const snap = await pageQuery.get();
-    const rows = snap.docs.map((doc) => {
+    const rowsRaw = snap.docs.map((doc) => {
       const p = doc.data() || {};
       const matches = Number(p.matches || 0);
       const avgScore = matches ? (p.score || 0) / matches : 0;
@@ -282,6 +286,8 @@ export function createStatsHelpers({
         winrate,
       };
     });
+
+    const rows = bannedSet ? rowsRaw.filter((r) => !bannedSet.has(r.uid)) : rowsRaw;
 
     const missingSettings = rows.filter(
       (r) => !r.settings || !Object.keys(r.settings || {}).length
@@ -319,7 +325,8 @@ export function createStatsHelpers({
     }
 
     const countSnap = await db.collection("leaderboard_users").count().get();
-    const total = countSnap.data().count || 0;
+    const rawTotal = countSnap.data().count || 0;
+    const total = bannedSet ? Math.max(0, rawTotal - bannedSet.size) : rawTotal;
     return { rows, total };
   }
 

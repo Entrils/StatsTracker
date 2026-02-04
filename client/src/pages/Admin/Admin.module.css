@@ -224,3 +224,83 @@
   color: #ff6b6b;
   border: 1px solid rgba(255, 77, 109, 0.4);
 }
+
+.banForm {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.banInput {
+  background: rgba(8, 12, 22, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: #f3f6ff;
+  outline: none;
+}
+
+.banInput:focus {
+  border-color: rgba(255, 77, 109, 0.5);
+  box-shadow: 0 0 0 2px rgba(255, 77, 109, 0.2);
+}
+
+.banButton {
+  padding: 0.6rem 1rem;
+  border-radius: 0.8rem;
+  font-weight: 800;
+  background: rgba(255, 77, 109, 0.15);
+  color: #ff6b6b;
+  border: 1px solid rgba(255, 77, 109, 0.4);
+}
+
+.banList {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.banItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 1rem;
+  border-radius: 12px;
+  background: rgba(6, 10, 20, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.banMeta {
+  display: grid;
+  gap: 4px;
+}
+
+.banUid {
+  font-weight: 700;
+  color: #f3f6ff;
+}
+
+.banReason {
+  font-size: 0.8rem;
+  color: rgba(154, 164, 193, 0.9);
+}
+
+.banActions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.banUnban {
+  padding: 0.45rem 0.9rem;
+  border-radius: 0.7rem;
+  font-weight: 700;
+  background: rgba(0, 245, 212, 0.2);
+  color: #b6fff2;
+  border: 1px solid rgba(0, 245, 212, 0.4);
+}
+
+.banInactive {
+  font-size: 0.75rem;
+  color: rgba(154, 164, 193, 0.75);
+}

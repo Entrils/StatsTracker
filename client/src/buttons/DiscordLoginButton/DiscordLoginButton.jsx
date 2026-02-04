@@ -1,4 +1,4 @@
-import styles from "./DiscordLoginButton.module.css";
+import styles from "@/buttons/DiscordLoginButton/DiscordLoginButton.module.css";
 
 export default function DiscordLoginButton() {
   const redirectUri = encodeURIComponent(
