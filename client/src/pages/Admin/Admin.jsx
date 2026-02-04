@@ -193,33 +193,36 @@ export default function Admin() {
   return (
     <div className={styles.wrapper}>
       <h1 className={styles.title}>Admin</h1>
-      <p className={styles.hint}>
-        Rebuild leaderboard from users matches
-      </p>
-
-      <button
-        className={styles.button}
-        onClick={handleRebuild}
-        disabled={loading}
-      >
-        {loading ? "Rebuilding..." : "Rebuild leaderboard"}
-      </button>
-
-      {status && (
-        <p
-          className={`${styles.status} ${
-            tone === "good"
-              ? styles.statusOk
-              : tone === "bad"
-              ? styles.statusBad
-              : ""
-          }`}
-        >
-          {status}
-        </p>
-      )}
-
-      <div className={styles.section}>
+      <div className={styles.sectionGrid}>
+        <div className={styles.section}>
+          <div className={styles.sectionHeader}>
+            <h2 className={styles.sectionTitle}>Leaderboard rebuild</h2>
+          </div>
+          <p className={styles.hint}>
+            Rebuild leaderboard from users matches
+          </p>
+          <button
+            className={styles.button}
+            onClick={handleRebuild}
+            disabled={loading}
+          >
+            {loading ? "Rebuilding..." : "Rebuild leaderboard"}
+          </button>
+          {status && (
+            <p
+              className={`${styles.status} ${
+                tone === "good"
+                  ? styles.statusOk
+                  : tone === "bad"
+                  ? styles.statusBad
+                  : ""
+              }`}
+            >
+              {status}
+            </p>
+          )}
+        </div>
+        <div className={styles.section}>
         <div className={styles.sectionHeader}>
           <h2 className={styles.sectionTitle}>Client errors</h2>
           <button
@@ -251,9 +254,9 @@ export default function Admin() {
             ))}
           </div>
         )}
-      </div>
+        </div>
 
-      <div className={styles.section}>
+        <div className={styles.section}>
         <div className={styles.sectionHeader}>
           <h2 className={styles.sectionTitle}>Rank verification</h2>
           <button
@@ -316,9 +319,9 @@ export default function Admin() {
             ))}
           </div>
         )}
-      </div>
+        </div>
 
-      <div className={styles.section}>
+        <div className={styles.section}>
         <div className={styles.sectionHeader}>
           <h2 className={styles.sectionTitle}>Bans</h2>
           <button
@@ -378,6 +381,7 @@ export default function Admin() {
             ))}
           </div>
         )}
+        </div>
       </div>
     </div>
   );

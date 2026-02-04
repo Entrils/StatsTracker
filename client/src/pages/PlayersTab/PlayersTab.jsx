@@ -40,7 +40,7 @@ export default function PlayersTab() {
 
       const offset = reset ? 0 : rawRows.length;
       const res = await fetch(
-        `${backendUrl}/leaderboard?limit=${PAGE_SIZE}&offset=${offset}`
+        `${backendUrl}/leaderboard?limit=${PAGE_SIZE}&offset=${offset}&sort=${sortBy}`
       );
       if (!res.ok) {
         const text = await res.text();
@@ -65,7 +65,7 @@ export default function PlayersTab() {
 
   useEffect(() => {
     fetchPage(true);
-  }, []);
+  }, [sortBy]);
 
   const players = useMemo(() => {
     return rawRows
@@ -87,21 +87,16 @@ export default function PlayersTab() {
         kda: row.kda || 0,
         winrate: row.winrate || 0,
         settings: row.settings || {},
+        rank: Number.isFinite(row.rank) ? row.rank : null,
+        rankDelta: Number.isFinite(row.rankDelta) ? row.rankDelta : 0,
       }));
   }, [rawRows]);
 
   const filteredAndSorted = useMemo(() => {
-    const filtered = players.filter((p) =>
+    return players.filter((p) =>
       p.name?.toLowerCase().includes(search.toLowerCase())
     );
-
-    return filtered.sort((a, b) => {
-      if (sortBy === SORTS.KDA) return (b.kda || 0) - (a.kda || 0);
-      if (sortBy === SORTS.WINRATE) return (b.winrate || 0) - (a.winrate || 0);
-      if (sortBy === SORTS.MATCHES) return (b.matches || 0) - (a.matches || 0);
-      return (b[sortBy] || 0) - (a[sortBy] || 0);
-    });
-  }, [players, sortBy, search]);
+  }, [players, search]);
 
   if (!players.length && !loading) {
     if (error) {
@@ -204,6 +199,11 @@ export default function PlayersTab() {
               const winrate = p.winrate.toFixed(1);
               const socials = p.settings || {};
 
+              const rank = p.rank ?? index + 1;
+              const delta = p.rankDelta || 0;
+              const deltaAbs = Math.abs(delta);
+              const deltaLabel =
+                delta === 0 ? "=0" : `${delta > 0 ? "▲" : "▼"} ${deltaAbs}`;
               return (
                 <tr
                   key={p.uid}
@@ -217,7 +217,22 @@ export default function PlayersTab() {
                       : ""
                   }`}
                 >
-                  <td className={styles.rankCell}>{index + 1}</td>
+                  <td className={styles.rankCell}>
+                    <div className={styles.rankWrap}>
+                      <span className={styles.rankValue}>{rank}</span>
+                      <span
+                        className={`${styles.rankDelta} ${
+                          delta > 0
+                            ? styles.rankUp
+                            : delta < 0
+                            ? styles.rankDown
+                            : styles.rankSame
+                        }`}
+                      >
+                        {deltaLabel}
+                      </span>
+                    </div>
+                  </td>
                   <td>
                     <div className={styles.playerCell}>
                       <Link

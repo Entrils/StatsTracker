@@ -193,12 +193,16 @@ export function registerLeaderboardRoutes(app, deps) {
       }
       const limit = Math.min(Math.max(limitRaw, 1), 1000);
       const offset = Math.max(offsetRaw, 0);
+      const sort = String(req.query.sort || "matches");
+      const allowedSorts = new Set(["matches", "winrate", "avgScore", "kda"]);
+      const sortBy = allowedSorts.has(sort) ? sort : "matches";
 
       const now = Date.now();
-      const { rows, total } = await getLeaderboardPage(limit, offset);
+      const { rows, total } = await getLeaderboardPage(limit, offset, sortBy);
       return res.json({
         updatedAt: now,
         total,
+        sortBy,
         rows,
       });
     } catch (err) {

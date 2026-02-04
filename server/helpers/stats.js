@@ -5,11 +5,16 @@ export function createStatsHelpers({
   CACHE_COLLECTION,
   GLOBAL_CACHE_TTL_MS,
   getActiveBansSet,
+  LEADERBOARD_CACHE_TTL_MS = 30000,
 }) {
   let globalCache = {
     updatedAt: 0,
     distributions: null,
     countPlayers: 0,
+  };
+  let leaderboardCache = {
+    updatedAt: 0,
+    bySort: new Map(),
   };
 
   async function readCacheDoc(id, ttlMs) {
@@ -249,47 +254,141 @@ export function createStatsHelpers({
     return globalCache;
   }
 
-  async function getLeaderboardPage(limit, offset) {
+  const SORT_FIELDS = {
+    matches: "matches",
+    winrate: "winrate",
+    avgScore: "avgScore",
+    kda: "kda",
+  };
+
+  const getSortFields = (sortBy) => {
+    const key = SORT_FIELDS[sortBy] ? sortBy : "matches";
+    return {
+      sortKey: key,
+      lastRankField: `lastRank_${key}`,
+      lastRankAtField: `lastRankAt_${key}`,
+    };
+  };
+
+  const toMs = (v) => {
+    if (!v) return 0;
+    if (typeof v === "number") return v;
+    if (typeof v.toMillis === "function") return v.toMillis();
+    return 0;
+  };
+
+  async function buildLeaderboardRows() {
     const bannedSet = getActiveBansSet ? await getActiveBansSet() : null;
+    const rows = [];
+
+    let lastDoc = null;
     const baseQuery = db
       .collection("leaderboard_users")
-      .orderBy("matches", "desc");
-    const pageQuery = baseQuery.offset(offset).limit(limit);
-    const snap = await pageQuery.get();
-    const rowsRaw = snap.docs.map((doc) => {
-      const p = doc.data() || {};
-      const matches = Number(p.matches || 0);
-      const avgScore = matches ? (p.score || 0) / matches : 0;
-      const avgKills = matches ? (p.kills || 0) / matches : 0;
-      const avgDeaths = matches ? (p.deaths || 0) / matches : 0;
-      const avgAssists = matches ? (p.assists || 0) / matches : 0;
-      const kda = (p.kills + p.assists) / Math.max(1, p.deaths || 0);
-      const winrate = (p.wins / Math.max(1, matches)) * 100 || 0;
-      return {
-        uid: doc.id,
-        name: p.name || "Unknown",
-        settings: p.settings || p.socials || null,
-        score: p.score || 0,
-        kills: p.kills || 0,
-        deaths: p.deaths || 0,
-        assists: p.assists || 0,
-        damage: p.damage || 0,
-        damageShare: p.damageShare || 0,
-        wins: p.wins || 0,
-        losses: p.losses || 0,
-        matches,
-        avgScore,
-        avgKills,
-        avgDeaths,
-        avgAssists,
-        kda,
-        winrate,
-      };
+      .orderBy(admin.firestore.FieldPath.documentId())
+      .limit(1000);
+
+    while (true) {
+      const query = lastDoc ? baseQuery.startAfter(lastDoc) : baseQuery;
+      const snap = await query.get();
+      if (snap.empty) break;
+
+      snap.docs.forEach((doc) => {
+        const p = doc.data() || {};
+        const uid = doc.id;
+        if (!uid) return;
+        if (bannedSet && bannedSet.has(uid)) return;
+        const matches = Number(p.matches || 0);
+        const avgScore = matches ? (p.score || 0) / matches : 0;
+        const avgKills = matches ? (p.kills || 0) / matches : 0;
+        const avgDeaths = matches ? (p.deaths || 0) / matches : 0;
+        const avgAssists = matches ? (p.assists || 0) / matches : 0;
+        const kda = (p.kills + p.assists) / Math.max(1, p.deaths || 0);
+        const winrate = (p.wins / Math.max(1, matches)) * 100 || 0;
+
+        rows.push({
+          uid,
+          name: p.name || "Unknown",
+          settings: p.settings || p.socials || null,
+          score: p.score || 0,
+          kills: p.kills || 0,
+          deaths: p.deaths || 0,
+          assists: p.assists || 0,
+          damage: p.damage || 0,
+          damageShare: p.damageShare || 0,
+          wins: p.wins || 0,
+          losses: p.losses || 0,
+          matches,
+          avgScore,
+          avgKills,
+          avgDeaths,
+          avgAssists,
+          kda,
+          winrate,
+          lastRank_matches: p.lastRank_matches || null,
+          lastRankAt_matches: p.lastRankAt_matches || null,
+          lastRank_winrate: p.lastRank_winrate || null,
+          lastRankAt_winrate: p.lastRankAt_winrate || null,
+          lastRank_avgScore: p.lastRank_avgScore || null,
+          lastRankAt_avgScore: p.lastRankAt_avgScore || null,
+          lastRank_kda: p.lastRank_kda || null,
+          lastRankAt_kda: p.lastRankAt_kda || null,
+        });
+      });
+
+      lastDoc = snap.docs[snap.docs.length - 1];
+    }
+
+    return rows;
+  }
+
+  async function getLeaderboardPage(limit, offset, sortBy = "matches") {
+    const now = Date.now();
+    const windowMs = 24 * 60 * 60 * 1000;
+    const { sortKey, lastRankField, lastRankAtField } = getSortFields(sortBy);
+
+    if (!leaderboardCache.updatedAt || now - leaderboardCache.updatedAt > LEADERBOARD_CACHE_TTL_MS) {
+      const rows = await buildLeaderboardRows();
+      const bySort = new Map();
+      Object.keys(SORT_FIELDS).forEach((key) => {
+        const sorted = [...rows].sort((a, b) => (b[key] || 0) - (a[key] || 0));
+        bySort.set(key, sorted);
+      });
+      leaderboardCache = { updatedAt: now, bySort };
+    }
+
+    const source = leaderboardCache.bySort.get(sortKey) || [];
+    const total = source.length;
+    const pageRows = source.slice(offset, offset + limit);
+
+    const batch = db.batch();
+    let hasUpdates = false;
+
+    pageRows.forEach((row, idx) => {
+      const currentRank = offset + idx + 1;
+      row.rank = currentRank;
+
+      const lastRankAtMs = toMs(row[lastRankAtField]);
+      const hasRecent = lastRankAtMs && now - lastRankAtMs <= windowMs;
+      const lastRank = Number.isFinite(row[lastRankField]) ? row[lastRankField] : null;
+      const delta = hasRecent && lastRank ? lastRank - currentRank : 0;
+      row.rankDelta = delta;
+
+      if (!lastRankAtMs || now - lastRankAtMs > windowMs) {
+        const ref = db.collection("leaderboard_users").doc(row.uid);
+        batch.set(
+          ref,
+          { [lastRankField]: currentRank, [lastRankAtField]: now },
+          { merge: true }
+        );
+        hasUpdates = true;
+      }
     });
 
-    const rows = bannedSet ? rowsRaw.filter((r) => !bannedSet.has(r.uid)) : rowsRaw;
+    if (hasUpdates) {
+      await batch.commit();
+    }
 
-    const missingSettings = rows.filter(
+    const missingSettings = pageRows.filter(
       (r) => !r.settings || !Object.keys(r.settings || {}).length
     );
 
@@ -324,10 +423,7 @@ export function createStatsHelpers({
       }
     }
 
-    const countSnap = await db.collection("leaderboard_users").count().get();
-    const rawTotal = countSnap.data().count || 0;
-    const total = bannedSet ? Math.max(0, rawTotal - bannedSet.size) : rawTotal;
-    return { rows, total };
+    return { rows: pageRows, total };
   }
 
   return { getDistributions, getLeaderboardPage, topPercent };

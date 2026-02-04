@@ -56,6 +56,10 @@ const allowedOrigins = (process.env.CORS_ORIGINS || "")
   .filter(Boolean);
 app.use(createCorsMiddleware(allowedOrigins));
 
+app.get("/healthz", (_req, res) => {
+  res.status(200).json({ ok: true, ts: Date.now() });
+});
+
 app.disable("x-powered-by");
 app.use(createHelmetMiddleware());
 app.use(express.json({ limit: "2mb" }));
@@ -82,6 +86,9 @@ const GLOBAL_CACHE_TTL_MS =
   15 * 60 * 1000;
 const BAN_CACHE_TTL_MS =
   Number.parseInt(process.env.BAN_CACHE_TTL_MS || "30000", 10) || 30 * 1000;
+const LEADERBOARD_CACHE_TTL_MS =
+  Number.parseInt(process.env.LEADERBOARD_CACHE_TTL_MS || "30000", 10) ||
+  30 * 1000;
 const PERCENTILES_CACHE_TTL_MS =
   Number.parseInt(process.env.PERCENTILES_CACHE_TTL_MS || "60000", 10) ||
   60 * 1000;
@@ -123,6 +130,7 @@ const { getDistributions, getLeaderboardPage, topPercent } = createStatsHelpers(
   CACHE_COLLECTION,
   GLOBAL_CACHE_TTL_MS,
   getActiveBansSet,
+  LEADERBOARD_CACHE_TTL_MS,
 });
 
 const routesDeps = {

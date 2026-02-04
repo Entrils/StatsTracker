@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import UploadTab from "@/pages/UploadTab/UploadTab";
 import PlayersTab from "@/pages/PlayersTab/PlayersTab";
@@ -13,6 +14,31 @@ import Settings from "@/pages/Settings/Settings";
 import Support from "@/pages/Support/Support";
 
 export default function App() {
+  useEffect(() => {
+    const BACKEND_URL =
+      import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+    const PING_INTERVAL_MS = 10 * 60 * 1000;
+
+    const isInMskWindow = () => {
+      const now = new Date();
+      const mskHour = (now.getUTCHours() + 3) % 24;
+      return mskHour >= 16 || mskHour < 4;
+    };
+
+    const ping = async () => {
+      if (!isInMskWindow()) return;
+      try {
+        await fetch(`${BACKEND_URL}/healthz`, { method: "GET" });
+      } catch {
+        // ignore keep-alive errors
+      }
+    };
+
+    ping();
+    const id = setInterval(ping, PING_INTERVAL_MS);
+    return () => clearInterval(id);
+  }, []);
+
   return (
     <Router>
       <Navbar />
