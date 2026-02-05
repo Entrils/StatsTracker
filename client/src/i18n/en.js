@@ -6,6 +6,7 @@
     Logout: "Logout",
     admin: "Admin",
     settings: "Settings",
+    friends: "Friends",
   },
 
   leaderboard: {
@@ -128,6 +129,12 @@
     loss: "LOSS",
     unknown: "-",
     compareSep: "vs",
+    compareTitle: "Compare",
+    compareHint: "Compare your stats with a friend",
+    compareSelect: "Choose a friend",
+    compareEmpty: "No friends to compare",
+    compareYou: "You",
+    compareFriend: "Friend",
     topPercent: "Top",
     vsGlobal: "vs Global average",
     globalSample: "sample",
@@ -202,6 +209,23 @@
     policy: "Policy of use",
     support: "Support",
     ads: "Advertising & contacts",
+  },
+
+  friends: {
+    title: "Friends",
+    tabFriends: "In friends",
+    tabRequests: "Requests",
+    empty: "No friends yet",
+    emptyRequests: "No requests yet",
+    add: "Add friend",
+    already: "Already friends",
+    pending: "Request sent",
+    incoming: "Request received",
+    accept: "Accept",
+    reject: "Reject",
+    matches: "Matches",
+    loading: "Loading...",
+    login: "Login required",
   },
 
   policy: {

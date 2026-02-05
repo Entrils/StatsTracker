@@ -7,6 +7,7 @@ export function registerOcrRoutes(app, deps) {
     isValidBase64Image,
     OCR_DAILY_LIMIT,
     db,
+    admin,
   } = deps;
 
   app.post("/ocr", ocrLimiter, requireAuth, ocrDailyLimiter, async (req, res) => {
@@ -16,6 +17,24 @@ export function registerOcrRoutes(app, deps) {
         const banSnap = await db.collection("bans").doc(uid).get();
         if (banSnap.exists && banSnap.data()?.active) {
           return res.status(403).json({ error: "Banned" });
+        }
+        const avatar = typeof req.user?.avatar === "string" ? req.user.avatar : null;
+        const username = typeof req.user?.username === "string" ? req.user.username : null;
+        const provider = typeof req.user?.provider === "string" ? req.user.provider : null;
+        if (avatar || username || provider) {
+          await db
+            .collection("leaderboard_users")
+            .doc(uid)
+            .set(
+              {
+                uid,
+                ...(username ? { name: username } : {}),
+                ...(avatar ? { avatar } : {}),
+                ...(provider ? { provider } : {}),
+                updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+              },
+              { merge: true }
+            );
         }
       }
       const { base64Image, lang } = req.body || {};

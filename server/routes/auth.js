@@ -1,5 +1,5 @@
 export function registerAuthRoutes(app, deps) {
-  const { admin, logger, authLimiter } = deps;
+  const { admin, db, logger, authLimiter } = deps;
 
   app.post("/auth/discord", authLimiter, async (req, res) => {
     const { code } = req.body;
@@ -54,6 +54,20 @@ export function registerAuthRoutes(app, deps) {
           provider: "discord",
         }
       );
+
+      await db
+        .collection("leaderboard_users")
+        .doc(`discord:${discordUser.id}`)
+        .set(
+          {
+            uid: `discord:${discordUser.id}`,
+            name: discordUser.global_name || discordUser.username,
+            avatar: discordUser.avatar || null,
+            provider: "discord",
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          },
+          { merge: true }
+        );
 
       return res.json({
         firebaseToken,

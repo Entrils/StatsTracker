@@ -16,6 +16,7 @@ export default function Navbar() {
   const [open, setOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
+  const [friendRequests, setFriendRequests] = useState(0);
   const dropdownRef = useRef(null);
   const langRef = useRef(null);
   const langMobileRef = useRef(null);
@@ -68,6 +69,35 @@ export default function Navbar() {
       document.body.style.overflow = prev || "";
     };
   }, [mobileOpen]);
+
+  useEffect(() => {
+    if (!user) {
+      setFriendRequests(0);
+      return;
+    }
+    let alive = true;
+    const loadRequests = async () => {
+      try {
+        const token = await user.getIdToken();
+        const res = await fetch(
+          `${import.meta.env.VITE_BACKEND_URL || "http://localhost:4000"}/friends/requests`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        const data = await res.json().catch(() => null);
+        if (!alive) return;
+        const count = Array.isArray(data?.rows) ? data.rows.length : 0;
+        setFriendRequests(count);
+      } catch {
+        if (alive) setFriendRequests(0);
+      }
+    };
+    loadRequests();
+    const id = setInterval(loadRequests, 60 * 1000);
+    return () => {
+      alive = false;
+      clearInterval(id);
+    };
+  }, [user]);
 
   const closeMobile = () => {
     setMobileOpen(false);
@@ -171,6 +201,18 @@ export default function Navbar() {
                   className={styles.dropdownItem}
                 >
                   {t.nav.myProfile || "My profile"}
+                </button>
+                <button
+                  onClick={() => {
+                    setOpen(false);
+                    navigate("/friends");
+                  }}
+                  className={styles.dropdownItem}
+                >
+                  {t.nav.friends || "Friends"}
+                  {!!friendRequests && (
+                    <span className={styles.badge}>{friendRequests}</span>
+                  )}
                 </button>
                 <button
                   onClick={() => {
@@ -309,6 +351,20 @@ export default function Navbar() {
               }
             >
               {t.nav.myProfile || "My profile"}
+            </NavLink>
+          )}
+          {user && (
+            <NavLink
+              to="/friends"
+              onClick={closeMobile}
+              className={({ isActive }) =>
+                `${styles.offcanvasLink} ${isActive ? styles.active : ""}`
+              }
+            >
+              {t.nav.friends || "Friends"}
+              {!!friendRequests && (
+                <span className={styles.badge}>{friendRequests}</span>
+              )}
             </NavLink>
           )}
           {user && (

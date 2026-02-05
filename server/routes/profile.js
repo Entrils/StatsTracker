@@ -71,6 +71,8 @@ export function registerProfileRoutes(app, deps) {
         matches,
         total: matches.length,
         name: profileData?.name || null,
+        avatar: profileData?.avatar || null,
+        provider: profileData?.provider || null,
         settings,
         ranks,
         ban,
@@ -122,7 +124,15 @@ export function registerProfileRoutes(app, deps) {
         .get();
       const ranks = ranksSnap.exists ? ranksSnap.data() || null : null;
 
-      return res.json({ uid, settings, ranks, name: data.name || null, ban });
+      return res.json({
+        uid,
+        settings,
+        ranks,
+        name: data.name || null,
+        avatar: data.avatar || null,
+        provider: data.provider || null,
+        ban,
+      });
     } catch (err) {
       logger.error("PROFILE ERROR:", err);
       return res.status(500).json({ error: "Failed to load profile" });
