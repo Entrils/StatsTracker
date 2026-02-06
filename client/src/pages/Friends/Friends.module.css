@@ -66,6 +66,10 @@
   gap: 14px;
 }
 
+.listGrid {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
 .friendCard {
   display: flex;
   align-items: center;
@@ -106,6 +110,23 @@
   gap: 4px;
 }
 
+.nameRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+
+.nameLink {
+  font-weight: 700;
+  color: #f3f6ff;
+  text-decoration: none;
+}
+
+.nameLink:hover {
+  color: var(--neon-cyan);
+}
+
 .name {
   font-weight: 700;
   color: #f3f6ff;
@@ -114,6 +135,70 @@
 .meta {
   font-size: 0.85rem;
   color: rgba(154, 164, 193, 0.9);
+}
+
+.streak {
+  display: flex;
+  gap: 6px;
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.streakWin {
+  color: #9bff2e;
+}
+
+.streakLoss {
+  color: #ff6b6b;
+}
+
+.streakNeutral {
+  color: #9aa4c1;
+}
+
+.socialIcons {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.socialIcon {
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  display: grid;
+  place-items: center;
+  background: rgba(6, 10, 20, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  transition: transform 0.15s ease, box-shadow 0.2s ease, border 0.2s ease;
+}
+
+.socialIcon img {
+  width: 14px;
+  height: 14px;
+  display: block;
+}
+
+.socialIcon:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 12px rgba(0, 245, 212, 0.35);
+  border-color: rgba(0, 245, 212, 0.45);
+}
+
+.socialTwitch:hover {
+  box-shadow: 0 0 14px rgba(167, 139, 250, 0.55);
+  border-color: rgba(167, 139, 250, 0.65);
+}
+
+.socialYouTube:hover {
+  box-shadow: 0 0 14px rgba(255, 77, 109, 0.55);
+  border-color: rgba(255, 77, 109, 0.65);
+}
+
+.socialTikTok:hover {
+  box-shadow: 0 0 14px rgba(0, 245, 212, 0.55);
+  border-color: rgba(0, 245, 212, 0.65);
 }
 
 .rankRow {
@@ -129,10 +214,37 @@
   filter: drop-shadow(0 0 6px rgba(0, 245, 212, 0.25));
 }
 
+.rankCol {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.rankIconLarge {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 8px rgba(0, 245, 212, 0.3));
+}
+
 .actions {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+.pendingTag {
+  padding: 0.35rem 0.7rem;
+  border-radius: 0.7rem;
+  font-weight: 700;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #ffd37a;
+  border: 1px solid rgba(255, 178, 0, 0.4);
+  background: rgba(255, 178, 0, 0.12);
 }
 
 .accept,
@@ -155,10 +267,28 @@
   border: 1px solid rgba(255, 77, 109, 0.4);
 }
 
+.cancel {
+  padding: 0.35rem 0.8rem;
+  border-radius: 0.7rem;
+  font-weight: 700;
+  border: 1px solid rgba(255, 77, 109, 0.4);
+  background: rgba(255, 77, 109, 0.15);
+  color: #ff6b6b;
+  cursor: pointer;
+}
+
 @media (max-width: 720px) {
+  .listGrid {
+    grid-template-columns: 1fr;
+  }
+
   .friendCard {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .rankCol {
+    justify-content: flex-start;
   }
   .actions {
     width: 100%;

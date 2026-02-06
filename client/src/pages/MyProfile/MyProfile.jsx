@@ -1247,7 +1247,11 @@ export default function MyProfile() {
                   alt={formatRank(profileRanks[season].rank, t)}
                 />
               ) : (
-                <div className={styles.rankIconPlaceholder} />
+                <img
+                  className={styles.rankIcon}
+                  src={rankIconSrc("unranked")}
+                  alt={t.me?.rankNone || "Not verified"}
+                />
               )}
               <div
                 className={`${styles.rankValue} ${
@@ -1379,6 +1383,6 @@ function rankClass(rank) {
 }
 
 function rankIconSrc(rank) {
-  const key = String(rank || "").toLowerCase();
+  const key = String(rank || "unranked").toLowerCase();
   return `/ranks/${key}.png`;
 }

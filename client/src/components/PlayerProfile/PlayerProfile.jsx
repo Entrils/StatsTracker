@@ -111,6 +111,7 @@ export default function PlayerProfile() {
       const data = await res.json().catch(() => null);
       if (res.ok) {
         setFriendStatus("friend");
+        window.dispatchEvent(new Event("friends-requests-refresh"));
       } else if (data?.status) {
         setFriendStatus(data.status);
       }
@@ -124,6 +125,27 @@ export default function PlayerProfile() {
     try {
       const token = await user.getIdToken();
       const res = await fetch(`${backend}/friends/reject`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ uid }),
+      });
+      if (res.ok) {
+        setFriendStatus("none");
+        window.dispatchEvent(new Event("friends-requests-refresh"));
+      }
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleRemoveFriend = async () => {
+    if (!user || !uid) return;
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch(`${backend}/friends/remove`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -245,39 +267,62 @@ export default function PlayerProfile() {
               {renderSocial("tiktok", profileSocials?.tiktok)}
             </div>
             {user && user.uid !== uid && friendStatus !== "incoming" && (
-              <button
-                className={`${styles.friendButton} ${
-                  friendStatus === "friend"
-                    ? styles.friendButtonDone
-                    : friendStatus === "outgoing"
-                    ? styles.friendButtonPending
-                    : ""
-                }`}
-                onClick={handleAddFriend}
-                disabled={friendStatus !== "none"}
-                aria-label={t.friends?.add || "Add friend"}
-              >
+              <>
+                <button
+                  className={`${styles.friendButton} ${
+                    friendStatus === "friend"
+                      ? styles.friendButtonDone
+                      : friendStatus === "outgoing"
+                      ? styles.friendButtonPending
+                      : ""
+                  }`}
+                  onClick={handleAddFriend}
+                  disabled={friendStatus !== "none"}
+                  aria-label={t.friends?.add || "Add friend"}
+                >
+                  {friendStatus === "friend" && (
+                    <span className={styles.friendIcon} aria-hidden="true">
+                      <svg viewBox="0 0 24 24" role="img">
+                        <path
+                          d="M8.2 12.1a4 4 0 1 1 3.6-6.1 4 4 0 0 1-3.6 6.1Zm7.1-1.6a3 3 0 1 1 0-6 3 3 0 0 1 0 6Zm-6.8 1.6c2.6 0 5.7 1.3 5.7 3.9v1H2.5v-1c0-2.6 3.1-3.9 5.9-3.9Zm12-1.4 1.1 1.1-4.3 4.3-2.2-2.2 1.1-1.1 1.1 1.1 3.2-3.2Z"
+                          fill="currentColor"
+                        />
+                      </svg>
+                    </span>
+                  )}
+                  {friendStatus === "outgoing" && (
+                    <span className={styles.friendStatusText}>
+                      {t.friends?.pending || "Request sent"}
+                    </span>
+                  )}
+                  {friendStatus === "none" && (
+                    <span className={styles.friendIcon} aria-hidden="true">
+                      <svg viewBox="0 0 24 24" role="img">
+                        <path
+                          d="M8.2 12.1a4 4 0 1 1 3.6-6.1 4 4 0 0 1-3.6 6.1Zm7.1-1.6a3 3 0 1 1 0-6 3 3 0 0 1 0 6Zm-6.8 1.6c2.6 0 5.7 1.3 5.7 3.9v1H2.5v-1c0-2.6 3.1-3.9 5.9-3.9Zm6.5.4h1.2v2.2h2.2v1.2h-2.2v2.2H15v-2.2h-2.2v-1.2H15v-2.2Z"
+                          fill="currentColor"
+                        />
+                      </svg>
+                    </span>
+                  )}
+                </button>
                 {friendStatus === "friend" && (
-                  <span className={styles.friendStatusText}>
-                    {t.friends?.already || "Already friends"}
-                  </span>
+                  <button
+                    className={`${styles.friendButton} ${styles.friendButtonRemove}`}
+                    onClick={handleRemoveFriend}
+                    aria-label={t.friends?.remove || "Remove friend"}
+                  >
+                    <span className={styles.friendIcon} aria-hidden="true">
+                      <svg viewBox="0 0 24 24" role="img">
+                        <path
+                          d="M8.2 12.1a4 4 0 1 1 3.6-6.1 4 4 0 0 1-3.6 6.1Zm7.1-1.6a3 3 0 1 1 0-6 3 3 0 0 1 0 6Zm-6.8 1.6c2.6 0 5.7 1.3 5.7 3.9v1H2.5v-1c0-2.6 3.1-3.9 5.9-3.9Zm6.2 1.7h5.4v1.6h-5.4z"
+                          fill="currentColor"
+                        />
+                      </svg>
+                    </span>
+                  </button>
                 )}
-                {friendStatus === "outgoing" && (
-                  <span className={styles.friendStatusText}>
-                    {t.friends?.pending || "Request sent"}
-                  </span>
-                )}
-                {friendStatus === "none" && (
-                  <span className={styles.friendIcon} aria-hidden="true">
-                    <svg viewBox="0 0 24 24" role="img">
-                      <path
-                        d="M8.2 12.1a4 4 0 1 1 3.6-6.1 4 4 0 0 1-3.6 6.1Zm7.1-1.6a3 3 0 1 1 0-6 3 3 0 0 1 0 6Zm-6.8 1.6c2.6 0 5.7 1.3 5.7 3.9v1H2.5v-1c0-2.6 3.1-3.9 5.9-3.9Zm6.5.4h1.2v2.2h2.2v1.2h-2.2v2.2H15v-2.2h-2.2v-1.2H15v-2.2Z"
-                        fill="currentColor"
-                      />
-                    </svg>
-                  </span>
-                )}
-              </button>
+              </>
             )}
           </div>
           <p className={styles.subtitle}>
@@ -355,7 +400,11 @@ export default function PlayerProfile() {
                   alt={formatRank(profileRanks[season].rank, t)}
                 />
               ) : (
-                <div className={styles.rankIconPlaceholder} />
+                <img
+                  className={styles.rankIcon}
+                  src={rankIconSrc("unranked")}
+                  alt={t.profile.rankNone || "Not verified"}
+                />
               )}
               <div
                 className={`${styles.rankValue} ${
@@ -508,7 +557,7 @@ function rankClass(rank) {
 }
 
 function rankIconSrc(rank) {
-  const key = String(rank || "").toLowerCase();
+  const key = String(rank || "unranked").toLowerCase();
   return `/ranks/${key}.png`;
 }
 

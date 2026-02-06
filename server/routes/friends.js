@@ -149,6 +149,46 @@ export function registerFriendsRoutes(app, deps) {
     }
   });
 
+  app.post("/friends/remove", authLimiter, requireAuth, async (req, res) => {
+    try {
+      const uid = req.user?.uid;
+      const targetUid = req.body?.uid;
+      if (!uid || !targetUid || !isValidUid(targetUid)) {
+        return res.status(400).json({ error: "Invalid uid" });
+      }
+
+      const batch = db.batch();
+      batch.delete(friendsRef(uid).doc(targetUid));
+      batch.delete(friendsRef(targetUid).doc(uid));
+      await batch.commit();
+
+      return res.json({ status: "removed" });
+    } catch (err) {
+      logger.error("FRIENDS REMOVE ERROR:", err);
+      return res.status(500).json({ error: "Failed to remove friend" });
+    }
+  });
+
+  app.post("/friends/cancel", authLimiter, requireAuth, async (req, res) => {
+    try {
+      const uid = req.user?.uid;
+      const targetUid = req.body?.uid;
+      if (!uid || !targetUid || !isValidUid(targetUid)) {
+        return res.status(400).json({ error: "Invalid uid" });
+      }
+
+      const batch = db.batch();
+      batch.delete(outgoingRef(uid).doc(targetUid));
+      batch.delete(incomingRef(targetUid).doc(uid));
+      await batch.commit();
+
+      return res.json({ status: "cancelled" });
+    } catch (err) {
+      logger.error("FRIENDS CANCEL ERROR:", err);
+      return res.status(500).json({ error: "Failed to cancel request" });
+    }
+  });
+
   app.get("/friends/list", statsLimiter, requireAuth, async (req, res) => {
     try {
       const uid = req.user?.uid;
@@ -163,21 +203,62 @@ export function registerFriendsRoutes(app, deps) {
         db.collection("users").doc(id).collection("profile").doc("ranks")
       );
 
-      const [profileSnaps, rankSnaps] = await Promise.all([
+      const [profileSnaps, rankSnaps, last5Snaps, settingsSnaps, legacySnaps] =
+        await Promise.all([
         db.getAll(...profileRefs),
         db.getAll(...rankRefs),
+        Promise.all(
+          ids.map((id) =>
+            db
+              .collection("users")
+              .doc(id)
+              .collection("matches")
+              .orderBy("createdAt", "desc")
+              .limit(5)
+              .get()
+          )
+        ),
+        db.getAll(
+          ...ids.map((id) =>
+            db.collection("users").doc(id).collection("profile").doc("settings")
+          )
+        ),
+        db.getAll(
+          ...ids.map((id) =>
+            db.collection("users").doc(id).collection("profile").doc("socials")
+          )
+        ),
       ]);
 
       const rows = ids.map((id, i) => {
         const profile = profileSnaps[i]?.data() || {};
         const ranks = rankSnaps[i]?.exists ? rankSnaps[i].data() || null : null;
+        const settingsData = settingsSnaps[i]?.exists
+          ? settingsSnaps[i].data() || {}
+          : {};
+        const legacyData = legacySnaps[i]?.exists ? legacySnaps[i].data() || {} : {};
+        const settings =
+          profile.settings ||
+          settingsData.settings ||
+          settingsData.socials ||
+          legacyData.settings ||
+          legacyData.socials ||
+          null;
+        const last5 = last5Snaps[i]?.docs?.map((doc) => {
+          const r = doc.data()?.result;
+          if (r === "victory") return "W";
+          if (r === "defeat") return "L";
+          return "-";
+        }) || [];
         const stats = buildStatsFromProfile(profile);
         return {
           uid: id,
           name: profile.name || id,
           avatar: profile.avatar || null,
           provider: profile.provider || null,
+          settings,
           ranks,
+          last5,
           ...stats,
         };
       });
@@ -223,6 +304,43 @@ export function registerFriendsRoutes(app, deps) {
     } catch (err) {
       logger.error("FRIENDS REQUESTS ERROR:", err);
       return res.status(500).json({ error: "Failed to load requests" });
+    }
+  });
+
+  app.get("/friends/outgoing", statsLimiter, requireAuth, async (req, res) => {
+    try {
+      const uid = req.user?.uid;
+      if (!uid) return res.status(401).json({ error: "Missing auth token" });
+
+      const snap = await outgoingRef(uid).limit(100).get();
+      const ids = snap.docs.map((d) => d.id).filter(Boolean);
+      if (!ids.length) return res.json({ rows: [] });
+
+      const profileRefs = ids.map((id) => db.collection("leaderboard_users").doc(id));
+      const rankRefs = ids.map((id) =>
+        db.collection("users").doc(id).collection("profile").doc("ranks")
+      );
+      const [profileSnaps, rankSnaps] = await Promise.all([
+        db.getAll(...profileRefs),
+        db.getAll(...rankRefs),
+      ]);
+
+      const rows = ids.map((id, i) => {
+        const profile = profileSnaps[i]?.data() || {};
+        const ranks = rankSnaps[i]?.exists ? rankSnaps[i].data() || null : null;
+        return {
+          uid: id,
+          name: profile.name || id,
+          avatar: profile.avatar || null,
+          provider: profile.provider || null,
+          ranks,
+        };
+      });
+
+      return res.json({ rows });
+    } catch (err) {
+      logger.error("FRIENDS OUTGOING ERROR:", err);
+      return res.status(500).json({ error: "Failed to load outgoing" });
     }
   });
 }
