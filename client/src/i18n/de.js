@@ -7,6 +7,7 @@ export default {
     admin: "Admin",
     settings: "Einstellungen",
     friends: "Freunde",
+    achievements: "Meine Erfolge",
   },
 
   leaderboard: {
@@ -225,6 +226,23 @@ export default {
     matches: "Matches",
     loading: "Laden...",
     login: "Bitte anmelden",
+  },
+
+  achievements: {
+    title: "Erfolge",
+    hint: "Dein Fortschritt und Freischalt-Daten",
+    summaryTitle: "Beste Erfolge",
+    summaryEmpty: "Noch keine Erfolge",
+    matchesTitle: "Match-Archivar",
+    friendsTitle: "Innerer Kreis",
+    killsTitle: "Frag-Jäger",
+    streakTitle: "Heiße Serie",
+    matchesLabel: "Matches",
+    friendsLabel: "Freunde",
+    killsLabel: "Kills",
+    streakLabel: "Siege in Folge",
+    unlockedAt: "Freigeschaltet",
+    remaining: "Verbleibend",
   },
 
   policy: {

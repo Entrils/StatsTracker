@@ -7,6 +7,7 @@ export default {
     admin: "Admin",
     friends: "Amis",
     settings: "Paramètres",
+    achievements: "Mes exploits",
   },
 
   leaderboard: {
@@ -212,17 +213,37 @@ export default {
     title: "Amis",
     tabFriends: "Dans les amis",
     tabRequests: "Demandes",
+    tabOutgoing: "Envoyées",
     empty: "Pas encore d'amis",
     emptyRequests: "Pas encore de demandes",
+    emptyOutgoing: "Pas encore de demandes envoyées",
     add: "Ajouter en ami",
     already: "Déjà amis",
     pending: "Demande envoyée",
+    cancel: "Annuler",
     incoming: "Demande reçue",
     accept: "Accepter",
     reject: "Refuser",
     matches: "Matchs",
     loading: "Chargement...",
     login: "Connexion requise",
+  },
+
+  achievements: {
+    title: "Exploits",
+    hint: "Votre progression et dates de déblocage",
+    summaryTitle: "Meilleurs exploits",
+    summaryEmpty: "Aucun exploit pour l'instant",
+    matchesTitle: "Archiviste des matchs",
+    friendsTitle: "Cercle rapproché",
+    killsTitle: "Chasseur de frags",
+    streakTitle: "Série brûlante",
+    matchesLabel: "matchs",
+    friendsLabel: "amis",
+    killsLabel: "kills",
+    streakLabel: "victoires d'affilée",
+    unlockedAt: "Débloqué",
+    remaining: "Restant",
   },
 
   policy: {
@@ -270,5 +291,6 @@ export default {
     discord: "Discord",
   },
 };
+
 
 

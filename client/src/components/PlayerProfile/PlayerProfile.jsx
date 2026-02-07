@@ -12,6 +12,7 @@ import {
 import styles from "@/components/PlayerProfile/PlayerProfile.module.css";
 import { useLang } from "@/i18n/LanguageContext";
 import { useAuth } from "@/auth/AuthContext";
+import Achievements from "@/components/Achievements/Achievements";
 
 const backend = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
@@ -29,6 +30,8 @@ export default function PlayerProfile() {
   const [profileAvatar, setProfileAvatar] = useState(null);
   const [banInfo, setBanInfo] = useState(null);
   const [friendStatus, setFriendStatus] = useState("none");
+  const [profileFriendDates, setProfileFriendDates] = useState([]);
+  const [profileFriendCount, setProfileFriendCount] = useState(null);
 
   useEffect(() => {
     const fetchHistory = async () => {
@@ -46,6 +49,10 @@ export default function PlayerProfile() {
         setProfileRanks(data?.ranks || null);
         setProfileAvatar(data?.avatar || null);
         setBanInfo(data?.ban || null);
+        setProfileFriendDates(Array.isArray(data?.friendDates) ? data.friendDates : []);
+        setProfileFriendCount(
+          Number.isFinite(data?.friendCount) ? data.friendCount : null
+        );
       } catch (e) {
         setError(t.profile.empty || "No match history");
       } finally {
@@ -421,6 +428,13 @@ export default function PlayerProfile() {
             ))}
           </div>
         </div>
+
+      <Achievements
+        matches={matches}
+        friendDates={profileFriendDates}
+        friendCount={profileFriendCount}
+        mode="summary"
+      />
 
       <div className={styles.chartCard}>
         <h2 className={styles.chartTitle}>{t.profile.progress}</h2>

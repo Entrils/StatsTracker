@@ -7,6 +7,7 @@
     admin: "Admin",
     settings: "Settings",
     friends: "Friends",
+    achievements: "My achievements",
   },
 
   leaderboard: {
@@ -229,6 +230,23 @@
     matches: "Matches",
     loading: "Loading...",
     login: "Login required",
+  },
+
+  achievements: {
+    title: "Achievements",
+    hint: "Your progress and unlock dates",
+    summaryTitle: "Best achievements",
+    summaryEmpty: "No achievements yet",
+    matchesTitle: "Match Archivist",
+    friendsTitle: "Inner Circle",
+    killsTitle: "Frag Hunter",
+    streakTitle: "Hot Streak",
+    matchesLabel: "matches",
+    friendsLabel: "friends",
+    killsLabel: "kills",
+    streakLabel: "wins in a row",
+    unlockedAt: "Unlocked",
+    remaining: "Remaining",
   },
 
   policy: {

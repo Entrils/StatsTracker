@@ -59,6 +59,19 @@ export function registerProfileRoutes(app, deps) {
         .get();
       const ranks = ranksSnap.exists ? ranksSnap.data() || null : null;
       const snap = await matchesRef.orderBy("createdAt", "asc").limit(limit).get();
+      const friendsSnap = await db
+        .collection("users")
+        .doc(uid)
+        .collection("friends")
+        .orderBy("createdAt", "asc")
+        .limit(10)
+        .get();
+      const friendDates = friendsSnap.docs
+        .map((doc) => {
+          const raw = doc.data()?.createdAt || null;
+          return raw?.toMillis ? raw.toMillis() : null;
+        })
+        .filter(Boolean);
 
       const matches = snap.docs.map((doc, i) => ({
         index: i + 1,
@@ -76,6 +89,8 @@ export function registerProfileRoutes(app, deps) {
         settings,
         ranks,
         ban,
+        friendCount: friendsSnap.size,
+        friendDates,
       });
     } catch (err) {
       logger.error("PLAYER PROFILE ERROR:", err);

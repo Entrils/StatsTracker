@@ -110,10 +110,10 @@ export default function Navbar() {
   };
 
   const languages = [
-    { code: "ru", label: "Русский", flagSrc: "/ru.png" },
-    { code: "en", label: "English", flagSrc: "/eng.png" },
-    { code: "de", label: "Deutsch", flagSrc: "/de.png" },
-    { code: "fr", label: "Français", flagSrc: "/fr.png" },
+    { code: "ru", label: "Русский", flagSrc: "/flags/ru.png" },
+    { code: "en", label: "English", flagSrc: "/flags/eng.png" },
+    { code: "de", label: "Deutsch", flagSrc: "/flags/de.png" },
+    { code: "fr", label: "Français", flagSrc: "/flags/fr.png" },
   ];
   const currentLang =
     languages.find((item) => item.code === lang) || languages[0];
@@ -218,6 +218,15 @@ export default function Navbar() {
                   {!!friendRequests && (
                     <span className={styles.badge}>{friendRequests}</span>
                   )}
+                </button>
+                <button
+                  onClick={() => {
+                    setOpen(false);
+                    navigate("/achievements");
+                  }}
+                  className={styles.dropdownItem}
+                >
+                  {t.nav.achievements || "Achievements"}
                 </button>
                 <button
                   onClick={() => {
@@ -370,6 +379,17 @@ export default function Navbar() {
               {!!friendRequests && (
                 <span className={styles.badge}>{friendRequests}</span>
               )}
+            </NavLink>
+          )}
+          {user && (
+            <NavLink
+              to="/achievements"
+              onClick={closeMobile}
+              className={({ isActive }) =>
+                `${styles.offcanvasLink} ${isActive ? styles.active : ""}`
+              }
+            >
+              {t.nav.achievements || "Achievements"}
             </NavLink>
           )}
           {user && (

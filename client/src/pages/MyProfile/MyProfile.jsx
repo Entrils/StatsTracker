@@ -11,6 +11,7 @@ import { db } from "@/firebase";
 import styles from "@/pages/MyProfile/MyProfile.module.css";
 import { useLang } from "@/i18n/LanguageContext";
 import { useAuth } from "@/auth/AuthContext";
+import Achievements from "@/components/Achievements/Achievements";
 import Stat from "@/components/MyProfile/StatCard";
 import {
   IconMatches,
@@ -292,6 +293,9 @@ export default function MyProfile() {
 
     const trendScore = round1(avg(last5, "score") - avg(prev5, "score"));
     const trendKills = round1(avg(last5, "kills") - avg(prev5, "kills"));
+    const trendDeaths = round1(avg(last5, "deaths") - avg(prev5, "deaths"));
+    const trendAssists = round1(avg(last5, "assists") - avg(prev5, "assists"));
+    const trendDamage = round1(avg(last5, "damage") - avg(prev5, "damage"));
 
     return {
       name:
@@ -339,6 +343,9 @@ export default function MyProfile() {
 
       trendScore,
       trendKills,
+      trendDeaths,
+      trendAssists,
+      trendDamage,
 
       last10,
 
@@ -1206,11 +1213,11 @@ export default function MyProfile() {
           )}
         </div>
 
-        <div className={styles.card}>
+        <div className={`${styles.card} ${styles.trendsCard}`}>
           <h2 className={styles.cardTitle}>
             {t.me?.trends || "Trends (last 5 vs prev 5)"}
           </h2>
-          <div className={styles.twoCol}>
+          <div className={styles.trendRow}>
             <Mini
               label={t.me?.score || "Score"}
               value={`${summary.trendScore >= 0 ? "+" : ""}${summary.trendScore}`}
@@ -1220,6 +1227,21 @@ export default function MyProfile() {
               label={t.me?.kills || "Kills"}
               value={`${summary.trendKills >= 0 ? "+" : ""}${summary.trendKills}`}
               accent={summary.trendKills >= 0 ? "good" : "bad"}
+            />
+            <Mini
+              label={t.me?.deaths || "Deaths"}
+              value={`${summary.trendDeaths >= 0 ? "+" : ""}${summary.trendDeaths}`}
+              accent={summary.trendDeaths >= 0 ? "bad" : "good"}
+            />
+            <Mini
+              label={t.me?.assists || "Assists"}
+              value={`${summary.trendAssists >= 0 ? "+" : ""}${summary.trendAssists}`}
+              accent={summary.trendAssists >= 0 ? "good" : "bad"}
+            />
+            <Mini
+              label={t.me?.damage || "Damage"}
+              value={`${summary.trendDamage >= 0 ? "+" : ""}${summary.trendDamage}`}
+              accent={summary.trendDamage >= 0 ? "good" : "bad"}
             />
           </div>
           <p className={styles.hint}>
@@ -1268,6 +1290,14 @@ export default function MyProfile() {
           ))}
         </div>
       </div>
+
+      <Achievements
+        matches={matches}
+        friends={friends}
+        friendDates={friends.map((f) => f.createdAt).filter(Boolean)}
+        mode="summary"
+      />
+
       <div className={`${styles.card} ${styles.fadeIn} ${styles.stagger5}`}>
         <h2 className={styles.cardTitle}>{t.me?.records || "Records"}</h2>
         <div className={styles.recordsGrid}>

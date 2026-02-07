@@ -196,6 +196,13 @@ export function registerFriendsRoutes(app, deps) {
 
       const friendsSnap = await friendsRef(uid).limit(200).get();
       const ids = friendsSnap.docs.map((d) => d.id).filter(Boolean);
+      const createdAtMap = new Map(
+        friendsSnap.docs.map((d) => {
+          const raw = d.data()?.createdAt || null;
+          const ms = raw?.toMillis ? raw.toMillis() : null;
+          return [d.id, ms];
+        })
+      );
       if (!ids.length) return res.json({ rows: [] });
 
       const profileRefs = ids.map((id) => db.collection("leaderboard_users").doc(id));
@@ -259,6 +266,7 @@ export function registerFriendsRoutes(app, deps) {
           settings,
           ranks,
           last5,
+          createdAt: createdAtMap.get(id) || null,
           ...stats,
         };
       });
