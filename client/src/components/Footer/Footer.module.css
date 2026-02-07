@@ -1,9 +1,9 @@
 .footer {
   margin-top: auto;
-  padding: 14px 14px 8px;
+  padding: var(--space-2) var(--space-3) var(--space-1);
   text-align: center;
   color: var(--text-muted);
-  font-size: 0.74rem;
+  font-size: 0.6875rem;
   letter-spacing: 0.04em;
   border-top: 1px solid var(--border-soft);
   background: linear-gradient(
@@ -16,11 +16,11 @@
 .brand {
   font-family: "Oxanium", "Noto Sans", "Segoe UI", sans-serif;
   font-weight: 800;
-  font-size: 0.78rem;
+  font-size: var(--text-xs);
   color: #f3f6ff;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  margin-bottom: 4px;
+  margin-bottom: var(--space-1);
   text-shadow:
     0 0 16px rgba(0, 245, 212, 0.35),
     0 0 26px rgba(255, 45, 149, 0.2);
@@ -29,22 +29,22 @@
 .copy {
   max-width: 720px;
   margin: 0 auto;
-  line-height: 1.4;
+  line-height: 1.25;
 }
 
 .links {
-  margin-top: 6px;
+  margin-top: var(--space-1);
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
   flex-wrap: wrap;
 }
 
 .link {
   color: var(--neon-cyan);
   font-weight: 700;
-  font-size: 0.7rem;
+  font-size: 0.6875rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }

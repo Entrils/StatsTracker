@@ -244,6 +244,7 @@
     policy: "Politique d'utilisation",
     support: "Support",
     ads: "Publicité & contacts",
+    roadmap: "Roadmap",
   },
 
   friends: {
@@ -330,6 +331,39 @@
       "La comparaison avec un ami se fait dans votre profil (onglet « Comparer »).",
     ],
     playerProfileAlt: "Guide du profil joueur",
+  },
+
+  roadmap: {
+    title: "Roadmap du projet",
+    subtitle: "Plan des prochaines mises à jour",
+    soon: "SOON",
+    soonHint: "Bientôt",
+    inProgress: "IN PROGRESS",
+    inProgressHint: "En cours",
+    inFuture: "IN FUTURE",
+    inFutureHint: "À venir",
+    wishlist: "WISHLIST",
+    wishlistHint: "Liste d'envies",
+    soonItems: [
+      "Correction des problèmes d'encodage du texte",
+      "Erreurs OCR plus claires + conseils",
+      "Smoke tests pour les API critiques",
+    ],
+    inProgressItems: [
+      "Extension Help/FAQ",
+      "Nouveaux empty states avec CTA",
+      "Page de release notes",
+    ],
+    inFutureItems: [
+      "Classement de progression hebdomadaire",
+      "Nouvelles catégories d'exploits",
+      "File OCR pour les pics de charge",
+    ],
+    wishlistItems: [
+      "Pages équipes/clans",
+      "Rapports de bilan de saison",
+      "API publique de statistiques",
+    ],
   },
 
   policy: {

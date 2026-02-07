@@ -1,0 +1,30 @@
+.box {
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px dashed rgba(255, 255, 255, 0.14);
+  background: rgba(8, 12, 22, 0.5);
+  color: #a9b4cd;
+  text-align: center;
+  font-size: var(--text-sm);
+}
+
+.neutral {
+  color: #a9b4cd;
+}
+
+.loading {
+  color: #d2ddf4;
+  border-color: rgba(43, 230, 203, 0.28);
+  background: rgba(10, 18, 28, 0.55);
+}
+
+.error {
+  color: #ff9ab0;
+  border-color: rgba(255, 77, 109, 0.35);
+  background: rgba(30, 12, 18, 0.45);
+}
+
+.empty {
+  color: #a9b4cd;
+}
+

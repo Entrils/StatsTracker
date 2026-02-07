@@ -1,7 +1,7 @@
 .wrapper {
   max-width: 1160px;
   margin: 0 auto;
-  padding: 28px 16px 64px;
+  padding: var(--space-6) var(--space-4) calc(var(--space-6) * 2);
   color: var(--text-main);
   width: 100%;
 }
@@ -11,12 +11,12 @@
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
 }
 
 .title {
-  font-size: 20px;
+  font-size: var(--text-lg);
   font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -25,5 +25,5 @@
 
 .hint {
   color: var(--text-muted);
-  font-size: 0.9rem;
+  font-size: var(--text-sm);
 }

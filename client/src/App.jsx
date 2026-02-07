@@ -15,6 +15,7 @@ import Support from "@/pages/Support/Support";
 import Friends from "@/pages/Friends/Friends";
 import AchievementsPage from "@/pages/Achievements/Achievements";
 import Help from "@/pages/Help/Help";
+import Roadmap from "@/pages/Roadmap/Roadmap";
 
 export default function App() {
   useEffect(() => {
@@ -62,6 +63,7 @@ export default function App() {
           <Route path="/policy" element={<Policy />} />
           <Route path="/support" element={<Support />} />
           <Route path="/ads" element={<Ads />} />
+          <Route path="/roadmap" element={<Roadmap />} />
         </Routes>
       </main>
       <Footer />

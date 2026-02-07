@@ -1,12 +1,12 @@
 .wrapper {
   max-width: 1120px;
   margin: 0 auto;
-  padding: 2.5rem 1.5rem;
+  padding: var(--space-6) var(--space-4);
   text-align: center;
 }
 
 .title {
-  font-size: 2rem;
+  font-size: var(--text-xl);
   font-weight: 800;
   margin-bottom: 0.5rem;
   text-transform: uppercase;
@@ -18,20 +18,19 @@
 
 .hint {
   color: var(--text-muted);
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--space-5);
 }
 
 .button {
   display: inline-block;
-  padding: 0.85rem 2rem;
-  border-radius: 0.9rem;
+  padding: 0.85rem var(--space-6);
+  border-radius: var(--radius-md);
   font-weight: 800;
-  background: linear-gradient(135deg, #a3ff12, #00f5d4);
-  color: #081016;
-  box-shadow:
-    0 0 18px rgba(163, 255, 18, 0.35),
-    0 0 28px rgba(0, 245, 212, 0.45);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-fg);
+  border: 1px solid rgba(163, 255, 18, 0.35);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.24);
+  transition: box-shadow 0.2s ease, filter 0.2s ease;
 }
 
 .button:disabled {
@@ -41,10 +40,8 @@
 }
 
 .button:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow:
-    0 0 22px rgba(0, 245, 212, 0.55),
-    0 0 32px rgba(163, 255, 18, 0.45);
+  filter: brightness(1.03);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.28);
 }
 
 .status {
@@ -54,19 +51,19 @@
 
 .statusOk {
   color: #9bff2e;
-  text-shadow: 0 0 10px rgba(163, 255, 18, 0.35);
+  text-shadow: 0 0 6px rgba(163, 255, 18, 0.2);
 }
 
 .statusBad {
   color: #ff4d6d;
-  text-shadow: 0 0 10px rgba(255, 77, 109, 0.35);
+  text-shadow: 0 0 6px rgba(255, 77, 109, 0.2);
 }
 
 .sectionGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1.5rem;
-  margin-top: 2.5rem;
+  gap: var(--space-5);
+  margin-top: var(--space-6);
 }
 
 @media (max-width: 900px) {
@@ -79,8 +76,8 @@
   text-align: left;
   background: rgba(8, 12, 22, 0.6);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
-  padding: 1.5rem;
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
 }
 
 .sectionHeader {
@@ -92,19 +89,19 @@
 }
 
 .sectionTitle {
-  font-size: 1.2rem;
+  font-size: var(--text-md);
   font-weight: 700;
   color: #f8fafc;
   margin: 0;
 }
 
 .smallButton {
-  padding: 0.4rem 0.9rem;
-  border-radius: 0.7rem;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-sm);
   font-weight: 700;
-  background: rgba(0, 245, 212, 0.2);
-  color: #e6fffb;
-  border: 1px solid rgba(0, 245, 212, 0.35);
+  background: var(--btn-secondary-bg);
+  color: var(--btn-secondary-fg);
+  border: 1px solid var(--btn-secondary-border);
 }
 
 .smallButton:disabled {
@@ -118,8 +115,8 @@
 }
 
 .errorItem {
-  padding: 0.9rem 1rem;
-  border-radius: 12px;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
   background: rgba(6, 10, 20, 0.7);
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
@@ -148,8 +145,8 @@
 }
 
 .rankItem {
-  padding: 1rem;
-  border-radius: 14px;
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
   background: rgba(6, 10, 20, 0.7);
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
@@ -198,7 +195,7 @@
 }
 
 .rankPreview {
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(8, 12, 22, 0.7);
@@ -214,27 +211,28 @@
 
 .rankActions {
   display: flex;
-  gap: 0.6rem;
+  gap: var(--space-2);
 }
 
 .rankApprove,
 .rankReject {
-  padding: 0.45rem 0.9rem;
-  border-radius: 0.7rem;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-sm);
   font-weight: 700;
   border: none;
   cursor: pointer;
 }
 
 .rankApprove {
-  background: linear-gradient(135deg, #9bff2e, #00f5d4);
-  color: #081016;
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-fg);
+  border: 1px solid rgba(163, 255, 18, 0.35);
 }
 
 .rankReject {
-  background: rgba(255, 77, 109, 0.15);
-  color: #ff6b6b;
-  border: 1px solid rgba(255, 77, 109, 0.4);
+  background: var(--btn-danger-bg);
+  color: var(--btn-danger-fg);
+  border: 1px solid var(--btn-danger-border);
 }
 
 .banForm {
@@ -246,8 +244,8 @@
 .banInput {
   background: rgba(8, 12, 22, 0.7);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 10px;
-  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  padding: 10px var(--space-3);
   color: #f3f6ff;
   outline: none;
 }
@@ -257,13 +255,18 @@
   box-shadow: 0 0 0 2px rgba(255, 77, 109, 0.2);
 }
 
+.banInput:focus-visible {
+  border-color: rgba(255, 77, 109, 0.62);
+  box-shadow: 0 0 0 3px rgba(255, 77, 109, 0.24);
+}
+
 .banButton {
-  padding: 0.6rem 1rem;
-  border-radius: 0.8rem;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-sm);
   font-weight: 800;
-  background: rgba(255, 77, 109, 0.15);
-  color: #ff6b6b;
-  border: 1px solid rgba(255, 77, 109, 0.4);
+  background: var(--btn-danger-bg);
+  color: var(--btn-danger-fg);
+  border: 1px solid var(--btn-danger-border);
 }
 
 .banList {
@@ -276,8 +279,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 0.9rem 1rem;
-  border-radius: 12px;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
   background: rgba(6, 10, 20, 0.7);
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
@@ -304,12 +307,12 @@
 }
 
 .banUnban {
-  padding: 0.45rem 0.9rem;
-  border-radius: 0.7rem;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-sm);
   font-weight: 700;
-  background: rgba(0, 245, 212, 0.2);
-  color: #b6fff2;
-  border: 1px solid rgba(0, 245, 212, 0.4);
+  background: var(--btn-secondary-bg);
+  color: var(--btn-secondary-fg);
+  border: 1px solid var(--btn-secondary-border);
 }
 
 .banInactive {

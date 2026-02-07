@@ -6,6 +6,7 @@ import { useLang } from "@/i18n/LanguageContext";
 import DiscordLoginButton from "@/buttons/DiscordLoginButton/DiscordLoginButton";
 import { useAuth } from "@/auth/AuthContext";
 import { auth } from "@/firebase";
+import { dedupedJsonRequest } from "@/utils/network/dedupedFetch";
 
 export default function Navbar() {
   const { lang, setLang, t } = useLang();
@@ -79,11 +80,23 @@ export default function Navbar() {
     const loadRequests = async () => {
       try {
         const token = await user.getIdToken();
-        const res = await fetch(
-          `${import.meta.env.VITE_BACKEND_URL || "http://localhost:4000"}/friends/requests`,
-          { headers: { Authorization: `Bearer ${token}` } }
+        const base = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+        const url = `${base}/friends/requests`;
+        const data = await dedupedJsonRequest(
+          `friends-requests:${user.uid}`,
+          async () => {
+            const res = await fetch(url, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            if (!res.ok) {
+              const error = new Error("Failed to load friend requests");
+              error.status = res.status;
+              throw error;
+            }
+            return res.json();
+          },
+          2500
         );
-        const data = await res.json().catch(() => null);
         if (!alive) return;
         const count = Array.isArray(data?.rows) ? data.rows.length : 0;
         setFriendRequests(count);

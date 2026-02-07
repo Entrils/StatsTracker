@@ -23,6 +23,10 @@ export default function Footer() {
         <a href="/ads" className={styles.link}>
           {t.footer?.ads || "Advertising & contacts"}
         </a>
+        <span className={styles.sep}>{sep}</span>
+        <a href="/roadmap" className={styles.link}>
+          {t.footer?.roadmap || "Roadmap"}
+        </a>
       </div>
     </footer>
   );

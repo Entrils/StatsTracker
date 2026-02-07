@@ -1,16 +1,16 @@
 .wrapper {
-  max-width: 900px;
+  max-width: var(--content-max-narrow);
   margin: 0 auto;
-  padding: 28px 18px;
+  padding: var(--space-6) var(--space-4);
   background: var(--bg-card);
-  border-radius: 20px;
+  border-radius: var(--radius-lg);
   border: 1px solid var(--border-soft);
   box-shadow: var(--shadow-strong);
 }
 
 .title {
-  margin-bottom: 14px;
-  font-size: 2rem;
+  margin-bottom: var(--space-3);
+  font-size: var(--text-xl);
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -18,6 +18,12 @@
 
 .text {
   color: var(--text-muted);
-  margin-bottom: 12px;
+  margin-bottom: var(--space-3);
   line-height: 1.7;
+  font-size: var(--text-sm);
+}
+
+.text + .text {
+  padding-top: var(--space-3);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
