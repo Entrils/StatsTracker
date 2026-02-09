@@ -22,6 +22,12 @@ export function registerProfileRoutes(app, deps) {
       const name = profileData?.name || uid;
       const provider = profileData?.provider || null;
       const avatar = profileData?.avatar || null;
+      const matches = Number.isFinite(profileData?.matches)
+        ? profileData.matches
+        : null;
+      const winrate = Number.isFinite(profileData?.winrate)
+        ? profileData.winrate
+        : null;
 
       let avatarUrl = null;
       if (provider === "discord" && uid.startsWith("discord:")) {
@@ -53,7 +59,27 @@ export function registerProfileRoutes(app, deps) {
           .replace(/"/g, "&quot;");
 
       const title = `FragPunk Tracker — ${name}`;
-      const description = `Профиль игрока ${name} на FragPunk Tracker.`;
+      const lang = String(req.query.lang || "").toLowerCase();
+      const isEn = lang === "en";
+      const isFr = lang === "fr";
+      const isDe = lang === "de";
+      const labelMatches = isEn ? "Matches" : isFr ? "Matchs" : isDe ? "Matches" : "Матчей";
+      const labelWinrate = isEn ? "Winrate" : isFr ? "Taux de victoire" : isDe ? "Winrate" : "Винрейт";
+      const statsParts = [];
+      if (matches !== null) {
+        statsParts.push(`${labelMatches}: ${matches}`);
+      }
+      if (winrate !== null) {
+        statsParts.push(`${labelWinrate}: ${winrate}%`);
+      }
+      const statsLine = statsParts.length ? ` ${statsParts.join(" • ")}` : "";
+      const description = isEn
+        ? `Player profile ${name} on FragPunk Tracker.${statsLine}`
+        : isFr
+        ? `Profil du joueur ${name} sur FragPunk Tracker.${statsLine}`
+        : isDe
+        ? `Spielerprofil ${name} auf FragPunk Tracker.${statsLine}`
+        : `Профиль игрока ${name} на FragPunk Tracker.${statsLine}`;
 
       res.setHeader("Content-Type", "text/html; charset=utf-8");
       return res.status(200).send(`<!doctype html>

@@ -9,6 +9,7 @@
     settings: "Settings",
     friends: "Friends",
     achievements: "My achievements",
+    help: "Help",
   },
 
   leaderboard: {
@@ -94,7 +95,7 @@
     deaths: "Deaths",
     assists: "Assists",
     hit: "Hit Enemy",
-    damage: "Damage %",
+    damage: "Damage",
     progress: "Progress",
     damageShare: "Dmg share",
     vsGlobal: "vs Global average",
@@ -267,6 +268,55 @@
     remaining: "Remaining",
   },
 
+  help: {
+    title: "Help",
+    subtitle: "Short, practical instructions without fluff.",
+    uploadTitle: "Uploading screenshots",
+    uploadBody:
+      "The service reads your match history from a screenshot. Cleaner and larger text means better OCR.",
+    uploadSteps: [
+      "Open match history and take a full-screen screenshot.",
+      "Use PNG/JPG without cropping or UI scaling.",
+      "Upload the file or paste from clipboard (Ctrl+V), then click “Analyze match”.",
+      "Wait for “OK” — the match will appear in your profile and leaderboard.",
+    ],
+    uploadTips: [
+      "Blurry or over-bright images reduce accuracy — use originals.",
+      "RU/EN/FR/DE interfaces are supported.",
+      "If a match is already uploaded, you’ll see a duplicate status.",
+    ],
+    uploadAlt: "Screenshot upload guide",
+    profileTitle: "Navigation and menu",
+    profileBody:
+      "The top bar contains the main sections and account menu. Here’s what each button does.",
+    profileButtons: [
+      "Upload — upload/analyze match screenshots (available after login).",
+      "Players — leaderboard and player search.",
+      "Help — this page with instructions and guides.",
+      "Profile (dropdown) — quick access to My Profile, Friends, Achievements, Settings, and Logout.",
+      "Language — switch between RU/EN/FR/DE.",
+    ],
+    profileTips: [
+      "On mobile, these items are inside the burger menu on the right.",
+    ],
+    profileAlt: "Navigation and menu guide",
+    playerProfileTitle: "Player profile",
+    playerProfileBody:
+      "This section explains how to read the player profile and its key blocks.",
+    playerProfileSteps: [
+      "Top area shows nickname, avatar, and socials. Social icons open the player’s profile.",
+      "The add‑friend button appears if the player isn’t in your friends list.",
+      "Stat blocks show averages, results, and progress over time.",
+      "Ranks show verified seasonal ranks or “not verified”.",
+      "Achievements list the best unlocked awards with dates.",
+    ],
+    playerProfileTips: [
+      "If a player is banned, a banner appears and they’re excluded from global stats.",
+      "Friend comparison is available in your profile under “Compare”.",
+    ],
+    playerProfileAlt: "Player profile guide",
+  },
+
   policy: {
     title: "Policy of use",
     p1:
@@ -312,10 +362,5 @@
     discord: "Discord",
   },
 };
-
-
-
-
-
 
 
