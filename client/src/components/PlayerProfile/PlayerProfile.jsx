@@ -32,6 +32,7 @@ export default function PlayerProfile() {
   const [friendStatus, setFriendStatus] = useState("none");
   const [profileFriendDates, setProfileFriendDates] = useState([]);
   const [profileFriendCount, setProfileFriendCount] = useState(null);
+  const [shareStatus, setShareStatus] = useState("");
 
   useEffect(() => {
     const fetchHistory = async () => {
@@ -237,6 +238,27 @@ export default function PlayerProfile() {
     return null;
   }, [profileAvatar, uid, user, claims]);
 
+  const shareUrl = useMemo(() => {
+    if (!uid) return "";
+    return `${backend.replace(/\/+$/, "")}/share/player/${encodeURIComponent(uid)}`;
+  }, [uid]);
+
+  const handleCopyShare = async () => {
+    if (!shareUrl) return;
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(shareUrl);
+      } else {
+        window.prompt(t.profile?.sharePrompt || "Copy link:", shareUrl);
+      }
+      setShareStatus(t.profile?.shareCopied || "Link copied");
+      window.setTimeout(() => setShareStatus(""), 2000);
+    } catch {
+      setShareStatus(t.profile?.shareFailed || "Copy failed");
+      window.setTimeout(() => setShareStatus(""), 2000);
+    }
+  };
+
   if (loading) {
     return <p className={styles.wrapper}>{t.profile.loading}</p>;
   }
@@ -267,6 +289,23 @@ export default function PlayerProfile() {
               <span className={styles.banBadge}>
                 {t.profile?.bannedBadge || "Banned"}
               </span>
+            )}
+            <button
+              type="button"
+              className={styles.shareButton}
+              onClick={handleCopyShare}
+              title={t.profile?.share || "Share profile"}
+              aria-label={t.profile?.share || "Share profile"}
+            >
+              <svg viewBox="0 0 24 24" role="img" aria-hidden="true">
+                <path
+                  d="M18 16a3 3 0 0 0-2.4 1.2L8.9 13a3.1 3.1 0 0 0 0-2l6.7-4.2A3 3 0 1 0 15 5a3 3 0 0 0 .1.7L8.4 9.9a3 3 0 1 0 0 4.2l6.7 4.2A3 3 0 1 0 18 16Z"
+                  fill="currentColor"
+                />
+              </svg>
+            </button>
+            {shareStatus && (
+              <span className={styles.shareHint}>{shareStatus}</span>
             )}
             <div className={styles.nameSocials}>
               {renderSocial("twitch", profileSocials?.twitch)}

@@ -1,4 +1,4 @@
-﻿import React, { useRef, useState } from "react";
+﻿import React, { useCallback, useEffect, useRef, useState } from "react";
 import imageCompression from "browser-image-compression";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "@/firebase";
@@ -56,8 +56,22 @@ function extractMatchId(text) {
 function parseMatchResult(text) {
   if (!text) return null;
   const t = String(text).toUpperCase();
-  const normalized = t.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const normalized = t.normalize("NFD").replace(/\p{M}/gu, "");
   const latin = t.replace(/[^A-Z]/g, "");
+  const latinConfusable = latin
+    .replace(/M/g, "P")
+    .replace(/N/g, "O")
+    .replace(/O/g, "O")
+    .replace(/B/g, "B")
+    .replace(/E/g, "E")
+    .replace(/A/g, "A")
+    .replace(/D/g, "D")
+    .replace(/P/g, "P")
+    .replace(/R/g, "R")
+    .replace(/T/g, "T")
+    .replace(/Y/g, "Y")
+    .replace(/K/g, "K")
+    .replace(/X/g, "X");
   const cyrA = t
     .replace(/[A]/g, "А")
     .replace(/[B]/g, "В")
@@ -90,9 +104,8 @@ function parseMatchResult(text) {
     .replace(/[N]/g, "О")
     .replace(/[V]/g, "В")
     .replace(/[^А-Я]/g, "");
-
-  if (
-    latin.includes("VICTORY") ||
+if (
+    latin.includes("VICTORY") || latinConfusable.includes("POBE") || latinConfusable.includes("POBED") || latinConfusable.includes("POB") ||
     normalized.includes("VICTOIRE") ||
     t.includes("SIEG") ||
     cyrA.includes("ПОБЕД") ||
@@ -103,7 +116,7 @@ function parseMatchResult(text) {
   )
     return "victory";
   if (
-    latin.includes("DEFEAT") ||
+    latin.includes("DEFEAT") || latinConfusable.includes("PORA") || latinConfusable.includes("PORAZH") || latinConfusable.includes("PORAZ") ||
     normalized.includes("DEFAITE") ||
     t.includes("VERLUST") ||
     cyrA.includes("ПОРАЖ") ||
@@ -169,13 +182,13 @@ export default function UploadTab() {
   const [isDragging, setIsDragging] = useState(false);
   const [status, setStatus] = useState("");
   const [statusTone, setStatusTone] = useState("");
+  const [lastMatch, setLastMatch] = useState(null);
   const [ocrRemaining, setOcrRemaining] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const tesseractRef = useRef(null);
   const tesseractInitRef = useRef(null);
-
-  const ensureTesseract = async () => {
+  const ensureTesseract = useCallback(async () => {
     if (tesseractRef.current) return tesseractRef.current;
     if (!tesseractInitRef.current) {
       tesseractInitRef.current = (async () => {
@@ -190,18 +203,48 @@ export default function UploadTab() {
       })();
     }
     return tesseractInitRef.current;
-  };
+  }, []);
 
-  const handleFile = (file) => {
-    setSelectedFile(file || null);
-    setImageUrl(file ? URL.createObjectURL(file) : null);
-    setFileName(file ? file.name : "");
-    if (file) {
-      ensureTesseract().catch(() => {
-        // handled on analyze
-      });
-    }
-  };
+  const handleFile = useCallback(
+    (file) => {
+      setSelectedFile(file || null);
+      setImageUrl(file ? URL.createObjectURL(file) : null);
+      setFileName(file ? file.name : "");
+      if (file) {
+        ensureTesseract().catch(() => {
+          // handled on analyze
+        });
+      }
+    },
+    [ensureTesseract]
+  );
+
+    const handlePaste = useCallback(
+    (event) => {
+      const items = event.clipboardData?.items;
+      if (!items?.length) return;
+      const imageItem = Array.from(items).find((item) =>
+        item.type.startsWith("image/")
+      );
+      if (!imageItem) return;
+      const file = imageItem.getAsFile();
+      if (!file) return;
+      event.preventDefault();
+      const ext = file.type.split("/")[1] || "png";
+      const namedFile = file.name
+        ? file
+        : new File([file], `clipboard.${ext}`, { type: file.type });
+      handleFile(namedFile);
+      setStatus(t.upload.pasteReady || "Pasted from clipboard");
+      setStatusTone("good");
+    },
+    [handleFile, t]
+  );
+
+  useEffect(() => {
+    window.addEventListener("paste", handlePaste);
+    return () => window.removeEventListener("paste", handlePaste);
+  }, [handlePaste]);
 
   if (!user) {
     return (
@@ -499,6 +542,7 @@ export default function UploadTab() {
 
       setStatus(t.upload.statusOk || "OK (Uploaded)");
       setStatusTone("good");
+      setLastMatch({ matchId, result: matchResult ?? null, ...parsed });
     } catch (e) {
       setStatus(t.upload.statusOtherFailed || "Not successful (Other error)");
       setStatusTone("bad");
@@ -529,6 +573,8 @@ export default function UploadTab() {
           className={`${styles.uploadArea} ${
             isDragging ? styles.uploadAreaDrag : ""
           }`}
+          tabIndex={0}
+          onPaste={handlePaste}
           onDragEnter={(e) => {
             e.preventDefault();
             setIsDragging(true);
@@ -553,7 +599,7 @@ export default function UploadTab() {
             {t.upload.selectFile || "Choose screenshot"}
           </div>
           <div className={styles.uploadHint}>
-            {t.upload.selectHint || "PNG/JPG, preferably full screen"}
+            {(t.upload.selectHint || "PNG/JPG, preferably full screen") + " | " + (t.upload.pasteHint || "Paste: Ctrl+V")}
           </div>
           {fileName && <div className={styles.fileName}>{fileName}</div>}
         </label>
@@ -606,10 +652,94 @@ export default function UploadTab() {
             )}
           </p>
         )}
+        {lastMatch && (
+          <div className={styles.matchCard}>
+            <div className={styles.matchCardHeader}>
+              <span className={styles.matchCardTitle}>
+                {t.upload.matchCardTitle || "Last match"}
+              </span>
+              <span
+                className={`${styles.matchCardResult} ${
+                  lastMatch.result === "victory"
+                    ? styles.matchCardWin
+                    : lastMatch.result === "defeat"
+                    ? styles.matchCardLoss
+                    : ""
+                }`}
+              >
+                {lastMatch.result === "victory"
+                  ? t.upload.resultVictory || "Victory"
+                  : lastMatch.result === "defeat"
+                  ? t.upload.resultDefeat || "Defeat"
+                  : t.upload.resultUnknown || "Result"}
+              </span>
+            </div>
+            <div className={styles.matchCardGrid}>
+              <div className={styles.matchCardItem}>
+                <span className={styles.matchCardLabel}>{t.upload.score || "Score"}</span>
+                <span className={styles.matchCardValue}>{lastMatch.score}</span>
+              </div>
+              <div className={styles.matchCardItem}>
+                <span className={styles.matchCardLabel}>{t.upload.kills || "K"}</span>
+                <span className={styles.matchCardValue}>{lastMatch.kills}</span>
+              </div>
+              <div className={styles.matchCardItem}>
+                <span className={styles.matchCardLabel}>{t.upload.deaths || "D"}</span>
+                <span className={styles.matchCardValue}>{lastMatch.deaths}</span>
+              </div>
+              <div className={styles.matchCardItem}>
+                <span className={styles.matchCardLabel}>{t.upload.assists || "A"}</span>
+                <span className={styles.matchCardValue}>{lastMatch.assists}</span>
+              </div>
+              <div className={styles.matchCardItem}>
+                <span className={styles.matchCardLabel}>{t.upload.damage || "Damage"}</span>
+                <span className={styles.matchCardValue}>{lastMatch.damage}</span>
+              </div>
+              <div className={styles.matchCardItem}>
+                <span className={styles.matchCardLabel}>{t.upload.damageShare || "Dmg %"}</span>
+                <span className={styles.matchCardValue}>
+                  {typeof lastMatch.damageShare === "number"
+                    ? `${lastMatch.damageShare}%`
+                    : lastMatch.damageShare}
+                </span>
+              </div>
+            </div>
+            <div className={styles.matchCardMeta}>
+              {t.upload.matchIdLabel || "Match ID"}: {lastMatch.matchId}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

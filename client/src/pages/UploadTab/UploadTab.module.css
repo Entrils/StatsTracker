@@ -218,6 +218,82 @@
   text-shadow: 0 0 10px rgba(255, 184, 77, 0.35);
 }
 
+.matchCard {
+  margin-top: 1rem;
+  padding: 1rem;
+  border-radius: 1rem;
+  background: rgba(8, 12, 22, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 24px rgba(0, 245, 212, 0.12);
+}
+
+.matchCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.matchCardTitle {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(154, 164, 193, 0.9);
+}
+
+.matchCardResult {
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #e6ecff;
+}
+
+.matchCardWin {
+  color: #9bff2e;
+}
+
+.matchCardLoss {
+  color: #ff4d6d;
+}
+
+.matchCardGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+  gap: 0.6rem;
+}
+
+.matchCardItem {
+  background: rgba(6, 10, 20, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 0.75rem;
+  padding: 0.5rem 0.6rem;
+  text-align: center;
+}
+
+.matchCardLabel {
+  display: block;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(154, 164, 193, 0.85);
+}
+
+.matchCardValue {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #f3f6ff;
+}
+
+.matchCardMeta {
+  margin-top: 0.75rem;
+  font-size: 0.75rem;
+  color: rgba(154, 164, 193, 0.8);
+  text-align: right;
+}
+
 .tableWrapper {
   margin-top: 2rem;
   overflow-x: auto;

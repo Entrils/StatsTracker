@@ -65,6 +65,31 @@
   flex-wrap: wrap;
 }
 
+.shareButton {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 245, 212, 0.35);
+  background: rgba(0, 245, 212, 0.12);
+  color: #b6fff2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.shareButton:hover {
+  transform: translateY(-1px);
+  border-color: rgba(0, 245, 212, 0.6);
+  box-shadow: 0 0 12px rgba(0, 245, 212, 0.25);
+}
+
+.shareHint {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.75);
+}
+
 .avatar {
   width: 44px;
   height: 44px;

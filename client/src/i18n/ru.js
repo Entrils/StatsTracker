@@ -3,6 +3,7 @@
     upload: "Загрузка",
     players: "Игроки",
     myProfile: "Мой профиль",
+    loginDiscord: "Войти через Discord",
     Logout: "Выйти",
     admin: "Админ",
     settings: "Настройки",
@@ -44,9 +45,11 @@
     deaths: "С",
     assists: "П",
     hit: "Попадания",
-    damage: "% урона",
+    damage: "урон",
     selectFile: "Выбрать скриншот",
     selectHint: "PNG/JPG, полный экран, RU/ENG/FR/DE",
+    pasteHint: "Вставить: Ctrl+V",
+    pasteReady: "Скриншот вставлен из буфера",
     fileReady: "Файл загружен — можно анализировать",
     fileMissing: "Файл еще не выбран",
     statusOk: "ОК (ЗАГРУЖЕНО)",
@@ -57,6 +60,11 @@
     statusBanned: "НЕ УДАЛОСЬ (ВЫ ЗАБАНЕНЫ)",
     statusMatchIdFailed: "НЕ УДАЛОСЬ (код матча не найден)",
     statusPlayerFailed: "НЕ УДАЛОСЬ (строка игрока не распознана)",
+    matchCardTitle: "Последний матч",
+    matchIdLabel: "Код матча",
+    resultVictory: "Победа",
+    resultDefeat: "Поражение",
+    resultUnknown: "Результат",
     ocrRemaining: "OCR осталось на сегодня: {count}",
   },
   profile: {
@@ -79,7 +87,7 @@
     deaths: "Смерти",
     assists: "Ассисты",
     hit: "Попадания",
-    damage: "% урона",
+    damage: "Урон",
     progress: "Прогресс",
     damageShare: "Доля урона",
     kda: "KDA",
@@ -94,6 +102,10 @@
     rankAce: "Ас",
     rankPunkmaster: "Панкмастер",
     bannedBadge: "Забанен",
+    share: "Поделиться",
+    shareCopied: "Ссылка скопирована",
+    shareFailed: "Не удалось скопировать",
+    sharePrompt: "Скопируйте ссылку:",
   },
   me: {
     title: "Мой профиль",
@@ -130,6 +142,10 @@
     compareFriend: "Друг",
     vsGlobal: "Сравнение со средним",
     globalSample: "выборка",
+    share: "Поделиться",
+    shareCopied: "Ссылка скопирована",
+    shareFailed: "Не удалось скопировать",
+    sharePrompt: "Скопируйте ссылку:",
     globalLoading: "Загружаем глобальные средние...",
     globalUnavailable: "Глобальные средние пока недоступны.",
     weekdaysShort: ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"],
@@ -169,6 +185,8 @@
     rankVerifyTitle: "Верификация ранга",
     rankVerifyHint:
       "Выберите сезон и ранг, затем прикрепите скриншот. 1 отправка в день.",
+    rankChooseFile: "Выбрать файл",
+    rankNoFile: "Файл не выбран",
     rankSeason: "Сезон",
     rankLabel: "Ранг",
     rankScreenshot: "Скриншот",
@@ -284,4 +302,10 @@
     discord: "Discord",
   },
 };
+
+
+
+
+
+
 

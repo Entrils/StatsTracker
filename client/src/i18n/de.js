@@ -1,8 +1,9 @@
-export default {
+﻿export default {
   nav: {
     upload: "Upload",
     players: "Spieler",
     myProfile: "Mein Profil",
+    loginDiscord: "Login mit Discord",
     Logout: "Abmelden",
     admin: "Admin",
     settings: "Einstellungen",
@@ -49,7 +50,9 @@ export default {
     damage: "% Schaden",
     selectFile: "Screenshot auswählen",
     selectHint: "PNG/JPG, Vollbild, RU/ENG/FR/DE",
-    fileReady: "Datei geladen – bereit zur Analyse",
+    pasteHint: "Einfügen: Ctrl+V",
+    pasteReady: "Aus Zwischenablage eingefuegt",
+    fileReady: "Datei geladen — bereit zur Analyse",
     fileMissing: "Noch keine Datei ausgewählt",
     statusOk: "OK (Hochgeladen)",
     statusAlready: "Match wurde bereits hochgeladen",
@@ -59,6 +62,11 @@ export default {
     statusBanned: "Nicht erfolgreich (gesperrt)",
     statusMatchIdFailed: "Nicht erfolgreich (Match-ID nicht gefunden)",
     statusPlayerFailed: "Nicht erfolgreich (Spielerzeile nicht erkannt)",
+    matchCardTitle: "Letztes Match",
+    matchIdLabel: "Match-ID",
+    resultVictory: "Sieg",
+    resultDefeat: "Niederlage",
+    resultUnknown: "Ergebnis",
     ocrRemaining: "OCR übrig heute: {count}",
   },
 
@@ -136,6 +144,10 @@ export default {
     globalSample: "Stichprobe",
     globalLoading: "Globale Durchschnittswerte werden geladen...",
     globalUnavailable: "Globale Durchschnittswerte sind noch nicht verfügbar.",
+    share: "Teilen",
+    shareCopied: "Link kopiert",
+    shareFailed: "Kopieren fehlgeschlagen",
+    sharePrompt: "Link kopieren:",
     weekdaysShort: ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"],
     totals: "Gesamt",
     trends: "Trends (letzte 5 vs vorherige 5)",
@@ -174,6 +186,8 @@ export default {
     rankVerifyTitle: "Rang-Verifizierung",
     rankVerifyHint:
       "Wähle Saison und Rang aus und füge einen Screenshot an. 1 Einsendung pro Tag.",
+    rankChooseFile: "Datei auswählen",
+    rankNoFile: "Keine Datei ausgewählt",
     rankSeason: "Saison",
     rankLabel: "Rang",
     rankScreenshot: "Screenshot",
@@ -197,6 +211,10 @@ export default {
     bannedTitle: "DU BIST GESPERRT",
     bannedHint: "Du kannst keine Screenshots hochladen und erscheinst nicht im Leaderboard.",
     bannedReason: "Grund",
+    share: "Teilen",
+    shareCopied: "Link kopiert",
+    shareFailed: "Kopieren fehlgeschlagen",
+    sharePrompt: "Link kopieren:",
   },
 
   footer: {
@@ -248,7 +266,7 @@ export default {
   policy: {
     title: "Nutzungsrichtlinie",
     p1:
-      "Mit der Nutzung von FragPunk Tracker akzeptierst du, dass der Dienst „wie er ist“ bereitgestellt wird und zeitweise ungenau oder nicht verfügbar sein kann.",
+      "Mit der Nutzung von FragPunk Tracker akzeptierst du, dass der Dienst “wie er ist” bereitgestellt wird und zeitweise ungenau oder nicht verfügbar sein kann.",
     p2:
       "Versuche, das System zu hacken, massenhaft zu scrapen oder die Stabilität durch Automatisierung zu beeinträchtigen, sind untersagt.",
     p3:

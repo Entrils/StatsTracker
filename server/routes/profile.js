@@ -10,6 +10,77 @@ export function registerProfileRoutes(app, deps) {
     isValidUid,
   } = deps;
 
+  app.get("/share/player/:uid", statsLimiter, async (req, res) => {
+    try {
+      const { uid } = req.params;
+      if (!uid || !isValidUid(uid)) {
+        return res.status(400).send("Invalid uid");
+      }
+
+      const profileSnap = await db.collection("leaderboard_users").doc(uid).get();
+      const profileData = profileSnap.exists ? profileSnap.data() : null;
+      const name = profileData?.name || uid;
+      const provider = profileData?.provider || null;
+      const avatar = profileData?.avatar || null;
+
+      let avatarUrl = null;
+      if (provider === "discord" && uid.startsWith("discord:")) {
+        const discordId = uid.replace("discord:", "");
+        if (avatar) {
+          avatarUrl = `https://cdn.discordapp.com/avatars/${discordId}/${avatar}.png?size=512`;
+        } else if (discordId) {
+          const fallbackIndex = Number.parseInt(discordId, 10) % 5;
+          avatarUrl = `https://cdn.discordapp.com/embed/avatars/${fallbackIndex}.png`;
+        }
+      }
+      if (!avatarUrl) {
+        avatarUrl = "https://cdn.discordapp.com/embed/avatars/0.png";
+      }
+
+      const siteUrlRaw =
+        process.env.PUBLIC_SITE_URL ||
+        process.env.SITE_URL ||
+        process.env.WEB_URL ||
+        "";
+      const siteUrl = siteUrlRaw.replace(/\/+$/, "");
+      const profileUrl = siteUrl ? `${siteUrl}/player/${encodeURIComponent(uid)}` : "";
+
+      const escapeHtml = (val) =>
+        String(val)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+
+      const title = `FragPunk Tracker — ${name}`;
+      const description = `Профиль игрока ${name} на FragPunk Tracker.`;
+
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      return res.status(200).send(`<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>${escapeHtml(title)}</title>
+    <meta property="og:title" content="${escapeHtml(title)}" />
+    <meta property="og:description" content="${escapeHtml(description)}" />
+    <meta property="og:type" content="profile" />
+    <meta property="og:image" content="${escapeHtml(avatarUrl)}" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
+    ${profileUrl ? `<meta property="og:url" content="${escapeHtml(profileUrl)}" />` : ""}
+    ${profileUrl ? `<meta http-equiv="refresh" content="0; url=${escapeHtml(profileUrl)}" />` : ""}
+  </head>
+  <body>
+    ${profileUrl ? `<a href="${escapeHtml(profileUrl)}">Открыть профиль</a>` : "Profile"}
+  </body>
+</html>`);
+    } catch (err) {
+      logger.error("SHARE PROFILE ERROR:", err);
+      return res.status(500).send("Failed to build share preview");
+    }
+  });
+
   app.get("/player/:uid", statsLimiter, async (req, res) => {
     try {
       const { uid } = req.params;
