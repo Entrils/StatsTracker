@@ -11,7 +11,7 @@ export default function OverviewSection({
   globalRanks,
 }) {
   return (
-    <div className={`${styles.statsSection} ${styles.fadeIn} ${styles.stagger1}`}>
+    <div className={`${styles.statsSection} ${styles.statsSectionPrimary} ${styles.fadeIn} ${styles.stagger1}`}>
       <div className={styles.statsHeader}>
         <h2 className={styles.statsTitle}>{t.me?.overview || "Overview"}</h2>
         <p className={styles.statsSubtitle}>
@@ -105,4 +105,3 @@ export default function OverviewSection({
     </div>
   );
 }
-

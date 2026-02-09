@@ -13,6 +13,7 @@ const SORTS = {
   MATCHES: "matches",
 };
 const PAGE_SIZE = 300;
+const SKELETON_ROWS = 8;
 
 export default function PlayersTab() {
   const { t } = useLang();
@@ -25,9 +26,11 @@ export default function PlayersTab() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
 
   const fetchPage = async (reset = false) => {
     if (reset) {
+      setRefreshing(rawRows.length > 0);
       setLoading(true);
       setHasMore(true);
       setRawRows([]);
@@ -69,6 +72,7 @@ export default function PlayersTab() {
     } finally {
       setLoading(false);
       setLoadingMore(false);
+      setRefreshing(false);
     }
   };
 
@@ -145,6 +149,7 @@ export default function PlayersTab() {
               }`}
               variant="secondary"
               size="sm"
+              disabled={loading || loadingMore}
             >
               {t.leaderboard.matches || "Matches"}
             </Button>
@@ -156,6 +161,7 @@ export default function PlayersTab() {
               }`}
               variant="secondary"
               size="sm"
+              disabled={loading || loadingMore}
             >
               {t.leaderboard.winrate || "Winrate"}
             </Button>
@@ -167,6 +173,7 @@ export default function PlayersTab() {
               }`}
               variant="secondary"
               size="sm"
+              disabled={loading || loadingMore}
             >
               {t.leaderboard.avgScore || "Avg score"}
             </Button>
@@ -178,6 +185,7 @@ export default function PlayersTab() {
               }`}
               variant="secondary"
               size="sm"
+              disabled={loading || loadingMore}
             >
               {t.leaderboard.kda || "KDA"}
             </Button>
@@ -187,15 +195,16 @@ export default function PlayersTab() {
             <Button
               onClick={() => fetchPage(true)}
               className={styles.refreshBtn}
-              disabled={loading}
+              disabled={loading || loadingMore}
               aria-label={t.leaderboard.refresh || "Refresh"}
               title={t.leaderboard.refresh || "Refresh"}
               variant="secondary"
               iconOnly
+              aria-busy={refreshing ? "true" : "false"}
             >
               <svg
                 className={`${styles.refreshIcon} ${
-                  loading ? styles.refreshIconSpinning : ""
+                  refreshing ? styles.refreshIconSpinning : ""
                 }`}
                 viewBox="0 0 24 24"
                 fill="none"
@@ -225,7 +234,18 @@ export default function PlayersTab() {
       </div>
 
       {loading && (
-        <StateMessage text={t.leaderboard.loading || "Loading..."} tone="loading" />
+        <div className={styles.skeletonWrap} aria-hidden="true">
+          {Array.from({ length: SKELETON_ROWS }).map((_, i) => (
+            <div className={styles.skeletonRow} key={i}>
+              <span className={`${styles.skeletonCell} ${styles.skeletonRank}`} />
+              <span className={`${styles.skeletonCell} ${styles.skeletonPlayer}`} />
+              <span className={styles.skeletonCell} />
+              <span className={styles.skeletonCell} />
+              <span className={styles.skeletonCell} />
+              <span className={styles.skeletonCell} />
+            </div>
+          ))}
+        </div>
       )}
       {!loading && error && <StateMessage text={error} tone="error" />}
 
@@ -335,6 +355,53 @@ export default function PlayersTab() {
         {!filteredAndSorted.length && (
           <StateMessage text={t.leaderboard.notFound} tone="empty" />
         )}
+      </div>
+      <div className={styles.mobileList}>
+        {filteredAndSorted.map((p, index) => {
+          const rank = p.rank ?? index + 1;
+          const delta = p.rankDelta || 0;
+          const createdAtMs =
+            typeof p.createdAt === "number"
+              ? p.createdAt
+              : typeof p.createdAt === "string"
+              ? Date.parse(p.createdAt)
+              : p.createdAt?.seconds
+              ? p.createdAt.seconds * 1000
+              : p.createdAt?._seconds
+              ? p.createdAt._seconds * 1000
+              : 0;
+          const isNew = createdAtMs && Date.now() - createdAtMs < 7 * 24 * 60 * 60 * 1000;
+          const deltaLabel = isNew ? "NEW" : delta === 0 ? "=0" : `${delta > 0 ? "+" : "-"} ${Math.abs(delta)}`;
+          return (
+            <article className={styles.mobileCard} key={`mobile-${p.uid}`}>
+              <div className={styles.mobileTop}>
+                <span className={styles.mobileRank}>#{rank}</span>
+                <span
+                  className={`${styles.rankDelta} ${
+                    isNew
+                      ? styles.rankNew
+                      : delta > 0
+                      ? styles.rankUp
+                      : delta < 0
+                      ? styles.rankDown
+                      : styles.rankSame
+                  }`}
+                >
+                  {deltaLabel}
+                </span>
+              </div>
+              <Link to={`/player/${p.uid}`} className={styles.mobileName}>
+                {p.name}
+              </Link>
+              <div className={styles.mobileMeta}>
+                <span>{t.leaderboard.matches || "Matches"}: {p.matches}</span>
+                <span>{t.leaderboard.winrate || "Winrate"}: {p.winrate.toFixed(1)}%</span>
+                <span>{t.leaderboard.avgScore || "Avg score"}: {Math.round(p.avgScore)}</span>
+                <span>{t.leaderboard.kda || "KDA"}: {p.kda.toFixed(2)}</span>
+              </div>
+            </article>
+          );
+        })}
       </div>
 
       {hasMore && !loading && (
