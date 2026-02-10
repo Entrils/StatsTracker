@@ -66,6 +66,7 @@
     resultVictory: "Победа",
     resultDefeat: "Поражение",
     resultUnknown: "Результат",
+    helpLink: "Справка по загрузке скриншота",
     ocrRemaining: "OCR осталось на сегодня: {count}",
   },
   profile: {

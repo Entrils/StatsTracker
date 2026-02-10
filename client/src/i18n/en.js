@@ -68,6 +68,7 @@
     resultVictory: "Victory",
     resultDefeat: "Defeat",
     resultUnknown: "Result",
+    helpLink: "Screenshot upload help",
     ocrRemaining: "OCR left today: {count}",
   },
 
@@ -362,5 +363,4 @@
     discord: "Discord",
   },
 };
-
 

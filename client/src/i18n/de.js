@@ -68,6 +68,7 @@
     resultVictory: "Sieg",
     resultDefeat: "Niederlage",
     resultUnknown: "Ergebnis",
+    helpLink: "Hilfe zum Screenshot-Upload",
     ocrRemaining: "OCR übrig heute: {count}",
   },
 
