@@ -107,6 +107,22 @@ export function registerProfileRoutes(app, deps) {
       .get();
     const friendCount = friendsDocs.size;
 
+    const updatedAtRaw = profileData?.updatedAt;
+    let updatedAt = null;
+    if (updatedAtRaw?.toMillis) {
+      updatedAt = updatedAtRaw.toMillis();
+    } else if (typeof updatedAtRaw === "number") {
+      updatedAt = updatedAtRaw;
+    } else if (updatedAtRaw?.seconds) {
+      updatedAt = updatedAtRaw.seconds * 1000;
+    }
+    if (updatedAt === null && matchCount) {
+      const lastMatch = matchRows[matchRows.length - 1];
+      if (typeof lastMatch?.createdAt === "number") {
+        updatedAt = lastMatch.createdAt;
+      }
+    }
+
     return {
       name,
       avatarUrl,
@@ -116,6 +132,7 @@ export function registerProfileRoutes(app, deps) {
       avgScore,
       kda,
       winrate,
+      updatedAt,
       ranks,
       matchRows,
       matchCount,
@@ -512,7 +529,7 @@ export function registerProfileRoutes(app, deps) {
 
       const lang = String(req.query.lang || "").toLowerCase();
       const shareData = await buildShareData(uid, lang);
-      const { name, matches, winrate } = shareData;
+      const { name, matches, winrate, updatedAt } = shareData;
 
       const siteUrlRaw =
         process.env.PUBLIC_SITE_URL ||
@@ -524,9 +541,12 @@ export function registerProfileRoutes(app, deps) {
       const proto = req.headers["x-forwarded-proto"] || req.protocol;
       const host = req.get("host");
       const origin = host ? `${proto}://${host}` : "";
+      const imageParams = new URLSearchParams();
+      if (lang) imageParams.set("lang", lang);
+      if (updatedAt) imageParams.set("v", String(updatedAt));
       const imageUrl = origin
         ? `${origin}/share/player/${encodeURIComponent(uid)}/image.png${
-            lang ? `?lang=${encodeURIComponent(lang)}` : ""
+            imageParams.toString() ? `?${imageParams.toString()}` : ""
           }`
         : "";
 
@@ -590,15 +610,21 @@ export function registerProfileRoutes(app, deps) {
     <title>${escapeHtml(shareTitle)}</title>
     <meta property="og:title" content="${escapeHtml(shareTitle)}" />
     <meta property="og:description" content="${escapeHtml(descriptionFinal)}" />
-    <meta property="og:type" content="profile" />
+    <meta property="og:type" content="website" />
     ${imageUrl ? `<meta property="og:image" content="${escapeHtml(imageUrl)}" />` : ""}
+    ${imageUrl ? `<meta property="og:image:secure_url" content="${escapeHtml(imageUrl)}" />` : ""}
     ${imageUrl ? `<meta property="og:image:width" content="1200" />` : ""}
     ${imageUrl ? `<meta property="og:image:height" content="630" />` : ""}
+    ${imageUrl ? `<meta property="og:image:type" content="image/png" />` : ""}
     ${profileUrl ? `<meta property="og:url" content="${escapeHtml(profileUrl)}" />` : ""}
+    <meta name="twitter:card" content="summary_large_image" />
+    ${imageUrl ? `<meta name="twitter:image" content="${escapeHtml(imageUrl)}" />` : ""}
+    <meta name="twitter:title" content="${escapeHtml(shareTitle)}" />
+    <meta name="twitter:description" content="${escapeHtml(descriptionFinal)}" />
     ${profileUrl ? `<meta http-equiv="refresh" content="0; url=${escapeHtml(profileUrl)}" />` : ""}
   </head>
   <body>
-    ${profileUrl ? `<a href="${escapeHtml(profileUrl)}">Открыть профиль</a>` : "Profile"}
+    ${profileUrl ? `<a href="${escapeHtml(profileUrl)}">${escapeHtml(profileLinkLabel)}</a>` : "Profile"}
   </body>
 </html>`);
     } catch (err) {
