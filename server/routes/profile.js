@@ -195,6 +195,12 @@ export function registerProfileRoutes(app, deps) {
 
   app.get("/share/player/:uid/image.png", statsLimiter, async (req, res) => {
     try {
+      res.setHeader(
+        "Cache-Control",
+        "no-store, no-cache, must-revalidate, proxy-revalidate"
+      );
+      res.setHeader("Pragma", "no-cache");
+      res.setHeader("Expires", "0");
       const { uid } = req.params;
       logger.info(`SHARE IMAGE request uid=${uid} lang=${req.query.lang || ""}`);
       if (!uid || !isValidUid(uid)) {
@@ -522,6 +528,12 @@ export function registerProfileRoutes(app, deps) {
 
   app.get("/share/player/:uid", statsLimiter, async (req, res) => {
     try {
+      res.setHeader(
+        "Cache-Control",
+        "no-store, no-cache, must-revalidate, proxy-revalidate"
+      );
+      res.setHeader("Pragma", "no-cache");
+      res.setHeader("Expires", "0");
       const { uid } = req.params;
       if (!uid || !isValidUid(uid)) {
         return res.status(400).send("Invalid uid");
