@@ -69,6 +69,14 @@ function parseMatchResult(text) {
   if (!text) return null;
   const t = String(text).toUpperCase();
   const normalized = t.normalize("NFD").replace(/\p{M}/gu, "");
+  const fuzzyLatin = normalized
+    .replace(/[^A-Z0-9]/g, "")
+    .replace(/0/g, "O")
+    .replace(/1/g, "I")
+    .replace(/3/g, "E")
+    .replace(/4/g, "A")
+    .replace(/5/g, "S")
+    .replace(/7/g, "T");
   const latin = t.replace(/[^A-Z]/g, "");
   const latinConfusable = latin
     .replace(/M/g, "P")
@@ -116,8 +124,12 @@ function parseMatchResult(text) {
     .replace(/[N]/g, "О")
     .replace(/[V]/g, "В")
     .replace(/[^А-Я]/g, "");
-if (
+  if (
     latin.includes("VICTORY") || latinConfusable.includes("POBE") || latinConfusable.includes("POBED") || latinConfusable.includes("POB") ||
+    fuzzyLatin.includes("VICTORY") ||
+    fuzzyLatin.includes("VICT0RY") ||
+    fuzzyLatin.includes("VICT0R") ||
+    fuzzyLatin.includes("VICT0") ||
     normalized.includes("VICTOIRE") ||
     t.includes("SIEG") ||
     cyrA.includes("ПОБЕД") ||
@@ -129,6 +141,9 @@ if (
     return "victory";
   if (
     latin.includes("DEFEAT") || latinConfusable.includes("PORA") || latinConfusable.includes("PORAZH") || latinConfusable.includes("PORAZ") ||
+    fuzzyLatin.includes("DEFEAT") ||
+    fuzzyLatin.includes("DEFEA") ||
+    fuzzyLatin.includes("DEFE4T") ||
     normalized.includes("DEFAITE") ||
     t.includes("VERLUST") ||
     cyrA.includes("ПОРАЖ") ||
@@ -142,7 +157,7 @@ if (
   return null;
 }
 
-function preprocessForOCR(srcCanvas) {
+function preprocessForOCR(srcCanvas, threshold = 135) {
   const c = document.createElement("canvas");
   c.width = Math.max(1, Math.floor(srcCanvas.width * 2));
   c.height = Math.max(1, Math.floor(srcCanvas.height * 2));
@@ -155,7 +170,7 @@ function preprocessForOCR(srcCanvas) {
 
   for (let i = 0; i < d.length; i += 4) {
     const gray = d[i] * 0.3 + d[i + 1] * 0.59 + d[i + 2] * 0.11;
-    const v = gray > 135 ? 255 : 0;
+    const v = gray > threshold ? 255 : 0;
     d[i] = d[i + 1] = d[i + 2] = v;
   }
 
@@ -207,6 +222,52 @@ async function loadBitmapSafe(fileLike) {
   });
 }
 
+async function detectMatchResult(worker, bitmap) {
+  const cropVariants = [
+    { x: 0.25, y: 0.0, w: 0.5, h: 0.18 },
+    { x: 0.2, y: 0.0, w: 0.6, h: 0.22 },
+    { x: 0.15, y: 0.0, w: 0.7, h: 0.25 },
+    { x: 0.0, y: 0.0, w: 1.0, h: 0.2 },
+  ];
+  const thresholds = [120, 135, 150];
+
+  await worker.setParameters({
+    // Latin + Cyrillic uppercase for result text (VICTORY/DEFEAT, ПОБЕДА/ПОРАЖЕНИЕ)
+    tessedit_char_whitelist:
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZÉÈÊËÀÂÎÏÔÛÙÜÇÄÖÜßАБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЫЬЭЮЯ",
+    preserve_interword_spaces: "1",
+  });
+
+  for (const crop of cropVariants) {
+    const resultCanvas = document.createElement("canvas");
+    resultCanvas.width = Math.max(1, Math.floor(bitmap.width * crop.w));
+    resultCanvas.height = Math.max(1, Math.floor(bitmap.height * crop.h));
+    const rctx = resultCanvas.getContext("2d");
+    rctx.drawImage(
+      bitmap,
+      Math.floor(bitmap.width * crop.x),
+      Math.floor(bitmap.height * crop.y),
+      Math.floor(bitmap.width * crop.w),
+      Math.floor(bitmap.height * crop.h),
+      0,
+      0,
+      resultCanvas.width,
+      resultCanvas.height
+    );
+
+    for (const threshold of thresholds) {
+      const processed = preprocessForOCR(resultCanvas, threshold);
+      const blob = await new Promise((r) => processed.toBlob(r, "image/png"));
+      const ocr = await worker.recognize(blob);
+      const text = ocr?.data?.text || "";
+      const parsed = parseMatchResult(text);
+      if (parsed) return parsed;
+    }
+  }
+
+  return null;
+}
+
 export default function UploadTab() {
   const { t, lang } = useLang();
   const { user, claims } = useAuth();
@@ -224,9 +285,11 @@ export default function UploadTab() {
   const [batchResults, setBatchResults] = useState([]);
   const [previewUrls, setPreviewUrls] = useState([]);
   const [toasts, setToasts] = useState([]);
+  const [manualResultRequest, setManualResultRequest] = useState(null);
 
   const tesseractRef = useRef(null);
   const tesseractInitRef = useRef(null);
+  const manualResultResolverRef = useRef(null);
   const ensureTesseract = useCallback(async () => {
     if (tesseractRef.current) return tesseractRef.current;
     if (!tesseractInitRef.current) {
@@ -291,6 +354,22 @@ export default function UploadTab() {
     },
     [playUnlockSound]
   );
+
+  const requestManualResult = useCallback(
+    (fileLabel) =>
+      new Promise((resolve) => {
+        manualResultResolverRef.current = resolve;
+        setManualResultRequest({ fileLabel });
+      }),
+    []
+  );
+
+  const resolveManualResult = useCallback((choice) => {
+    const resolver = manualResultResolverRef.current;
+    manualResultResolverRef.current = null;
+    setManualResultRequest(null);
+    if (resolver) resolver(choice || null);
+  }, []);
 
   const handleFile = useCallback(
     (input) => {
@@ -367,6 +446,16 @@ export default function UploadTab() {
       });
     };
   }, [selectedFiles]);
+
+  useEffect(
+    () => () => {
+      if (manualResultResolverRef.current) {
+        manualResultResolverRef.current(null);
+        manualResultResolverRef.current = null;
+      }
+    },
+    []
+  );
 
   if (!user) {
     return (
@@ -536,45 +625,31 @@ export default function UploadTab() {
         setStatus(`${t.upload.ocr || "OCR..."}${suffix}`);
         setStatusTone("neutral");
 
-        const resultCanvas = document.createElement("canvas");
-        resultCanvas.width = Math.max(1, Math.floor(bitmap.width * 0.5));
-        resultCanvas.height = Math.max(1, Math.floor(bitmap.height * 0.18));
-
-        const rctx = resultCanvas.getContext("2d");
-
-        const sx = Math.floor(bitmap.width * 0.25);
-        const sy = 0;
-        const sw = Math.floor(bitmap.width * 0.5);
-        const sh = resultCanvas.height;
-
-        rctx.drawImage(
-          bitmap,
-          sx,
-          sy,
-          sw,
-          sh,
-          0,
-          0,
-          resultCanvas.width,
-          resultCanvas.height
-        );
-
-        const resultProcessed = preprocessForOCR(resultCanvas);
-        const resultBlob = await new Promise((r) =>
-          resultProcessed.toBlob(r, "image/png")
-        );
-
-        await worker.setParameters({
-          // Latin + Cyrillic uppercase for result text (VICTORY/DEFEAT, ПОБЕДА/ПОРАЖЕНИЕ)
-          tessedit_char_whitelist:
-            "ABCDEFGHIJKLMNOPQRSTUVWXYZÉÈÊËÀÂÎÏÔÛÙÜÇÄÖÜßАБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЫЬЭЮЯ",
-          preserve_interword_spaces: "1",
-        });
-
-        const resultOCR = await worker.recognize(resultBlob);
-        const resultText = resultOCR?.data?.text || "";
-
-        const matchResult = parseMatchResult(resultText);
+        let matchResult = await detectMatchResult(worker, bitmap);
+        if (!matchResult) {
+          setStatus(
+            `${t.upload.manualResultPrompt || "Select match result manually"}${suffix}`
+          );
+          setStatusTone("neutral");
+          const manualChoice = await requestManualResult(displayName);
+          if (!manualChoice) {
+            setStatus(
+              `${t.upload.statusManualSkipped || "Not successful (Result not selected)"}${suffix}`
+            );
+            setStatusTone("bad");
+            setBatchResults((prev) => [
+              ...prev,
+              {
+                name: displayName,
+                status: "skip",
+                message:
+                  t.upload.statusManualSkipped || "Result not selected",
+              },
+            ]);
+            continue;
+          }
+          matchResult = manualChoice;
+        }
 
         await worker.setParameters({
           tessedit_char_whitelist: "0123456789abcdef",
@@ -1139,6 +1214,43 @@ export default function UploadTab() {
           </div>
         )}
       </div>
+      {manualResultRequest && (
+        <div className={styles.manualResultOverlay}>
+          <div className={styles.manualResultModal}>
+            <div className={styles.manualResultTitle}>
+              {t.upload.manualResultTitle || "Result not recognized"}
+            </div>
+            <div className={styles.manualResultHint}>
+              {(t.upload.manualResultHint ||
+                "Choose the match result to continue upload") +
+                `: ${manualResultRequest.fileLabel}`}
+            </div>
+            <div className={styles.manualResultActions}>
+              <button
+                type="button"
+                className={`${styles.manualResultBtn} ${styles.manualResultVictory}`}
+                onClick={() => resolveManualResult("victory")}
+              >
+                {t.upload.manualVictory || "Victory"}
+              </button>
+              <button
+                type="button"
+                className={`${styles.manualResultBtn} ${styles.manualResultDefeat}`}
+                onClick={() => resolveManualResult("defeat")}
+              >
+                {t.upload.manualDefeat || "Defeat"}
+              </button>
+              <button
+                type="button"
+                className={`${styles.manualResultBtn} ${styles.manualResultSkip}`}
+                onClick={() => resolveManualResult(null)}
+              >
+                {t.upload.manualSkip || "Skip"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
