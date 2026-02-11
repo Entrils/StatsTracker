@@ -324,6 +324,7 @@ export function createStatsHelpers({
           avgAssists,
           kda,
           winrate,
+          createdAt: p.createdAt || p.firstMatchAt || p.updatedAt || null,
           lastRank_matches: p.lastRank_matches || null,
           lastRankAt_matches: p.lastRankAt_matches || null,
           lastRank_winrate: p.lastRank_winrate || null,
@@ -343,7 +344,7 @@ export function createStatsHelpers({
 
   async function getLeaderboardPage(limit, offset, sortBy = "matches") {
     const now = Date.now();
-    const windowMs = 24 * 60 * 60 * 1000;
+    const windowMs = 7 * 24 * 60 * 60 * 1000;
     const { sortKey, lastRankField, lastRankAtField } = getSortFields(sortBy);
 
     if (!leaderboardCache.updatedAt || now - leaderboardCache.updatedAt > LEADERBOARD_CACHE_TTL_MS) {

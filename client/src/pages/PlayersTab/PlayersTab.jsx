@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import styles from "@/pages/PlayersTab/PlayersTab.module.css";
 import { useLang } from "@/i18n/LanguageContext";
@@ -87,6 +87,7 @@ export default function PlayersTab() {
         kda: row.kda || 0,
         winrate: row.winrate || 0,
         settings: row.settings || {},
+        createdAt: row.createdAt || row.firstMatchAt || row.updatedAt || 0,
         rank: Number.isFinite(row.rank) ? row.rank : null,
         rankDelta: Number.isFinite(row.rankDelta) ? row.rankDelta : 0,
       }));
@@ -202,8 +203,24 @@ export default function PlayersTab() {
               const rank = p.rank ?? index + 1;
               const delta = p.rankDelta || 0;
               const deltaAbs = Math.abs(delta);
-              const deltaLabel =
-                delta === 0 ? "=0" : `${delta > 0 ? "▲" : "▼"} ${deltaAbs}`;
+              const createdAtMs =
+                typeof p.createdAt === "number"
+                  ? p.createdAt
+                  : typeof p.createdAt === "string"
+                  ? Date.parse(p.createdAt)
+                  : p.createdAt?.seconds
+                  ? p.createdAt.seconds * 1000
+                  : p.createdAt?._seconds
+                  ? p.createdAt._seconds * 1000
+                  : 0;
+              const isNew =
+                createdAtMs &&
+                Date.now() - createdAtMs < 7 * 24 * 60 * 60 * 1000;
+              const deltaLabel = isNew
+                ? "NEW"
+                : delta === 0
+                ? "=0"
+                : `${delta > 0 ? "▲" : "▼"} ${deltaAbs}`;
               return (
                 <tr
                   key={p.uid}
@@ -222,7 +239,9 @@ export default function PlayersTab() {
                       <span className={styles.rankValue}>{rank}</span>
                       <span
                         className={`${styles.rankDelta} ${
-                          delta > 0
+                          isNew
+                            ? styles.rankNew
+                            : delta > 0
                             ? styles.rankUp
                             : delta < 0
                             ? styles.rankDown
@@ -325,3 +344,4 @@ function normalizeSocialUrl(type, value) {
   if (type === "youtube") return `https://youtube.com/${v.replace(/^@/, "@")}`;
   return `https://tiktok.com/${v.replace(/^@/, "")}`;
 }
+

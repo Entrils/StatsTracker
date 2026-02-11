@@ -37,6 +37,7 @@ export function registerLeaderboardRoutes(app, deps) {
           return { updated: false };
         }
 
+        const aggSnap = await tx.get(aggRef);
         const matchSnap = await tx.get(matchRef);
         if (!matchSnap.exists) {
           return { updated: false, missingMatch: true };
@@ -47,24 +48,28 @@ export function registerLeaderboardRoutes(app, deps) {
         const wins = m.result === "victory" ? 1 : 0;
         const losses = m.result === "defeat" ? 1 : 0;
 
-        tx.set(
-          aggRef,
-          {
-            uid,
-            name: m.name || "Unknown",
-            score: inc(m.score || 0),
-            kills: inc(m.kills || 0),
-            deaths: inc(m.deaths || 0),
-            assists: inc(m.assists || 0),
-            damage: inc(m.damage || 0),
-            damageShare: inc(m.damageShare || 0),
-            matches: inc(1),
-            wins: inc(wins),
-            losses: inc(losses),
-            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-          },
-          { merge: true }
-        );
+        const aggPayload = {
+          uid,
+          name: m.name || "Unknown",
+          score: inc(m.score || 0),
+          kills: inc(m.kills || 0),
+          deaths: inc(m.deaths || 0),
+          assists: inc(m.assists || 0),
+          damage: inc(m.damage || 0),
+          damageShare: inc(m.damageShare || 0),
+          matches: inc(1),
+          wins: inc(wins),
+          losses: inc(losses),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        };
+        if (!aggSnap.exists || !aggSnap.get("createdAt")) {
+          aggPayload.createdAt =
+            typeof m.createdAt === "number"
+              ? m.createdAt
+              : admin.firestore.FieldValue.serverTimestamp();
+        }
+
+        tx.set(aggRef, aggPayload, { merge: true });
 
         tx.set(processedRef, {
           uid,
@@ -120,6 +125,7 @@ export function registerLeaderboardRoutes(app, deps) {
             wins: 0,
             losses: 0,
             matches: 0,
+            firstMatchAt: null,
           };
 
           if ((m.name || m.playerName || m.username) && prev.name === "Unknown") {
@@ -135,6 +141,11 @@ export function registerLeaderboardRoutes(app, deps) {
           if (m.result === "victory") prev.wins += 1;
           else if (m.result === "defeat") prev.losses += 1;
           prev.matches += 1;
+          if (typeof m.createdAt === "number") {
+            if (!prev.firstMatchAt || m.createdAt < prev.firstMatchAt) {
+              prev.firstMatchAt = m.createdAt;
+            }
+          }
 
           players.set(uid, prev);
         }
@@ -148,23 +159,26 @@ export function registerLeaderboardRoutes(app, deps) {
 
       for (const p of players.values()) {
         const ref = db.collection("leaderboard_users").doc(p.uid);
-        batch.set(
-          ref,
-          {
-            name: p.name,
-            score: p.score,
-            kills: p.kills,
-            deaths: p.deaths,
-            assists: p.assists,
-            damage: p.damage,
-            damageShare: p.damageShare,
-            wins: p.wins,
-            losses: p.losses,
-            matches: p.matches,
-            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-          },
-          { merge: true }
-        );
+        const payload = {
+          name: p.name,
+          score: p.score,
+          kills: p.kills,
+          deaths: p.deaths,
+          assists: p.assists,
+          damage: p.damage,
+          damageShare: p.damageShare,
+          wins: p.wins,
+          losses: p.losses,
+          matches: p.matches,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        };
+        if (p.firstMatchAt) {
+          payload.createdAt = p.firstMatchAt;
+        } else {
+          payload.createdAt = admin.firestore.FieldValue.delete();
+        }
+
+        batch.set(ref, payload, { merge: true });
 
         i += 1;
         if (i % batchSize === 0) {

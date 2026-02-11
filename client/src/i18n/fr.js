@@ -25,6 +25,7 @@
     wins: "Victoires",
     wl: "W/L",
     winrate: "Taux de victoire",
+    newLabel: "NOUVEAU",
     refresh: "Actualiser",
     loadMore: "Charger plus",
     loading: "Chargement...",
@@ -54,6 +55,14 @@
     selectHint: "PNG/JPG, plein écran, RU/ENG/FR/DE",
     pasteHint: "Coller: Ctrl+V",
     pasteReady: "Image collee depuis le presse-papiers",
+    batchHint: "Batch jusqu’a 10 screens",
+    batchNote: "Batch un par un — plus lent mais stable.",
+    batchTitle: "Recap batch",
+    batchSummary: "OK {ok} • Err {err} • Skip {skip}",
+    fileLabel: "Screen",
+    achievementToast: "Debloque: {title} — {value}",
+    testToast: "Test notification",
+    achievementToastTest: "Succes debloque !",
     fileReady: "Fichier chargé — prêt à analyser",
     fileMissing: "Aucun fichier sélectionné",
     statusOk: "OK (Téléversé)",
@@ -361,8 +370,4 @@
     discord: "Discord",
   },
 };
-
-
-
-
 
