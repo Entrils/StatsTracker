@@ -9,9 +9,17 @@ const translations = { ru, en, de, fr };
 const LanguageContext = createContext();
 
 export function LanguageProvider({ children }) {
-  const [lang, setLang] = useState(
-    localStorage.getItem("lang") || "ru"
-  );
+  const [lang, setLang] = useState(() => {
+    if (typeof window === "undefined") return "en";
+    const saved = localStorage.getItem("lang");
+    if (saved && translations[saved]) return saved;
+    const nav =
+      (navigator.languages && navigator.languages[0]) ||
+      navigator.language ||
+      "";
+    const code = nav.toLowerCase().slice(0, 2);
+    return translations[code] ? code : "en";
+  });
 
   useEffect(() => {
     localStorage.setItem("lang", lang);
