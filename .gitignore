@@ -3,3 +3,8 @@ server/firebaseServiceAccount.json
 .env
 server/.env
 client/.env
+
+# dependencies
+node_modules/
+server/node_modules/
+client/node_modules/
