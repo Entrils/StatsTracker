@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "@/firebase";
 import { round1 } from "@/utils/myProfile/math";
 import { dedupedJsonRequest } from "@/utils/network/dedupedFetch";
 
@@ -17,28 +19,62 @@ export default function useProfileRemoteData({ uid, user, summary, backendUrl })
 
   useEffect(() => {
     if (!uid) return;
-    const controller = new AbortController();
-    dedupedJsonRequest(
-      `profile:${uid}`,
-      async () => {
-        const res = await fetch(`${backendUrl}/profile/${uid}`, {
-          signal: controller.signal,
-        });
-        if (!res.ok) {
-          const error = new Error("Failed to load profile");
-          error.status = res.status;
-          throw error;
-        }
-        return res.json();
-      },
-      2500
-    )
-      .then((data) => {
+    let alive = true;
+    const loadProfile = async () => {
+      try {
+        const data = await dedupedJsonRequest(
+          `player-profile-lite:${uid}`,
+          async () => {
+            const res = await fetch(`${backendUrl}/player/${uid}?limit=1`);
+            if (!res.ok) {
+              const error = new Error("Failed to load profile");
+              error.status = res.status;
+              throw error;
+            }
+            return res.json();
+          },
+          2500
+        );
+        if (!alive) return;
         setProfileRanks(data?.ranks || null);
         setBanInfo(data?.ban || null);
-      })
-      .catch(() => {});
-    return () => controller.abort();
+      } catch {
+        // Secondary backend fallback.
+        try {
+          const data = await dedupedJsonRequest(
+            `profile:${uid}`,
+            async () => {
+              const res = await fetch(`${backendUrl}/profile/${uid}`);
+              if (!res.ok) {
+                const error = new Error("Failed to load profile");
+                error.status = res.status;
+                throw error;
+              }
+              return res.json();
+            },
+            2500
+          );
+          if (!alive) return;
+          setProfileRanks(data?.ranks || null);
+          setBanInfo(data?.ban || null);
+          return;
+        } catch {
+          // ignore and continue to Firestore fallback below
+        }
+        // Fallback for local/dev rate limits: read own ranks directly from Firestore.
+        try {
+          const ranksSnap = await getDoc(doc(db, "users", uid, "profile", "ranks"));
+          if (!alive) return;
+          setProfileRanks(ranksSnap.exists() ? ranksSnap.data() || null : null);
+        } catch {
+          if (alive) setProfileRanks(null);
+        }
+      }
+    };
+    loadProfile();
+    return () => {
+      alive = false;
+    };
   }, [uid, backendUrl]);
 
   useEffect(() => {

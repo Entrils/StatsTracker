@@ -25,6 +25,9 @@ export function dedupedJsonRequest(key, fetcher, ttlMs = 1500) {
       return data;
     })
     .catch((error) => {
+      if (error?.name === "AbortError") {
+        throw error;
+      }
       const status = Number(error?.status || 0);
       const cooldown =
         status === 429

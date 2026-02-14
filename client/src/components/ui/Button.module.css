@@ -3,14 +3,16 @@
   border: 1px solid transparent;
   font-weight: 700;
   cursor: pointer;
-  transition: border-color 0.16s ease, box-shadow 0.16s ease, filter 0.16s ease,
-    background-color 0.16s ease, color 0.16s ease;
+  transition: border-color var(--motion-fast), box-shadow var(--motion-fast),
+    filter var(--motion-fast), background-color var(--motion-fast),
+    color var(--motion-fast), opacity var(--motion-fast);
 }
 
 .button:disabled {
-  opacity: 0.62;
-  cursor: default;
+  opacity: 0.58;
+  cursor: not-allowed;
   box-shadow: none;
+  filter: saturate(0.8);
 }
 
 .button:focus-visible {
@@ -34,12 +36,16 @@
 }
 
 .iconOnly {
-  width: 38px;
-  height: 38px;
+  width: var(--control-size-md);
+  height: var(--control-size-md);
   padding: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+
+.button[aria-busy="true"] {
+  opacity: 0.86;
 }
 
 .primary {
@@ -60,7 +66,7 @@
 
 .secondary:hover:not(:disabled) {
   border-color: rgba(43, 230, 203, 0.45);
-  filter: brightness(1.04);
+  filter: brightness(1.03);
 }
 
 .danger {
@@ -72,4 +78,3 @@
 .danger:hover:not(:disabled) {
   filter: brightness(1.03);
 }
-

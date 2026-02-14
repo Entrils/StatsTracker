@@ -27,6 +27,7 @@
     --radius-sm: 8px;
     --radius-md: 12px;
     --radius-lg: 16px;
+    --radius-xl: 20px;
 
     --text-xs: 0.75rem;
     --text-sm: 0.875rem;
@@ -52,6 +53,14 @@
 
     --shadow-strong: 0 14px 34px rgba(0, 0, 0, 0.45);
     --shadow-glow: 0 0 16px rgba(0, 245, 212, 0.16);
+    --shadow-card: 0 10px 24px rgba(0, 0, 0, 0.34);
+
+    --control-size-sm: 32px;
+    --control-size-md: 36px;
+    --control-size-lg: 42px;
+
+    --motion-fast: 140ms ease;
+    --motion-normal: 220ms ease;
   }
 
   html,
@@ -175,11 +184,11 @@
     border-radius: var(--radius-sm);
     font-weight: 700;
     transition:
-      background-color 0.16s ease,
-      border-color 0.16s ease,
-      box-shadow 0.16s ease,
-      filter 0.16s ease,
-      color 0.16s ease;
+      background-color var(--motion-fast),
+      border-color var(--motion-fast),
+      box-shadow var(--motion-fast),
+      filter var(--motion-fast),
+      color var(--motion-fast);
   }
 
   button:focus-visible {
@@ -200,6 +209,16 @@
     opacity: 0.6;
     filter: none;
     cursor: default;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
   }
 }
 
