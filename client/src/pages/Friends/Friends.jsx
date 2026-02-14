@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import styles from "@/pages/Friends/Friends.module.css";
+import StateMessage from "@/components/StateMessage/StateMessage";
+import Button from "@/components/ui/Button";
+import Badge from "@/components/ui/Badge";
 import { useLang } from "@/i18n/LanguageContext";
 import { useAuth } from "@/auth/AuthContext";
 
@@ -193,47 +196,53 @@ export default function Friends() {
         <div className={styles.header}>
           <h1 className={styles.title}>{t.friends?.title || "Friends"}</h1>
           <div className={styles.tabs}>
-            <button
+            <Button
               className={`${styles.tab} ${
                 tab === "friends" ? styles.tabActive : ""
               }`}
               onClick={() => setTab("friends")}
+              variant="secondary"
+              size="sm"
             >
               {t.friends?.tabFriends || "In friends"}
-            </button>
-            <button
+            </Button>
+            <Button
               className={`${styles.tab} ${
                 tab === "requests" ? styles.tabActive : ""
               }`}
               onClick={() => setTab("requests")}
+              variant="secondary"
+              size="sm"
             >
               {t.friends?.tabRequests || "Requests"}
-            </button>
-            <button
+            </Button>
+            <Button
               className={`${styles.tab} ${
                 tab === "outgoing" ? styles.tabActive : ""
               }`}
               onClick={() => setTab("outgoing")}
+              variant="secondary"
+              size="sm"
             >
               {t.friends?.tabOutgoing || "Outgoing"}
-            </button>
+            </Button>
           </div>
         </div>
 
         {loading && (
-          <p className={styles.hint}>{t.friends?.loading || "Loading..."}</p>
+          <StateMessage text={t.friends?.loading || "Loading..."} tone="loading" />
         )}
 
         {!loading && tab === "friends" && !friends.length && (
-          <p className={styles.hint}>{emptyText}</p>
+          <StateMessage text={emptyText} tone="empty" />
         )}
 
         {!loading && tab === "requests" && !requests.length && (
-          <p className={styles.hint}>{emptyText}</p>
+          <StateMessage text={emptyText} tone="empty" />
         )}
 
         {!loading && tab === "outgoing" && !outgoing.length && (
-          <p className={styles.hint}>{emptyText}</p>
+          <StateMessage text={emptyText} tone="empty" />
         )}
 
         {!loading && tab === "friends" && (
@@ -357,18 +366,22 @@ export default function Friends() {
                     </div>
                   </div>
                   <div className={styles.actions}>
-                    <button
+                    <Button
                       className={styles.accept}
                       onClick={() => acceptRequest(friend.uid)}
+                      variant="primary"
+                      size="sm"
                     >
                       {t.friends?.accept || "Accept"}
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       className={styles.reject}
                       onClick={() => rejectRequest(friend.uid)}
+                      variant="danger"
+                      size="sm"
                     >
                       {t.friends?.reject || "Reject"}
-                    </button>
+                    </Button>
                   </div>
                 </div>
               );
@@ -415,15 +428,17 @@ export default function Friends() {
                       )}
                     </div>
                   </div>
-                  <div className={styles.pendingTag}>
+                  <Badge className={styles.pendingTag}>
                     {t.friends?.pending || "Pending"}
-                  </div>
-                  <button
+                  </Badge>
+                  <Button
                     className={styles.cancel}
                     onClick={() => cancelOutgoing(friend.uid)}
+                    variant="danger"
+                    size="sm"
                   >
                     {t.friends?.cancel || "Cancel"}
-                  </button>
+                  </Button>
                 </div>
               );
             })}

@@ -1,7 +1,10 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import styles from "@/pages/PlayersTab/PlayersTab.module.css";
+import StateMessage from "@/components/StateMessage/StateMessage";
+import Button from "@/components/ui/Button";
 import { useLang } from "@/i18n/LanguageContext";
+import { dedupedJsonRequest } from "@/utils/network/dedupedFetch";
 
 const SORTS = {
   AVG_SCORE: "avgScore",
@@ -39,15 +42,21 @@ export default function PlayersTab() {
       }
 
       const offset = reset ? 0 : rawRows.length;
-      const res = await fetch(
-        `${backendUrl}/leaderboard?limit=${PAGE_SIZE}&offset=${offset}&sort=${sortBy}`
+      const url = `${backendUrl}/leaderboard?limit=${PAGE_SIZE}&offset=${offset}&sort=${sortBy}`;
+      const payload = await dedupedJsonRequest(
+        `leaderboard:${url}`,
+        async () => {
+          const res = await fetch(url);
+          if (!res.ok) {
+            const text = await res.text();
+            const error = new Error(text || "Failed to load leaderboard");
+            error.status = res.status;
+            throw error;
+          }
+          return res.json();
+        },
+        2500
       );
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || "Failed to load leaderboard");
-      }
-
-      const payload = await res.json();
       const data = Array.isArray(payload.rows) ? payload.rows : [];
       const total = Number.isFinite(payload.total) ? payload.total : data.length;
 
@@ -101,9 +110,17 @@ export default function PlayersTab() {
 
   if (!players.length && !loading) {
     if (error) {
-      return <p className={styles.empty}>{error}</p>;
+      return (
+        <div className={styles.wrapper}>
+          <StateMessage text={error} tone="error" />
+        </div>
+      );
     }
-    return <p className={styles.empty}>{t.leaderboard.empty}</p>;
+    return (
+      <div className={styles.wrapper}>
+        <StateMessage text={t.leaderboard.empty} tone="empty" />
+      </div>
+    );
   }
 
   return (
@@ -121,63 +138,96 @@ export default function PlayersTab() {
           />
 
           <div className={styles.sort}>
-            <button
+            <Button
               onClick={() => setSortBy(SORTS.MATCHES)}
               className={`${styles.sortBtn} ${
                 sortBy === SORTS.MATCHES ? styles.active : ""
               }`}
+              variant="secondary"
+              size="sm"
             >
               {t.leaderboard.matches || "Matches"}
-            </button>
+            </Button>
 
-            <button
+            <Button
               onClick={() => setSortBy(SORTS.WINRATE)}
               className={`${styles.sortBtn} ${
                 sortBy === SORTS.WINRATE ? styles.active : ""
               }`}
+              variant="secondary"
+              size="sm"
             >
               {t.leaderboard.winrate || "Winrate"}
-            </button>
+            </Button>
 
-            <button
+            <Button
               onClick={() => setSortBy(SORTS.AVG_SCORE)}
               className={`${styles.sortBtn} ${
                 sortBy === SORTS.AVG_SCORE ? styles.active : ""
               }`}
+              variant="secondary"
+              size="sm"
             >
               {t.leaderboard.avgScore || "Avg score"}
-            </button>
+            </Button>
 
-            <button
+            <Button
               onClick={() => setSortBy(SORTS.KDA)}
               className={`${styles.sortBtn} ${
                 sortBy === SORTS.KDA ? styles.active : ""
               }`}
+              variant="secondary"
+              size="sm"
             >
               {t.leaderboard.kda || "KDA"}
-            </button>
+            </Button>
           </div>
 
           <div className={styles.refreshWrap}>
-            <button
+            <Button
               onClick={() => fetchPage(true)}
               className={styles.refreshBtn}
               disabled={loading}
+              aria-label={t.leaderboard.refresh || "Refresh"}
+              title={t.leaderboard.refresh || "Refresh"}
+              variant="secondary"
+              iconOnly
             >
-              {t.leaderboard.refresh || "Refresh"}
-            </button>
+              <svg
+                className={`${styles.refreshIcon} ${
+                  loading ? styles.refreshIconSpinning : ""
+                }`}
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
+              >
+                <path
+                  d="M20 12a8 8 0 1 1-2.34-5.66"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+                <path
+                  d="M20 4v5h-5"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              <span className={styles.visuallyHidden}>
+                {t.leaderboard.refresh || "Refresh"}
+              </span>
+            </Button>
           </div>
         </div>
       </div>
 
       {loading && (
-        <div className={styles.noResults}>
-          {t.leaderboard.loading || "Loading..."}
-        </div>
+        <StateMessage text={t.leaderboard.loading || "Loading..."} tone="loading" />
       )}
-      {!loading && error && (
-        <div className={styles.noResults}>{error}</div>
-      )}
+      {!loading && error && <StateMessage text={error} tone="error" />}
 
       <div className={styles.tableWrapper}>
         <table className={styles.table}>
@@ -220,7 +270,7 @@ export default function PlayersTab() {
                 ? "NEW"
                 : delta === 0
                 ? "=0"
-                : `${delta > 0 ? "▲" : "▼"} ${deltaAbs}`;
+                : `${delta > 0 ? "+" : "-"} ${deltaAbs}`;
               return (
                 <tr
                   key={p.uid}
@@ -283,23 +333,23 @@ export default function PlayersTab() {
         </table>
 
         {!filteredAndSorted.length && (
-          <div className={styles.noResults}>
-            {t.leaderboard.notFound}
-          </div>
+          <StateMessage text={t.leaderboard.notFound} tone="empty" />
         )}
       </div>
 
       {hasMore && !loading && (
         <div className={styles.loadMoreWrap}>
-          <button
+          <Button
             className={styles.loadMoreBtn}
             onClick={() => fetchPage(false)}
             disabled={loadingMore}
+            variant="secondary"
+            size="md"
           >
             {loadingMore
               ? t.leaderboard.loading || "Loading..."
               : t.leaderboard.loadMore || "Load more"}
-          </button>
+          </Button>
         </div>
       )}
     </div>
@@ -344,4 +394,3 @@ function normalizeSocialUrl(type, value) {
   if (type === "youtube") return `https://youtube.com/${v.replace(/^@/, "@")}`;
   return `https://tiktok.com/${v.replace(/^@/, "")}`;
 }
-

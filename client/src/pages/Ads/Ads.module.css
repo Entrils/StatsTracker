@@ -1,16 +1,16 @@
 .wrapper {
-  max-width: 900px;
+  max-width: var(--content-max-narrow);
   margin: 0 auto;
-  padding: 28px 18px;
+  padding: var(--space-6) var(--space-4);
   background: var(--bg-card);
-  border-radius: 20px;
+  border-radius: var(--radius-lg);
   border: 1px solid var(--border-soft);
   box-shadow: var(--shadow-strong);
 }
 
 .title {
-  margin-bottom: 14px;
-  font-size: 2rem;
+  margin-bottom: var(--space-3);
+  font-size: var(--text-xl);
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -18,26 +18,31 @@
 
 .text {
   color: var(--text-muted);
-  margin-bottom: 18px;
+  margin-bottom: var(--space-4);
   line-height: 1.7;
 }
 
 .contactBox {
-  padding: 14px 16px;
-  border-radius: 16px;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(9, 12, 24, 0.7);
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 12px;
+  transition: border-color 0.16s ease, background-color 0.16s ease;
+}
+
+.contactBox:hover {
+  border-color: rgba(43, 230, 203, 0.24);
 }
 
 .contactLabel {
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
 }
 
 .contactValue {

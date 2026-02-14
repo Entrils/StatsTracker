@@ -1,0 +1,36 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.neutral {
+  color: #dbe7ff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.soon {
+  color: #ff8f86;
+  background: rgba(255, 120, 110, 0.14);
+}
+
+.progress {
+  color: #ffd06f;
+  background: rgba(255, 207, 112, 0.14);
+}
+
+.future {
+  color: #7ce3ab;
+  background: rgba(124, 227, 171, 0.14);
+}
+
+.wishlist {
+  color: #82c8ff;
+  background: rgba(130, 200, 255, 0.14);
+}
+

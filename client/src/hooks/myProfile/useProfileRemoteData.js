@@ -1,0 +1,171 @@
+import { useEffect, useState } from "react";
+import { round1 } from "@/utils/myProfile/math";
+import { dedupedJsonRequest } from "@/utils/network/dedupedFetch";
+
+export default function useProfileRemoteData({ uid, user, summary, backendUrl }) {
+  const [profileRanks, setProfileRanks] = useState(null);
+  const [banInfo, setBanInfo] = useState(null);
+  const [globalAvg, setGlobalAvg] = useState(null);
+  const [loadingGlobal, setLoadingGlobal] = useState(true);
+  const [globalRanks, setGlobalRanks] = useState(null);
+  const [globalMeans, setGlobalMeans] = useState(null);
+  const [globalMatchMeans, setGlobalMatchMeans] = useState(null);
+  const [loadingRanks, setLoadingRanks] = useState(false);
+  const [friends, setFriends] = useState([]);
+  const [friendsLoading, setFriendsLoading] = useState(false);
+  const [friendId, setFriendId] = useState("");
+
+  useEffect(() => {
+    if (!uid) return;
+    const controller = new AbortController();
+    dedupedJsonRequest(
+      `profile:${uid}`,
+      async () => {
+        const res = await fetch(`${backendUrl}/profile/${uid}`, {
+          signal: controller.signal,
+        });
+        if (!res.ok) {
+          const error = new Error("Failed to load profile");
+          error.status = res.status;
+          throw error;
+        }
+        return res.json();
+      },
+      2500
+    )
+      .then((data) => {
+        setProfileRanks(data?.ranks || null);
+        setBanInfo(data?.ban || null);
+      })
+      .catch(() => {});
+    return () => controller.abort();
+  }, [uid, backendUrl]);
+
+  useEffect(() => {
+    if (!summary) return;
+    const controller = new AbortController();
+    setLoadingGlobal(true);
+    setGlobalAvg(null);
+    setGlobalMeans(null);
+    setGlobalMatchMeans(null);
+    setGlobalRanks(null);
+    setLoadingRanks(true);
+
+    const metrics = {
+      matches: summary.matchesCount,
+      wins: summary.wins,
+      losses: summary.losses,
+      avgScore: summary.avgScoreRaw,
+      avgKills: summary.avgKillsRaw,
+      avgDeaths: summary.avgDeathsRaw,
+      avgAssists: summary.avgAssistsRaw,
+      avgDamage: summary.avgDamageRaw,
+      avgDamageShare: summary.avgDamageShareRaw,
+      kda: summary.kdaRaw,
+      winrate: summary.winrateRaw,
+    };
+
+    dedupedJsonRequest(
+      `percentiles:${JSON.stringify(metrics)}`,
+      async () => {
+        const res = await fetch(`${backendUrl}/stats/percentiles`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ metrics }),
+          signal: controller.signal,
+        });
+        if (!res.ok) {
+          const error = new Error("Failed to load percentiles");
+          error.status = res.status;
+          throw error;
+        }
+        return res.json();
+      },
+      2500
+    )
+      .then((data) => {
+        if (!data) return;
+        setGlobalRanks(data.percentiles || null);
+        setGlobalMeans(data.averages || null);
+        setGlobalMatchMeans(data.matchAverages || null);
+        if (data.matchAverages) {
+          const m = data.matchAverages;
+          setGlobalAvg({
+            count: data.matchCount || 0,
+            avgScore: Math.round(m.avgScore || 0),
+            avgKills: Math.round(m.avgKills || 0),
+            avgDeaths: Math.round(m.avgDeaths || 0),
+            avgAssists: Math.round(m.avgAssists || 0),
+            avgDamage: Math.round(m.avgDamage || 0),
+            avgDamageShare: round1(m.avgDamageShare || 0),
+            kda: round1(m.kda || 0),
+          });
+        }
+      })
+      .catch(() => {
+        setGlobalAvg(null);
+      })
+      .finally(() => {
+        setLoadingGlobal(false);
+        setLoadingRanks(false);
+      });
+
+    return () => controller.abort();
+  }, [summary, backendUrl]);
+
+  useEffect(() => {
+    if (!user) return;
+    let alive = true;
+    const loadFriends = async () => {
+      setFriendsLoading(true);
+      try {
+        const token = await user.getIdToken();
+        const data = await dedupedJsonRequest(
+          `friends-list:${user.uid}`,
+          async () => {
+            const res = await fetch(`${backendUrl}/friends/list`, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            if (!res.ok) {
+              const error = new Error("Failed to load friends list");
+              error.status = res.status;
+              throw error;
+            }
+            return res.json();
+          },
+          2500
+        );
+        if (!alive) return;
+        setFriends(Array.isArray(data?.rows) ? data.rows : []);
+      } catch {
+        if (alive) setFriends([]);
+      } finally {
+        if (alive) setFriendsLoading(false);
+      }
+    };
+    loadFriends();
+    return () => {
+      alive = false;
+    };
+  }, [user, backendUrl]);
+
+  useEffect(() => {
+    if (!friends.length) return;
+    setFriendId((prev) => prev || friends[0]?.uid || "");
+  }, [friends]);
+
+  return {
+    profileRanks,
+    banInfo,
+    globalAvg,
+    loadingGlobal,
+    globalRanks,
+    globalMeans,
+    globalMatchMeans,
+    loadingRanks,
+    friends,
+    friendsLoading,
+    friendId,
+    setFriendId,
+  };
+}

@@ -1,7 +1,7 @@
 .wrapper {
-  max-width: 1160px;
+  max-width: var(--content-max);
   margin: 0 auto;
-  padding: 28px 16px 64px;
+  padding: var(--space-6) var(--space-4) calc(var(--space-6) * 2);
   color: var(--text-main);
   width: 100%;
 }
@@ -9,8 +9,8 @@
 .card {
   background: var(--bg-card);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 18px;
-  padding: 18px;
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
   box-shadow: var(--shadow-strong);
   min-height: calc(100dvh - 220px);
   display: flex;
@@ -20,13 +20,13 @@
 .header {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: var(--space-3);
   flex-wrap: wrap;
-  margin-bottom: 14px;
+  margin-bottom: var(--space-3);
 }
 
 .title {
-  font-size: 16px;
+  font-size: var(--text-md);
   font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -36,13 +36,13 @@
 
 .tabs {
   display: flex;
-  gap: 8px;
+  gap: var(--space-2);
   flex-wrap: wrap;
 }
 
 .tab {
-  padding: 0.45rem 0.9rem;
-  border-radius: 8px;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-sm);
   font-weight: 700;
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(8, 12, 22, 0.8);
@@ -50,11 +50,20 @@
   cursor: pointer;
 }
 
+.tab:focus-visible,
+.accept:focus-visible,
+.reject:focus-visible,
+.cancel:focus-visible,
+.nameLink:focus-visible {
+  outline: none;
+  box-shadow: var(--btn-focus-ring);
+}
+
 .tabActive {
   color: #f8fafc;
   background: rgba(0, 245, 212, 0.12);
   border-color: rgba(0, 245, 212, 0.35);
-  box-shadow: 0 0 10px rgba(0, 245, 212, 0.2);
+  box-shadow: 0 0 6px rgba(0, 245, 212, 0.16);
 }
 
 .hint {
@@ -63,7 +72,7 @@
 
 .list {
   display: grid;
-  gap: 14px;
+  gap: var(--space-3);
 }
 
 .listGrid {
@@ -73,11 +82,17 @@
 .friendCard {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 14px 16px;
-  border-radius: 16px;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
   background: rgba(6, 10, 20, 0.7);
   border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: border-color 0.16s ease, background-color 0.16s ease;
+}
+
+.friendCard:hover {
+  border-color: rgba(43, 230, 203, 0.24);
+  background: rgba(8, 12, 22, 0.74);
 }
 
 .avatar {
@@ -85,9 +100,7 @@
   height: 44px;
   border-radius: 50%;
   border: 2px solid rgba(0, 245, 212, 0.35);
-  box-shadow:
-    0 0 14px rgba(0, 245, 212, 0.25),
-    0 0 24px rgba(255, 45, 149, 0.2);
+  box-shadow: 0 0 8px rgba(0, 245, 212, 0.14);
   object-fit: cover;
 }
 
@@ -178,26 +191,27 @@
   width: 14px;
   height: 14px;
   display: block;
+  opacity: 0.9;
 }
 
 .socialIcon:hover {
   transform: translateY(-1px);
-  box-shadow: 0 0 12px rgba(0, 245, 212, 0.35);
+  box-shadow: 0 0 8px rgba(0, 245, 212, 0.2);
   border-color: rgba(0, 245, 212, 0.45);
 }
 
 .socialTwitch:hover {
-  box-shadow: 0 0 14px rgba(167, 139, 250, 0.55);
+  box-shadow: 0 0 8px rgba(167, 139, 250, 0.3);
   border-color: rgba(167, 139, 250, 0.65);
 }
 
 .socialYouTube:hover {
-  box-shadow: 0 0 14px rgba(255, 77, 109, 0.55);
+  box-shadow: 0 0 8px rgba(255, 77, 109, 0.3);
   border-color: rgba(255, 77, 109, 0.65);
 }
 
 .socialTikTok:hover {
-  box-shadow: 0 0 14px rgba(0, 245, 212, 0.55);
+  box-shadow: 0 0 8px rgba(0, 245, 212, 0.3);
   border-color: rgba(0, 245, 212, 0.65);
 }
 
@@ -211,7 +225,7 @@
   width: 26px;
   height: 26px;
   object-fit: contain;
-  filter: drop-shadow(0 0 6px rgba(0, 245, 212, 0.25));
+  filter: drop-shadow(0 0 4px rgba(0, 245, 212, 0.16));
 }
 
 .rankCol {
@@ -226,7 +240,8 @@
   width: 36px;
   height: 36px;
   object-fit: contain;
-  filter: drop-shadow(0 0 8px rgba(0, 245, 212, 0.3));
+  filter: drop-shadow(0 0 5px rgba(0, 245, 212, 0.18));
+  opacity: 0.92;
 }
 
 .actions {
@@ -249,8 +264,8 @@
 
 .accept,
 .reject {
-  padding: 0.45rem 0.9rem;
-  border-radius: 0.7rem;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-sm);
   font-weight: 700;
   border: none;
   cursor: pointer;
@@ -268,8 +283,8 @@
 }
 
 .cancel {
-  padding: 0.35rem 0.8rem;
-  border-radius: 0.7rem;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
   font-weight: 700;
   border: 1px solid rgba(255, 77, 109, 0.4);
   background: rgba(255, 77, 109, 0.15);
@@ -294,3 +309,4 @@
     width: 100%;
   }
 }
+
