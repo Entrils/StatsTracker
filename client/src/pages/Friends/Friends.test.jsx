@@ -55,7 +55,7 @@ describe("Friends", () => {
       getIdToken: vi.fn().mockResolvedValue("token-1"),
     };
 
-    global.fetch = vi.fn().mockImplementation(async (url, options) => {
+    global.fetch = vi.fn().mockImplementation(async (url, _options) => {
       if (String(url).includes("/friends/list")) {
         return { ok: true, json: async () => ({ rows: [] }) };
       }
