@@ -15,6 +15,7 @@ import { registerFriendsRoutes } from "./routes/friends.js";
 import { createCorsMiddleware } from "./middleware/cors.js";
 import { createHelmetMiddleware } from "./middleware/helmet.js";
 import { createRateLimiters } from "./middleware/rateLimits.js";
+import { createRequestLogger } from "./middleware/requestLogger.js";
 import { createRequireAuth } from "./middleware/auth.js";
 import { createFirestoreDailyLimiters } from "./middleware/firestoreLimits.js";
 import { payloadTooLargeHandler } from "./middleware/errors.js";
@@ -28,18 +29,19 @@ import {
 import { createClientErrorHelpers } from "./helpers/clientErrors.js";
 import { createStatsHelpers } from "./helpers/stats.js";
 import { createBanHelpers } from "./helpers/bans.js";
+import { loadConfig } from "./config.js";
 
 dotenv.config();
+const config = loadConfig(process.env);
 
 const app = express();
 app.set("trust proxy", 1);
-const logger = pino({ level: process.env.LOG_LEVEL || "info" });
+const logger = pino({ level: config.logLevel });
+app.use(createRequestLogger(logger));
 
-const CLIENT_ERROR_LOG = process.env.CLIENT_ERROR_LOG || "client_errors.log";
-const MAX_CLIENT_ERRORS = Number.parseInt(process.env.CLIENT_ERROR_MAX || "200", 10) || 200;
-const CLIENT_ERROR_ROTATE_BYTES =
-  Number.parseInt(process.env.CLIENT_ERROR_ROTATE_BYTES || "1048576", 10) ||
-  1024 * 1024;
+const CLIENT_ERROR_LOG = config.clientErrorLog;
+const MAX_CLIENT_ERRORS = config.clientErrorMax;
+const CLIENT_ERROR_ROTATE_BYTES = config.clientErrorRotateBytes;
 const {
   clientErrorBuffer,
   pushClientError,
@@ -51,11 +53,7 @@ const {
   fs,
 });
 
-const allowedOrigins = (process.env.CORS_ORIGINS || "")
-  .split(",")
-  .map((s) => s.trim())
-  .filter(Boolean);
-app.use(createCorsMiddleware(allowedOrigins));
+app.use(createCorsMiddleware(config.corsOrigins));
 
 app.get("/healthz", (_req, res) => {
   res.status(200).json({ ok: true, ts: Date.now() });
@@ -70,9 +68,7 @@ app.use(baseLimiter);
 
 const requireAuth = createRequireAuth(admin);
 
-const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON
-  ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON)
-  : null;
+const serviceAccountJson = config.serviceAccountJson;
 
 admin.initializeApp({
   credential: serviceAccountJson
@@ -81,23 +77,15 @@ admin.initializeApp({
 });
 
 const db = admin.firestore();
-const CACHE_COLLECTION = "stats_cache";
-const GLOBAL_CACHE_TTL_MS =
-  Number.parseInt(process.env.GLOBAL_CACHE_TTL_MS || "900000", 10) ||
-  15 * 60 * 1000;
-const BAN_CACHE_TTL_MS =
-  Number.parseInt(process.env.BAN_CACHE_TTL_MS || "30000", 10) || 30 * 1000;
-const LEADERBOARD_CACHE_TTL_MS =
-  Number.parseInt(process.env.LEADERBOARD_CACHE_TTL_MS || "30000", 10) ||
-  30 * 1000;
-const PERCENTILES_CACHE_TTL_MS =
-  Number.parseInt(process.env.PERCENTILES_CACHE_TTL_MS || "60000", 10) ||
-  60 * 1000;
+const CACHE_COLLECTION = config.cacheCollection;
+const GLOBAL_CACHE_TTL_MS = config.globalCacheTtlMs;
+const BAN_CACHE_TTL_MS = config.banCacheTtlMs;
+const LEADERBOARD_CACHE_TTL_MS = config.leaderboardCacheTtlMs;
+const PERCENTILES_CACHE_TTL_MS = config.percentilesCacheTtlMs;
 const percentilesCache = new Map();
 
-const OCR_DAILY_LIMIT = 15;
-const RANK_SUBMIT_DAILY_LIMIT =
-  Number.parseInt(process.env.RANK_SUBMIT_DAILY_LIMIT || "1", 10) || 1;
+const OCR_DAILY_LIMIT = config.ocrDailyLimit;
+const RANK_SUBMIT_DAILY_LIMIT = config.rankSubmitDailyLimit;
 const { ocrDailyLimiter, rankDailyLimiter } = createFirestoreDailyLimiters({
   admin,
   db,
@@ -184,12 +172,33 @@ registerFriendsRoutes(app, routesDeps);
 
 app.use(payloadTooLargeHandler);
 
-const PORT = process.env.PORT || 4000;
-const publicUrl = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
-app.listen(PORT, () => {
+const PORT = config.port;
+const publicUrl = config.publicUrl || `http://localhost:${PORT}`;
+const server = app.listen(PORT, () => {
   logger.info(
-    { port: PORT, env: process.env.NODE_ENV || "development" },
+    { port: PORT, env: config.nodeEnv },
     `Backend running on ${publicUrl}`
   );
 });
+
+const shutdown = (signal) => {
+  logger.info({ signal }, "Shutdown started");
+  const forceTimer = setTimeout(() => {
+    logger.error("Forced shutdown timeout reached");
+    process.exit(1);
+  }, 10000);
+
+  server.close((err) => {
+    clearTimeout(forceTimer);
+    if (err) {
+      logger.error({ err }, "Shutdown failed");
+      process.exit(1);
+    }
+    logger.info("Shutdown completed");
+    process.exit(0);
+  });
+};
+
+process.on("SIGINT", () => shutdown("SIGINT"));
+process.on("SIGTERM", () => shutdown("SIGTERM"));
 

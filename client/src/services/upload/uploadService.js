@@ -39,13 +39,14 @@ export async function fetchFriendsMeta(idToken) {
   }
 }
 
-export async function requestOcr(base64Image, lang, idToken) {
+export async function requestOcr(base64Image, lang, idToken, signal) {
   const headers = {
     "Content-Type": "application/json",
     ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
   };
   return fetch(`${BACKEND_URL}/ocr`, {
     method: "POST",
+    signal,
     headers,
     body: JSON.stringify({ base64Image, lang }),
   });
@@ -104,4 +105,3 @@ export async function triggerLeaderboardUpdate(matchId, idToken) {
     // best-effort update
   }
 }
-

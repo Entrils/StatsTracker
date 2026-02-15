@@ -1,3 +1,5 @@
+import { fetchWithTimeoutRetry } from "../helpers/fetchWithTimeoutRetry.js";
+
 export function registerOcrRoutes(app, deps) {
   const {
     logger,
@@ -9,43 +11,6 @@ export function registerOcrRoutes(app, deps) {
     db,
     admin,
   } = deps;
-
-  const fetchWithTimeoutRetry = async (
-    url,
-    options = {},
-    { timeoutMs = 12000, retries = 1, retryDelayMs = 500 } = {}
-  ) => {
-    let lastError = null;
-
-    for (let attempt = 0; attempt <= retries; attempt += 1) {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), timeoutMs);
-      try {
-        const response = await fetch(url, {
-          ...options,
-          signal: controller.signal,
-        });
-        clearTimeout(timer);
-
-        if (
-          (response.status === 429 || response.status >= 500) &&
-          attempt < retries
-        ) {
-          await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
-          continue;
-        }
-
-        return response;
-      } catch (err) {
-        clearTimeout(timer);
-        lastError = err;
-        if (attempt >= retries) break;
-        await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
-      }
-    }
-
-    throw lastError || new Error("Request failed");
-  };
 
   app.post("/ocr", ocrLimiter, requireAuth, ocrDailyLimiter, async (req, res) => {
     try {
@@ -96,11 +61,15 @@ export function registerOcrRoutes(app, deps) {
         form.append("isOverlayRequired", "false");
         form.append("base64Image", base64Image);
 
-        const r = await fetchWithTimeoutRetry("https://api.ocr.space/parse/image", {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: form.toString(),
-        });
+        const r = await fetchWithTimeoutRetry(
+          "https://api.ocr.space/parse/image",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: form.toString(),
+          },
+          { timeoutMs: 12000, retries: 1, retryDelayMs: 500 }
+        );
 
         if (!r.ok) {
           const text = await r.text();
@@ -130,10 +99,15 @@ export function registerOcrRoutes(app, deps) {
       }
 
       if (!result.ok) {
-        return res.status(502).json({
-          error: "OCR request failed",
-          details: result.errorText || "Unknown OCR error",
-        });
+        logger.warn(
+          {
+            status: result.status,
+            body: String(result.errorText || "").slice(0, 500),
+            requestedLang,
+          },
+          "OCR provider request failed"
+        );
+        return res.status(502).json({ error: "OCR request failed" });
       }
 
       result.data.remaining =
