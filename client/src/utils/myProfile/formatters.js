@@ -4,6 +4,38 @@ export function formatDate(ts, fallback = "-") {
   return d.toLocaleString();
 }
 
+export function formatTimeAgo(ts, fallback = "-", locale = "ru") {
+  if (!ts) return fallback;
+  const date = new Date(ts);
+  if (Number.isNaN(date.getTime())) return fallback;
+
+  const diffSec = Math.floor((date.getTime() - Date.now()) / 1000);
+  const absSec = Math.abs(diffSec);
+
+  if (absSec < 60) {
+    return locale.startsWith("ru") ? "только что" : "just now";
+  }
+
+  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
+
+  if (absSec < 3600) {
+    return rtf.format(Math.round(diffSec / 60), "minute");
+  }
+  if (absSec < 86400) {
+    return rtf.format(Math.round(diffSec / 3600), "hour");
+  }
+  if (absSec < 86400 * 7) {
+    return rtf.format(Math.round(diffSec / 86400), "day");
+  }
+  if (absSec < 86400 * 30) {
+    return rtf.format(Math.round(diffSec / (86400 * 7)), "week");
+  }
+  if (absSec < 86400 * 365) {
+    return rtf.format(Math.round(diffSec / (86400 * 30)), "month");
+  }
+  return rtf.format(Math.round(diffSec / (86400 * 365)), "year");
+}
+
 export function formatRank(rank, t) {
   const key = String(rank || "").toLowerCase();
   if (key === "bronze") return t.me?.rankBronze || "Bronze";

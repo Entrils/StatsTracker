@@ -30,8 +30,7 @@ export default function useMyProfileViewModel({
   const activity = useMemo(() => buildActivity(matches), [matches]);
   const { activityGridWrapRef, activityLayout } = useActivityLayout(activity);
 
-  const { chartMetric, setChartMetric, chartToggleRef, chartPillRefs, pillStyle } =
-    useChartMetricPill();
+  const { chartMetric, setChartMetric } = useChartMetricPill();
 
   const sparkScore = useMemo(() => {
     if (!globalMeans?.avgScore) return [];
@@ -89,9 +88,6 @@ export default function useMyProfileViewModel({
     activityLayout,
     chartMetric,
     setChartMetric,
-    chartToggleRef,
-    chartPillRefs,
-    pillStyle,
     sparkScore,
     sparkKda,
     sparkWinrate,

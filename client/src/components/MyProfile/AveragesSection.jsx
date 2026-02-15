@@ -17,13 +17,31 @@ export default function AveragesSection({
   sparkKda,
   showRanks,
   globalRanks,
-  globalMatchMeans,
-  perfColor,
-  perfWidth,
-  safeDiv,
 }) {
+  const buildRangeStyle = (value, min, max) => {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric) || max <= min) {
+      return { width: "2%", background: "linear-gradient(90deg, hsl(0 85% 55%), #f5f5f5)" };
+    }
+
+    const clamped = Math.max(min, Math.min(max, numeric));
+    const ratio = (clamped - min) / (max - min);
+    const minWidthPct = 2;
+    const widthPct = Math.round((minWidthPct + ratio * (100 - minWidthPct)) * 10) / 10;
+    const hue = Math.round(120 * ratio);
+
+    return {
+      width: `${widthPct}%`,
+      background: `linear-gradient(90deg, hsl(${hue} 85% 55%), #f5f5f5)`,
+    };
+  };
+
+  const scoreStyle = buildRangeStyle(summary.avgScoreRaw, 4000, 10000);
+  const kdaStyle = buildRangeStyle(summary.kdaRaw, 1.5, 3.5);
+  const damageStyle = buildRangeStyle(summary.avgDamageRaw, 800, 2000);
+
   return (
-    <div className={`${styles.statsSection} ${styles.fadeIn} ${styles.stagger2}`}>
+    <div className={`${styles.statsSection} ${styles.denseCard} ${styles.fadeIn} ${styles.stagger2}`}>
       <div className={styles.statsHeader}>
         <h2 className={styles.statsTitle}>{t.me?.averages || "Averages"}</h2>
         <p className={styles.statsSubtitle}>
@@ -35,69 +53,21 @@ export default function AveragesSection({
           <span className={styles.stripLabel}>{t.me?.score || "Score"}</span>
           <span className={styles.stripValue}>{summary.avgScore}</span>
           <span className={styles.stripBar}>
-            <span
-              className={styles.stripFill}
-              style={
-                globalMatchMeans?.avgScore
-                  ? {
-                      width: perfWidth(summary.avgScoreRaw / globalMatchMeans.avgScore),
-                      background: `linear-gradient(90deg, ${perfColor(
-                        summary.avgScoreRaw / globalMatchMeans.avgScore
-                      )}, #f5f5f5)`,
-                    }
-                  : {
-                      width: `${Math.min(
-                        100,
-                        safeDiv(summary.avgScore * 100, summary.bestScore?.score || 1)
-                      )}%`,
-                    }
-              }
-            />
+            <span className={styles.stripFill} style={scoreStyle} />
           </span>
         </div>
         <div className={styles.stripItem}>
           <span className={styles.stripLabel}>{t.me?.kda || "KDA"}</span>
           <span className={styles.stripValue}>{summary.kda}</span>
           <span className={styles.stripBar}>
-            <span
-              className={styles.stripFill}
-              style={
-                globalMatchMeans?.kda
-                  ? {
-                      width: perfWidth(summary.kdaRaw / globalMatchMeans.kda),
-                      background: `linear-gradient(90deg, ${perfColor(
-                        summary.kdaRaw / globalMatchMeans.kda
-                      )}, #f5f5f5)`,
-                    }
-                  : {
-                      width: `${Math.min(100, safeDiv(summary.kda * 100, summary.maxKda || 1))}%`,
-                    }
-              }
-            />
+            <span className={styles.stripFill} style={kdaStyle} />
           </span>
         </div>
         <div className={styles.stripItem}>
           <span className={styles.stripLabel}>{t.me?.damage || "Damage"}</span>
           <span className={styles.stripValue}>{summary.avgDamage}</span>
           <span className={styles.stripBar}>
-            <span
-              className={styles.stripFill}
-              style={
-                globalMatchMeans?.avgDamage
-                  ? {
-                      width: perfWidth(summary.avgDamageRaw / globalMatchMeans.avgDamage),
-                      background: `linear-gradient(90deg, ${perfColor(
-                        summary.avgDamageRaw / globalMatchMeans.avgDamage
-                      )}, #f5f5f5)`,
-                    }
-                  : {
-                      width: `${Math.min(
-                        100,
-                        safeDiv(summary.avgDamage * 100, summary.maxDamage?.damage || 1)
-                      )}%`,
-                    }
-              }
-            />
+            <span className={styles.stripFill} style={damageStyle} />
           </span>
         </div>
       </div>
@@ -171,4 +141,3 @@ export default function AveragesSection({
     </div>
   );
 }
-

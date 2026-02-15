@@ -55,14 +55,14 @@ export default function Achievements({
   if (isSummary) {
     return (
       <div className={styles.wrapper}>
-        <section className={styles.section}>
-          <h3 className={styles.sectionTitle}>
+        <section className={`${styles.section} ${styles.summarySection}`}>
+          <h3 className={`${styles.sectionTitle} ${styles.summaryTitle}`}>
             {t.achievements?.summaryTitle || "Best achievements"}
           </h3>
           {summaryItems.length ? (
-            <div className={styles.grid}>
+            <div className={`${styles.grid} ${styles.summaryGrid}`}>
               {summaryItems.map(({ key, item, title }) => (
-                <div key={key} className={styles.item}>
+                <div key={key} className={`${styles.item} ${styles.summaryItem}`}>
                   <img
                     src={item.image}
                     alt={valueLabel(key, item.value, t)}
@@ -70,15 +70,9 @@ export default function Achievements({
                     loading="lazy"
                   />
                   <div className={styles.label}>{title}</div>
-                  <div className={styles.meta}>
+                  <div className={`${styles.meta} ${styles.summaryMeta}`}>
                     {valueLabel(key, item.value, t)}
                   </div>
-                  {item.unlockedAt ? (
-                    <div className={styles.meta}>
-                      {t.achievements?.unlockedAt || "Unlocked"}:{" "}
-                      {formatDate(item.unlockedAt)}
-                    </div>
-                  ) : null}
                 </div>
               ))}
             </div>

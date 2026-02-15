@@ -9,7 +9,7 @@ import {
 } from "firebase/firestore";
 import { db } from "@/firebase";
 
-const MATCHES_PAGE_SIZE = 80;
+const MATCHES_PAGE_SIZE = 20;
 
 export default function useProfileMatches(uid) {
   const [matches, setMatches] = useState([]);

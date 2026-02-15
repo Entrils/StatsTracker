@@ -11,14 +11,16 @@ export default function OverviewSection({
   globalRanks,
 }) {
   return (
-    <div className={`${styles.statsSection} ${styles.statsSectionPrimary} ${styles.fadeIn} ${styles.stagger1}`}>
+    <div
+      className={`${styles.statsSection} ${styles.statsSectionPrimary} ${styles.overviewSection} ${styles.denseCard} ${styles.fadeIn} ${styles.stagger1}`}
+    >
       <div className={styles.statsHeader}>
         <h2 className={styles.statsTitle}>{t.me?.overview || "Overview"}</h2>
         <p className={styles.statsSubtitle}>
           {t.me?.overviewHint || "Match results and consistency"}
         </p>
       </div>
-      <div className={styles.statStrip}>
+      <div className={`${styles.statStrip} ${styles.overviewStrip}`}>
         <div className={styles.stripItem}>
           <span className={styles.stripLabel}>{t.me?.matches || "Matches"}</span>
           <span className={styles.stripValue}>{summary.matchesCount}</span>

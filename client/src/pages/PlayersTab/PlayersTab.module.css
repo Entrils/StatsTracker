@@ -120,14 +120,19 @@
 }
 
 .sortBtn {
-  padding: var(--space-2) var(--space-3);
+  padding: 9px 14px 8px;
   border-radius: var(--radius-md);
   font-size: var(--text-xs);
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   color: var(--btn-secondary-fg);
   background: var(--btn-secondary-bg);
   border: 1px solid var(--btn-secondary-border);
   cursor: pointer;
+  transition: border-color var(--motion-fast), box-shadow var(--motion-fast),
+    filter var(--motion-fast), background-color var(--motion-fast),
+    color var(--motion-fast), opacity var(--motion-fast);
 }
 
 .sortBtn:hover {
@@ -135,7 +140,7 @@
   filter: brightness(1.05);
 }
 
-.active {
+.sortBtn.active {
   color: #f8fdff;
   background: rgba(43, 230, 203, 0.2);
   border-color: rgba(43, 230, 203, 0.6);

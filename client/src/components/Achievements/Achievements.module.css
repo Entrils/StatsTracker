@@ -11,6 +11,10 @@
   box-shadow: var(--shadow-strong);
 }
 
+.summarySection {
+  padding: var(--space-4);
+}
+
 .sectionTitle {
   font-size: 14px;
   font-weight: 800;
@@ -20,10 +24,20 @@
   text-transform: uppercase;
 }
 
+.summaryTitle {
+  margin-bottom: 10px;
+}
+
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 12px;
+}
+
+.summaryGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 8px;
 }
 
 .item {
@@ -37,6 +51,13 @@
   text-align: center;
 }
 
+.summaryItem {
+  border-radius: 12px;
+  padding: 8px;
+  grid-template-rows: auto 44px auto auto;
+  gap: 6px;
+}
+
 .locked {
   opacity: 0.55;
 }
@@ -48,6 +69,11 @@
   filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.35));
 }
 
+.summaryItem .icon {
+  width: 44px;
+  height: 44px;
+}
+
 .label {
   font-size: 12px;
   letter-spacing: 0.08em;
@@ -56,9 +82,19 @@
   font-weight: 700;
 }
 
+.summaryItem .label {
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+}
+
 .meta {
   font-size: 11px;
   color: #9aa4c1;
+}
+
+.summaryMeta {
+  font-size: 10px;
+  line-height: 1.25;
 }
 
 .progress {
