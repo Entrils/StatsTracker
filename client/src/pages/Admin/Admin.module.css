@@ -88,6 +88,11 @@
   margin-bottom: 1rem;
 }
 
+.actionsRow {
+  display: inline-flex;
+  gap: 0.5rem;
+}
+
 .sectionTitle {
   font-size: var(--text-md);
   font-weight: 700;
@@ -142,6 +147,84 @@
 .rankList {
   display: grid;
   gap: 1rem;
+}
+
+.eloList {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.eloItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 8px 10px;
+  border-radius: var(--radius-md);
+  background: rgba(6, 10, 20, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.eloLeft {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-width: 0;
+}
+
+.eloRank {
+  font-weight: 800;
+  color: #c7d2ee;
+  min-width: 28px;
+  font-size: 0.82rem;
+}
+
+.eloName {
+  font-weight: 700;
+  color: #f3f6ff;
+  font-size: 0.88rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.eloRight {
+  display: grid;
+  justify-items: end;
+  gap: 2px;
+}
+
+.eloValue {
+  font-weight: 900;
+  color: #9bff2e;
+  font-size: 0.9rem;
+  line-height: 1;
+  text-shadow: 0 0 8px rgba(163, 255, 18, 0.2);
+}
+
+.eloMeta {
+  font-size: 0.7rem;
+  line-height: 1.1;
+  color: #9aa4c1;
+}
+
+.hiddenEloSection {
+  padding: var(--space-4);
+}
+
+.hiddenEloSection .sectionHeader {
+  margin-bottom: 0.6rem;
+}
+
+.hiddenEloSection .smallButton {
+  padding: 0.2rem 0.55rem;
+  font-size: 0.72rem;
+}
+
+.hiddenEloSection .status {
+  margin-top: 0.45rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.78rem;
 }
 
 .rankItem {

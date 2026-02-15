@@ -38,6 +38,9 @@ export function loadConfig(env = process.env) {
     percentilesCacheTtlMs: toInt(env.PERCENTILES_CACHE_TTL_MS, 60 * 1000),
     ocrDailyLimit: toInt(env.OCR_DAILY_LIMIT, 15),
     rankSubmitDailyLimit: toInt(env.RANK_SUBMIT_DAILY_LIMIT, 1),
+    steamAppId: toInt(env.STEAM_APP_ID, null),
+    steamOnlineCacheTtlMs: toInt(env.STEAM_ONLINE_CACHE_TTL_MS, 60 * 1000),
+    steamApiTimeoutMs: toInt(env.STEAM_API_TIMEOUT_MS, 4000),
   };
 
   if (isProd && !config.corsOrigins.length) {

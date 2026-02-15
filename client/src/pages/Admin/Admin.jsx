@@ -17,6 +17,11 @@ export default function Admin() {
   const [banItems, setBanItems] = useState([]);
   const [banUid, setBanUid] = useState("");
   const [banReason, setBanReason] = useState("");
+  const [eloLoading, setEloLoading] = useState(false);
+  const [eloItems, setEloItems] = useState([]);
+  const [eloRecomputeLoading, setEloRecomputeLoading] = useState(false);
+  const [eloRecomputeStatus, setEloRecomputeStatus] = useState("");
+  const [eloRecomputeTone, setEloRecomputeTone] = useState("");
 
   const isAdmin = claims?.admin === true || claims?.role === "admin";
 
@@ -128,6 +133,57 @@ export default function Admin() {
     }
   };
 
+  const loadHiddenElo = async () => {
+    if (!user) return;
+    setEloLoading(true);
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch(`${BACKEND_URL}/admin/hidden-elo?limit=20&offset=0`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json().catch(() => null);
+      setEloItems(Array.isArray(data?.rows) ? data.rows : []);
+    } finally {
+      setEloLoading(false);
+    }
+  };
+
+  const recomputeHiddenElo = async () => {
+    if (!user) return;
+    setEloRecomputeLoading(true);
+    setEloRecomputeStatus("Recomputing hidden ELO...");
+    setEloRecomputeTone("neutral");
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch(`${BACKEND_URL}/admin/hidden-elo/recompute`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({}),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        setEloRecomputeStatus(data?.error || "Recompute failed");
+        setEloRecomputeTone("bad");
+        return;
+      }
+      setEloRecomputeStatus(
+        `Done. Updated: ${data?.processedLeaderboard ?? 0}, created: ${
+          data?.createdFromUsers ?? 0
+        }`
+      );
+      setEloRecomputeTone("good");
+      await loadHiddenElo();
+    } catch {
+      setEloRecomputeStatus("Recompute failed");
+      setEloRecomputeTone("bad");
+    } finally {
+      setEloRecomputeLoading(false);
+    }
+  };
+
   const submitBan = async () => {
     if (!user || !banUid.trim()) return;
     try {
@@ -170,6 +226,7 @@ export default function Admin() {
     if (!user || !isAdmin) return;
     loadRankSubmissions();
     loadBans();
+    loadHiddenElo();
   }, [user, isAdmin]);
 
   if (!user) {
@@ -194,7 +251,7 @@ export default function Admin() {
     <div className={styles.wrapper}>
       <h1 className={styles.title}>Admin</h1>
       <div className={styles.sectionGrid}>
-        <div className={styles.section}>
+        <div className={`${styles.section} ${styles.hiddenEloSection}`}>
           <div className={styles.sectionHeader}>
             <h2 className={styles.sectionTitle}>Leaderboard rebuild</h2>
           </div>
@@ -222,6 +279,65 @@ export default function Admin() {
             </p>
           )}
         </div>
+        <div className={styles.section}>
+        <div className={styles.sectionHeader}>
+          <h2 className={styles.sectionTitle}>Top Hidden ELO</h2>
+          <div className={styles.actionsRow}>
+            <button
+              className={styles.smallButton}
+              onClick={loadHiddenElo}
+              disabled={eloLoading || eloRecomputeLoading}
+            >
+              {eloLoading ? "Loading..." : "Refresh"}
+            </button>
+            <button
+              className={styles.smallButton}
+              onClick={recomputeHiddenElo}
+              disabled={eloRecomputeLoading || eloLoading}
+            >
+              {eloRecomputeLoading ? "Recomputing..." : "Recompute all"}
+            </button>
+          </div>
+        </div>
+
+        {eloRecomputeStatus && (
+          <p
+            className={`${styles.status} ${
+              eloRecomputeTone === "good"
+                ? styles.statusOk
+                : eloRecomputeTone === "bad"
+                ? styles.statusBad
+                : ""
+            }`}
+          >
+            {eloRecomputeStatus}
+          </p>
+        )}
+
+        {!eloItems.length && (
+          <p className={styles.hint}>No hidden ELO data yet.</p>
+        )}
+
+        {!!eloItems.length && (
+          <div className={styles.eloList}>
+            {eloItems.map((item, i) => (
+              <div key={item.uid || i} className={styles.eloItem}>
+                <div className={styles.eloLeft}>
+                  <span className={styles.eloRank}>#{i + 1}</span>
+                  <span className={styles.eloName}>{item.name || item.uid}</span>
+                </div>
+                <div className={styles.eloRight}>
+                  <span className={styles.eloValue}>{Math.round(item.hiddenElo || 0)}</span>
+                  <span className={styles.eloMeta}>
+                    {Math.round(item.winrate || 0)}% WR • {Math.round(item.matches || 0)} m
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        </div>
+
         <div className={styles.section}>
         <div className={styles.sectionHeader}>
           <h2 className={styles.sectionTitle}>Client errors</h2>

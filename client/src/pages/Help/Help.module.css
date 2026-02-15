@@ -9,6 +9,39 @@
   margin-bottom: var(--space-4);
 }
 
+.toc {
+  margin-bottom: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: rgba(6, 10, 20, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.tocTitle {
+  font-size: var(--text-md);
+  font-weight: 800;
+  margin-bottom: var(--space-2);
+  color: #f3f6ff;
+}
+
+.tocList {
+  margin: 0;
+  padding-left: 0;
+  display: grid;
+  gap: 6px;
+  list-style: none;
+}
+
+.tocLink {
+  color: #9feee0;
+  text-decoration: none;
+}
+
+.tocLink:hover {
+  color: #d7fff8;
+  text-decoration: underline;
+}
+
 .title {
   font-size: var(--text-xl);
   font-weight: 800;
@@ -38,6 +71,10 @@
   transition: border-color 0.16s ease;
 }
 
+#elo-rating {
+  scroll-margin-top: 90px;
+}
+
 .section:hover {
   border-color: rgba(43, 230, 203, 0.2);
 }
@@ -62,6 +99,11 @@
   letter-spacing: 0.2px;
 }
 
+.sectionIndex {
+  color: #9feee0;
+  font-weight: 900;
+}
+
 .sectionText {
   margin-top: var(--space-2);
   color: rgba(255, 255, 255, 0.72);
@@ -69,9 +111,18 @@
   font-size: var(--text-sm);
 }
 
+.sectionTextMuted {
+  margin-top: var(--space-2);
+  color: rgba(255, 255, 255, 0.58);
+  line-height: 1.6;
+  font-size: var(--text-xs);
+}
+
 .list {
   margin: var(--space-3) 0 0;
   padding-left: 20px;
+  list-style-type: disc;
+  list-style-position: outside;
   color: rgba(255, 255, 255, 0.85);
   line-height: 1.55;
   font-size: var(--text-sm);
@@ -80,10 +131,13 @@
 .listMuted {
   margin: var(--space-2) 0 0;
   padding-left: 20px;
+  list-style-type: disc;
+  list-style-position: outside;
   color: rgba(255, 255, 255, 0.6);
   line-height: 1.55;
   font-size: var(--text-xs);
 }
+
 
 .imageWrap {
   margin-top: var(--space-4);

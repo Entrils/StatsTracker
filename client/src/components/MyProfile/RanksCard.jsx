@@ -1,10 +1,14 @@
 import styles from "@/pages/MyProfile/MyProfile.module.css";
 import { formatRank, rankClass, rankIconSrc } from "@/utils/myProfile/formatters";
 
-export default function RanksCard({ t, profileRanks }) {
+export default function RanksCard({ t, profileRanks, profileElo = 0 }) {
   return (
     <div className={styles.card}>
       <h2 className={styles.cardTitle}>{t.me?.ranks || "Ranks"}</h2>
+      <div className={styles.rankEloRow}>
+        <span className={styles.rankEloLabel}>{t.me?.elo || "ELO"}</span>
+        <span className={styles.rankEloValue}>{Math.round(profileElo || 0)}</span>
+      </div>
       <div className={styles.rankGrid}>
         {["s1", "s2", "s3", "s4"].map((season) => (
           <div

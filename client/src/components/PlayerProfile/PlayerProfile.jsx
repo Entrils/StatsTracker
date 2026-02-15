@@ -27,6 +27,7 @@ export default function PlayerProfile() {
   const [profileSocials, setProfileSocials] = useState(null);
   const [profileName, setProfileName] = useState("");
   const [profileRanks, setProfileRanks] = useState(null);
+  const [profileElo, setProfileElo] = useState(0);
   const [profileAvatar, setProfileAvatar] = useState(null);
   const [banInfo, setBanInfo] = useState(null);
   const [friendStatus, setFriendStatus] = useState("none");
@@ -48,6 +49,7 @@ export default function PlayerProfile() {
         setProfileSocials(data?.settings || null);
         setProfileName(data?.name || "");
         setProfileRanks(data?.ranks || null);
+        setProfileElo(Number.isFinite(Number(data?.elo)) ? Number(data.elo) : 0);
         setProfileAvatar(data?.avatar || null);
         setBanInfo(data?.ban || null);
         setProfileFriendDates(Array.isArray(data?.friendDates) ? data.friendDates : []);
@@ -373,7 +375,7 @@ export default function PlayerProfile() {
             )}
           </div>
           <p className={styles.subtitle}>
-            {t.profile.matches}: {summary.matches}
+            {t.profile.matches}: {summary.matches} • {(t.profile.elo || "ELO")}: {Math.round(profileElo || 0)}
           </p>
           {user && user.uid !== uid && friendStatus === "incoming" && (
             <div className={styles.friendActions}>

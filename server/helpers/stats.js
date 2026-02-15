@@ -259,6 +259,7 @@ export function createStatsHelpers({
     winrate: "winrate",
     avgScore: "avgScore",
     kda: "kda",
+    elo: "elo",
   };
 
   const getSortFields = (sortBy) => {
@@ -308,6 +309,7 @@ export function createStatsHelpers({
         rows.push({
           uid,
           name: p.name || "Unknown",
+          elo: Number.isFinite(Number(p.hiddenElo)) ? Number(p.hiddenElo) : 0,
           settings: p.settings || p.socials || null,
           score: p.score || 0,
           kills: p.kills || 0,

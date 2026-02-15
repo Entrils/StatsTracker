@@ -29,6 +29,7 @@ import {
 import { createClientErrorHelpers } from "./helpers/clientErrors.js";
 import { createStatsHelpers } from "./helpers/stats.js";
 import { createBanHelpers } from "./helpers/bans.js";
+import { createSteamHelpers } from "./helpers/steam.js";
 import { loadConfig } from "./config.js";
 
 dotenv.config();
@@ -121,6 +122,12 @@ const { getDistributions, getLeaderboardPage, topPercent } = createStatsHelpers(
   getActiveBansSet,
   LEADERBOARD_CACHE_TTL_MS,
 });
+const { getSteamOnline, steamAppId } = createSteamHelpers({
+  appId: config.steamAppId,
+  onlineCacheTtlMs: config.steamOnlineCacheTtlMs,
+  requestTimeoutMs: config.steamApiTimeoutMs,
+  logger,
+});
 
 const routesDeps = {
   admin,
@@ -141,6 +148,8 @@ const routesDeps = {
   parseIntParam,
   isValidUid,
   getLeaderboardPage,
+  getSteamOnline,
+  steamAppId,
   getActiveBansSet,
   percentilesCache,
   PERCENTILES_CACHE_TTL_MS,

@@ -1,3 +1,5 @@
+import { computeHiddenElo } from "../helpers/elo.js";
+
 export function registerRankRoutes(app, deps) {
   const {
     admin,
@@ -138,6 +140,33 @@ export function registerRankRoutes(app, deps) {
               },
               { merge: true }
             );
+
+          const aggRef = db.collection("leaderboard_users").doc(data.uid);
+          const [aggSnap, ranksSnap] = await Promise.all([
+            aggRef.get(),
+            db.collection("users").doc(data.uid).collection("profile").doc("ranks").get(),
+          ]);
+          if (aggSnap.exists) {
+            const agg = aggSnap.data() || {};
+            const hiddenElo = computeHiddenElo({
+              matches: agg.matches || 0,
+              score: agg.score || 0,
+              kills: agg.kills || 0,
+              deaths: agg.deaths || 0,
+              assists: agg.assists || 0,
+              damage: agg.damage || 0,
+              damageShare: agg.damageShare || 0,
+              ranks: ranksSnap.exists ? ranksSnap.data() || {} : {},
+            });
+            await aggRef.set(
+              {
+                hiddenElo,
+                hiddenEloUpdatedAt: Date.now(),
+                updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+              },
+              { merge: true }
+            );
+          }
         }
       }
 

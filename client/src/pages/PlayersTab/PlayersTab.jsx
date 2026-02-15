@@ -7,6 +7,7 @@ import { useLang } from "@/i18n/LanguageContext";
 import { dedupedJsonRequest } from "@/utils/network/dedupedFetch";
 
 const SORTS = {
+  ELO: "elo",
   AVG_SCORE: "avgScore",
   WINRATE: "winrate",
   KDA: "kda",
@@ -27,6 +28,7 @@ export default function PlayersTab() {
   const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState("");
   const [refreshing, setRefreshing] = useState(false);
+  const [steamOnline, setSteamOnline] = useState(null);
 
   const fetchPage = async (reset = false) => {
     if (reset) {
@@ -62,6 +64,8 @@ export default function PlayersTab() {
       );
       const data = Array.isArray(payload.rows) ? payload.rows : [];
       const total = Number.isFinite(payload.total) ? payload.total : data.length;
+      const onlineRaw = Number(payload.steamOnline);
+      setSteamOnline(Number.isFinite(onlineRaw) && onlineRaw >= 0 ? onlineRaw : null);
 
       setRawRows((prev) => (reset ? data : [...prev, ...data]));
       setHasMore(offset + data.length < total);
@@ -93,6 +97,9 @@ export default function PlayersTab() {
         wins: row.wins || 0,
         losses: row.losses || 0,
         matches: row.matches || 0,
+        elo: Number.isFinite(Number(row.elo ?? row.hiddenElo))
+          ? Number(row.elo ?? row.hiddenElo)
+          : 0,
         avgScore: row.avgScore || 0,
         avgKills: row.avgKills || 0,
         avgDeaths: row.avgDeaths || 0,
@@ -131,6 +138,12 @@ export default function PlayersTab() {
     <div className={styles.wrapper}>
       <div className={styles.header}>
         <h1 className={styles.title}>{t.leaderboard.title}</h1>
+        {steamOnline !== null && (
+          <p className={styles.steamOnline}>
+            {t.leaderboard.steamOnline || "Steam online"}:{" "}
+            <strong>{steamOnline.toLocaleString()}</strong>
+          </p>
+        )}
 
         <div className={styles.controls}>
           <input
@@ -164,6 +177,18 @@ export default function PlayersTab() {
               disabled={loading || loadingMore}
             >
               {t.leaderboard.winrate || "Winrate"}
+            </Button>
+
+            <Button
+              onClick={() => setSortBy(SORTS.ELO)}
+              className={`${styles.sortBtn} ${
+                sortBy === SORTS.ELO ? styles.active : ""
+              }`}
+              variant="secondary"
+              size="sm"
+              disabled={loading || loadingMore}
+            >
+              {t.leaderboard.elo || "ELO"}
             </Button>
 
             <Button
@@ -243,6 +268,7 @@ export default function PlayersTab() {
               <span className={styles.skeletonCell} />
               <span className={styles.skeletonCell} />
               <span className={styles.skeletonCell} />
+              <span className={styles.skeletonCell} />
             </div>
           ))}
         </div>
@@ -255,6 +281,19 @@ export default function PlayersTab() {
             <tr>
               <th>#</th>
               <th>{t.upload.player}</th>
+              <th>
+                <span className={styles.thLabel}>
+                  {t.leaderboard.elo || "ELO"}
+                  <Link
+                    to="/help#elo-rating"
+                    className={styles.eloHelpLink}
+                    aria-label={t.help?.eloTitle || "ELO rating help"}
+                    title={t.help?.eloTitle || "ELO rating help"}
+                  >
+                    ?
+                  </Link>
+                </span>
+              </th>
               <th>{t.leaderboard.matches || "Matches"}</th>
               <th>{t.leaderboard.wl || "W/L"}</th>
               <th>{t.leaderboard.winrate || "Winrate"}</th>
@@ -337,6 +376,7 @@ export default function PlayersTab() {
                       </div>
                     </div>
                   </td>
+                  <td>{Math.round(p.elo || 0)}</td>
                   <td>{p.matches}</td>
                   <td className={styles.wlCell}>
                     <span className={styles.winText}>W</span> {p.wins}
@@ -394,6 +434,7 @@ export default function PlayersTab() {
                 {p.name}
               </Link>
               <div className={styles.mobileMeta}>
+                <span>{t.leaderboard.elo || "ELO"}: {Math.round(p.elo || 0)}</span>
                 <span>{t.leaderboard.matches || "Matches"}: {p.matches}</span>
                 <span>{t.leaderboard.winrate || "Winrate"}: {p.winrate.toFixed(1)}%</span>
                 <span>{t.leaderboard.avgScore || "Avg score"}: {Math.round(p.avgScore)}</span>

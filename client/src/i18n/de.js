@@ -21,6 +21,7 @@
     assists: "Assists",
     avgScore: "Ø Score",
     kda: "KDA",
+    elo: "ELO",
     matches: "Matches",
     wins: "Siege",
     wl: "W/L",
@@ -93,6 +94,7 @@
     empty: "Keine Match-Historie",
     back: "Zurück",
     matches: "Matches",
+    elo: "ELO",
     wins: "Siege",
     losses: "Niederlagen",
     winrate: "Siegrate",
@@ -133,6 +135,7 @@
     overview: "Überblick",
     overviewHint: "Match-Ergebnisse und Konstanz",
     matches: "Matches",
+    elo: "ELO",
     wins: "Siege",
     losses: "Niederlagen",
     winrate: "Siegrate",
@@ -284,51 +287,96 @@
 
   help: {
     title: "Hilfe",
-    subtitle: "Kurze, praktische Anleitungen ohne Umwege.",
+    tocTitle: "Inhalt",
+    subtitle: "Schnelle Orientierung für die wichtigsten Bereiche.",
+    eloTitle: "ELO-Bewertung",
+    eloBody:
+      "ELO zeigt dein aktuelles Skill-Niveau. Es kombiniert Ränge und durchschnittliche Match-Stats.",
+    eloFactors: [
+      "Ränge haben den größten Einfluss: höherer Rang => mehr ELO.",
+      "Neue Saisons zählen mehr als alte (S4 > S3 > S2 > S1).",
+      "Zusätzlich fließen KDA, Kills, Schaden, Schadensanteil und Score ein.",
+      "Bis 20 Matches steigt ELO schneller, danach gleichmäßiger.",
+    ],
+    eloFactorsText:
+      "Der größte Teil von ELO kommt aus deinen Rängen, und aktuelle Saisons zählen stärker als alte (S4 hat mehr Gewicht als S1). Dazu kommen Match-Statistiken wie KDA, Kills, Schaden, Schadensanteil und Score. In der Anfangsphase geht es schneller: bis etwa 20 Matches steigt ELO meist deutlicher, danach stabiler.",
+    eloRules: [
+      "Alte hohe Ränge zählen weniger als aktuelle hohe Ränge.",
+      "Werte über den Obergrenzen bringen kaum noch Zusatzwirkung.",
+    ],
+    eloRulesText:
+      "Ältere Erfolge werden weiterhin berücksichtigt, aber schwächer als neue. Liegt eine Metrik bereits über ihrem wirksamen Bereich, bringt zusätzlicher Anstieg nur noch wenig für die Endwertung.",
     uploadTitle: "Screenshot hochladen",
     uploadBody:
-      "Der Dienst liest die Match-Historie aus deinem Screenshot. Je klarer der Text, desto besser die OCR.",
+      "Der Dienst liest deine Match-Stats aus dem Screenshot. Je klarer der Text, desto besser die OCR.",
     uploadSteps: [
-      "Öffne die Match-Historie und erstelle einen Vollbild‑Screenshot.",
-      "Nutze PNG/JPG ohne Zuschnitt oder UI‑Zoom.",
-      "Lade die Datei hoch oder füge sie per Zwischenablage (Ctrl+V) ein und klicke auf „Match analysieren“.",
-      "Warte auf „OK“ — der Match erscheint im Profil und Leaderboard.",
+      "Öffne die Match-Historie und mache einen Vollbild-Screenshot.",
+      "Nutze PNG/JPG und schneide die UI nicht weg.",
+      "Datei hochladen (oder mit Ctrl+V einfügen) und auf „Match analysieren“ klicken.",
+      "Bei „OK“ ist das Match im Profil und Leaderboard sichtbar.",
     ],
+    uploadStepsText:
+      "Öffne die Match-Historie und erstelle einen Screenshot im Vollbild. Nutze PNG oder JPG und lasse die komplette UI sichtbar. Lade die Datei hoch (oder füge sie mit Ctrl+V ein) und klicke auf „Match analysieren“. Sobald „OK“ erscheint, wird das Match automatisch im Profil und Leaderboard übernommen.",
     uploadTips: [
-      "Verwischte oder überbelichtete Bilder reduzieren die Erkennung.",
+      "Unscharfe oder überbelichtete Bilder führen häufiger zu Fehlern.",
       "RU/EN/FR/DE‑Oberflächen werden unterstützt.",
-      "Bereits hochgeladene Matches werden als Duplikat markiert.",
+      "Bereits hochgeladene Matches werden als Duplikat erkannt.",
     ],
+    uploadTipsText:
+      "Scharfe, nicht überbelichtete Screenshots funktionieren deutlich zuverlässiger. RU/EN/FR/DE-Oberflächen werden unterstützt. Wenn ein Match bereits vorhanden ist, zeigt das System einfach den Duplikat-Status an.",
     uploadAlt: "Guide zum Screenshot-Upload",
+    matchIssuesTitle: "Warum ein Match nicht hochgeladen wurde",
+    matchIssuesBody:
+      "Häufige OCR-/Upload-Fehler und schnelle Lösungen.",
+    matchIssuesText:
+      "Am häufigsten liegt es an der Screenshot-Qualität: unscharfer Text, Überbelichtung oder abgeschnittene UI. Fehler treten auch auf, wenn das Match schon hochgeladen wurde, die Match-ID nicht erkannt wird oder die Spielerzeile falsch gelesen wird. In den meisten Fällen hilft ein neuer Vollbild-Screenshot und ein erneuter Upload. Wenn das Problem bleibt, sende einen Bug-Report mit Beispiel-Screenshot.",
     profileTitle: "Navigation und Menü",
     profileBody:
-      "In der oberen Leiste findest du die Hauptbereiche und das Account‑Menü. Hier kurz zu jeder Schaltfläche.",
+      "Kurz erklärt: was die Buttons im oberen Menü machen.",
     profileButtons: [
-      "Upload — Screenshots hochladen/analysieren (nach Login verfügbar).",
+      "Upload — Screenshots hochladen und analysieren (nach Login).",
       "Spieler — Leaderboard und Spielersuche.",
-      "Hilfe — diese Seite mit Anleitungen.",
+      "Hilfe — diese Seite.",
       "Profil (Dropdown) — schneller Zugriff auf Mein Profil, Freunde, Erfolge, Einstellungen und Logout.",
-      "Sprache — zwischen RU/EN/FR/DE wechseln.",
+      "Sprache — UI-Sprache wechseln.",
     ],
+    profileButtonsText:
+      "Über „Upload“ sendest du Screenshots und startest die Analyse. „Spieler“ öffnet Leaderboard und Suche. „Hilfe“ führt auf diese Seite. Im „Profil“-Dropdown findest du deine persönlichen Bereiche und Logout. Mit der Sprachwahl wechselst du die UI-Sprache.",
     profileTips: [
-      "Auf dem Handy liegen diese Punkte im Burger‑Menü rechts.",
+      "Auf Mobilgeräten findest du alles im Burger-Menü rechts.",
     ],
+    profileTipsText:
+      "Auf dem Handy findest du dieselben Punkte im Burger-Menü rechts.",
     profileAlt: "Guide zur Navigation und zum Menü",
+    friendsCompareTitle: "Freunde und Vergleich",
+    friendsCompareBody:
+      "So funktionieren Freundesanfragen und der Stat-Vergleich.",
+    friendsCompareText:
+      "Du kannst Spieler im Profil oder auf der Freundeseite hinzufügen. Nach Annahme erscheint der Spieler in deiner Freundesliste. Der Vergleich ist in „Mein Profil“ verfügbar: dort wählst du einen Freund aus und siehst die Unterschiede bei Score, KDA, Schaden, Winrate und weiteren Kennzahlen.",
     playerProfileTitle: "Spielerprofil",
     playerProfileBody:
-      "Dieser Abschnitt erklärt die wichtigsten Bereiche im Spielerprofil.",
+      "Was im Spielerprofil wichtig ist und wo du es findest.",
     playerProfileSteps: [
-      "Oben: Name, Avatar und Socials. Die Icons öffnen das Profil des Spielers.",
-      "Der Freund‑Button erscheint, wenn der Spieler noch nicht in deiner Liste ist.",
-      "Stat‑Blöcke zeigen Durchschnitte, Ergebnisse und Fortschritt.",
-      "Ränge zeigen verifizierte Saison‑Ränge oder „nicht verifiziert“.",
-      "Erfolge zeigen die besten freigeschalteten Auszeichnungen mit Datum.",
+      "Oben siehst du Name, Avatar und Social-Links.",
+      "Wenn der Spieler nicht in deiner Liste ist, erscheint der Freund-Button.",
+      "Stat-Blöcke zeigen Durchschnittswerte, Ergebnisse und Fortschritt.",
+      "Ränge zeigen verifizierte Saison-Ränge (oder nicht verifiziert).",
+      "Erfolge zeigen die wichtigsten freigeschalteten Auszeichnungen.",
     ],
+    playerProfileStepsText:
+      "Oben im Profil siehst du Name, Avatar und Social-Links. Wenn der Spieler noch nicht in deiner Freundesliste ist, erscheint daneben der Freund-Button. Darunter findest du Durchschnittswerte, Ergebnisse und Fortschritt. In separaten Blöcken werden verifizierte Saison-Ränge und die wichtigsten freigeschalteten Erfolge angezeigt.",
     playerProfileTips: [
-      "Bei einem Bann erscheint ein Hinweis und der Spieler wird aus globalen Stats ausgeschlossen.",
-      "Der Vergleich mit Freunden ist in deinem Profil unter „Vergleichen“ verfügbar.",
+      "Bei Bann wird ein Hinweis im Profil angezeigt.",
+      "Vergleich mit Freunden findest du in deinem eigenen Profil.",
     ],
+    playerProfileTipsText:
+      "Bei aktivem Bann wird ein Hinweisbanner im Profil angezeigt. Den Vergleich mit Freunden findest du in deinem eigenen Profilbereich.",
     playerProfileAlt: "Guide zum Spielerprofil",
+    bugReportTitle: "So meldest du einen Bug",
+    bugReportBody:
+      "Was in einen guten Bug-Report gehört.",
+    bugReportText:
+      "Beschreibe kurz, was du vor dem Fehler gemacht hast, was du erwartet hast und was stattdessen passiert ist. Füge wenn möglich einen Screenshot, die ungefähre Uhrzeit und die UID bzw. den Seitenlink hinzu. Je genauer der Report, desto schneller kann das Problem nachvollzogen und behoben werden.",
   },
 
   roadmap: {

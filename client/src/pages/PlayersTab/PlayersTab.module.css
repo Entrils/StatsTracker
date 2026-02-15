@@ -5,6 +5,7 @@
 }
 
 .header {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
@@ -12,10 +13,27 @@
 }
 
 .title {
+  padding-right: 160px;
   font-size: var(--text-xl);
   font-weight: 800;
   color: #f6fbff;
   text-shadow: 0 0 8px rgba(0, 245, 212, 0.2);
+}
+
+.steamOnline {
+  position: absolute;
+  top: 2px;
+  right: 0;
+  margin: 0;
+  font-size: var(--text-xs);
+  line-height: 1.2;
+  text-align: right;
+  color: #c9d7f7;
+  opacity: 0.9;
+}
+
+.steamOnline strong {
+  color: #eaffff;
 }
 
 
@@ -24,6 +42,7 @@
   flex-wrap: wrap;
   gap: var(--space-3);
   align-items: center;
+  width: 100%;
 }
 
 .refreshWrap {
@@ -219,6 +238,41 @@
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: #b2bdd7;
+}
+
+.thLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.eloHelpLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  color: #d7e3ff;
+  text-decoration: none;
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1;
+  background: rgba(8, 12, 22, 0.72);
+  transition: border-color var(--motion-fast), color var(--motion-fast),
+    box-shadow var(--motion-fast);
+}
+
+.eloHelpLink:hover {
+  border-color: rgba(0, 245, 212, 0.6);
+  color: #ffffff;
+  box-shadow: 0 0 8px rgba(0, 245, 212, 0.24);
+}
+
+.eloHelpLink:focus-visible {
+  outline: none;
+  box-shadow: var(--btn-focus-ring);
 }
 
 .table td {
@@ -492,6 +546,20 @@
 @media (max-width: 720px) {
   .wrapper {
     padding: var(--space-5) var(--space-3);
+  }
+
+  .header {
+    padding-right: 0;
+  }
+
+  .title {
+    padding-right: 0;
+  }
+
+  .steamOnline {
+    position: static;
+    align-self: flex-end;
+    margin-top: -6px;
   }
 
   .tableWrapper {

@@ -22,12 +22,14 @@ vi.mock("@/i18n/LanguageContext", () => ({
         winrate: "Winrate",
         avgScore: "Avg score",
         kda: "KDA",
+        elo: "ELO",
         wl: "W/L",
         loadMore: "Load more",
         loading: "Loading...",
         empty: "No data yet",
         notFound: "Player not found",
         refresh: "Refresh",
+        steamOnline: "Steam online",
       },
     },
   }),
@@ -44,11 +46,13 @@ function renderPlayers() {
 describe("PlayersTab", () => {
   beforeEach(() => {
     dedupedJsonRequestMock.mockResolvedValue({
+      steamOnline: 55210,
       rows: [
         {
           uid: "u1",
           name: "Alice",
           matches: 10,
+          elo: 1900,
           wins: 6,
           losses: 4,
           avgScore: 120,
@@ -61,6 +65,7 @@ describe("PlayersTab", () => {
           uid: "u2",
           name: "Bob",
           matches: 5,
+          elo: 1500,
           wins: 2,
           losses: 3,
           avgScore: 90,
@@ -79,6 +84,7 @@ describe("PlayersTab", () => {
 
     expect(await screen.findByRole("link", { name: "Alice" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Bob" })).toBeInTheDocument();
+    expect(screen.getByText(/Steam online:/i)).toBeInTheDocument();
   });
 
   it("filters rows by search input", async () => {

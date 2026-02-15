@@ -83,4 +83,90 @@ describe("profile routes", () => {
     expect(ok.body.ok).toBe(true);
     expect(set).toHaveBeenCalled();
   });
+
+  it("forbids hidden elo endpoint for non-admin", async () => {
+    const deps = {
+      ...baseDeps,
+      db: {
+        collection: () => ({
+          doc: () => ({
+            get: async () => ({ exists: false }),
+          }),
+        }),
+      },
+      requireAuth: (req, _res, next) => {
+        req.user = { uid: "u1", admin: false };
+        next();
+      },
+    };
+    const app = createApp(deps);
+    const res = await request(app).get("/admin/profile/u1/hidden-elo");
+    expect(res.status).toBe(403);
+    expect(res.body.error).toBe("Forbidden");
+  });
+
+  it("returns hidden elo payload for admin", async () => {
+    const deps = {
+      ...baseDeps,
+      db: {
+        collection: (name) => {
+          if (name === "leaderboard_users") {
+            return {
+              doc: () => ({
+                get: async () => ({
+                  exists: true,
+                  data: () => ({
+                    hiddenElo: 1777,
+                    hiddenEloUpdatedAt: 12345,
+                    matches: 40,
+                    wins: 22,
+                    losses: 18,
+                    score: 260000,
+                    kills: 520,
+                    deaths: 250,
+                    assists: 220,
+                    damage: 74000,
+                    damageShare: 1200,
+                  }),
+                }),
+              }),
+            };
+          }
+          if (name === "users") {
+            return {
+              doc: () => ({
+                collection: () => ({
+                  doc: () => ({
+                    get: async () => ({
+                      exists: true,
+                      data: () => ({
+                        s3: { rank: "diamond" },
+                        s4: { rank: "master" },
+                      }),
+                    }),
+                  }),
+                }),
+              }),
+            };
+          }
+          return {
+            doc: () => ({
+              get: async () => ({ exists: false }),
+            }),
+          };
+        },
+      },
+      requireAuth: (req, _res, next) => {
+        req.user = { uid: "admin:u1", admin: true };
+        next();
+      },
+    };
+    const app = createApp(deps);
+    const res = await request(app).get("/admin/profile/u1/hidden-elo");
+    expect(res.status).toBe(200);
+    expect(res.body.uid).toBe("u1");
+    expect(res.body.hiddenElo).toBe(1777);
+    expect(typeof res.body.recomputedHiddenElo).toBe("number");
+    expect(res.body.ranks.s4.rank).toBe("master");
+  });
 });

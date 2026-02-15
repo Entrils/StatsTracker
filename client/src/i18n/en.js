@@ -21,6 +21,7 @@
     assists: "Assists",
     avgScore: "Avg score",
     kda: "KDA",
+    elo: "ELO",
     matches: "Matches",
     wins: "Wins",
     wl: "W/L",
@@ -32,6 +33,7 @@
     indexHint: "Index missing for sorting. Showing unsorted data.",
     empty: "No data yet",
     notFound: "Player not found",
+    steamOnline: "Steam online",
   },
 
   upload: {
@@ -93,6 +95,7 @@
     empty: "No match history",
     back: "Back",
     matches: "Matches",
+    elo: "ELO",
     wins: "Wins",
     losses: "Losses",
     winrate: "Winrate",
@@ -144,6 +147,7 @@
     empty: "No match history yet",
 
     matches: "Matches",
+    elo: "ELO",
     wins: "Wins",
     losses: "Losses",
     winrate: "Winrate",
@@ -288,51 +292,96 @@
 
   help: {
     title: "Help",
-    subtitle: "Short, practical instructions without fluff.",
+    tocTitle: "Contents",
+    subtitle: "Quick guide to the key parts of the site.",
+    eloTitle: "ELO rating",
+    eloBody:
+      "ELO is your current skill estimate. It blends your ranks with your average match stats.",
+    eloFactors: [
+      "Ranks have the biggest impact: higher rank means higher ELO.",
+      "Recent seasons matter more than older ones (S4 > S3 > S2 > S1).",
+      "KDA, kills, damage, damage share, and score also affect the result.",
+      "Up to 20 matches, ELO grows faster. After that, changes are smoother.",
+    ],
+    eloFactorsText:
+      "Ranks drive most of the ELO result, and recent seasons matter more than older ones (S4 weighs more than S1). Match stats are also included: KDA, kills, damage, damage share, and score. Early progress is faster too: up to around 20 matches, ELO usually climbs more quickly, then changes become steadier.",
+    eloRules: [
+      "Older high ranks count less than recent high ranks.",
+      "Once a stat is above its cap, extra value adds little or no gain.",
+    ],
+    eloRulesText:
+      "Older achievements still count, but less than recent ones. And once a stat is already above its effective cap, pushing it higher adds only a very small effect to final ELO.",
     uploadTitle: "Uploading screenshots",
     uploadBody:
-      "The service reads your match history from a screenshot. Cleaner and larger text means better OCR.",
+      "The app reads match stats from your screenshot. Cleaner text means better OCR.",
     uploadSteps: [
       "Open match history and take a full-screen screenshot.",
-      "Use PNG/JPG without cropping or UI scaling.",
-      "Upload the file or paste from clipboard (Ctrl+V), then click “Analyze match”.",
-      "Wait for “OK” — the match will appear in your profile and leaderboard.",
+      "Use PNG/JPG and avoid cropping the game UI.",
+      "Upload it (or paste with Ctrl+V), then click “Analyze match”.",
+      "When you see “OK”, the match is added to your profile and leaderboard.",
     ],
+    uploadStepsText:
+      "Open your match history and take a full-screen screenshot. Use PNG or JPG and keep the full game UI visible. Then upload the image (or paste it with Ctrl+V) and click “Analyze match”. Once you get the “OK” status, the match is added to your profile and leaderboard automatically.",
     uploadTips: [
-      "Blurry or over-bright images reduce accuracy — use originals.",
+      "Blurry or overexposed images usually fail more often.",
       "RU/EN/FR/DE interfaces are supported.",
-      "If a match is already uploaded, you’ll see a duplicate status.",
+      "If the match is already in the system, you'll get a duplicate status.",
     ],
+    uploadTipsText:
+      "Clear, non-overexposed screenshots are much more reliable. RU/EN/FR/DE game interfaces are supported. If the match was already uploaded before, you'll simply see a duplicate status.",
     uploadAlt: "Screenshot upload guide",
+    matchIssuesTitle: "Why match upload failed",
+    matchIssuesBody:
+      "Most common OCR/upload errors and quick ways to fix them.",
+    matchIssuesText:
+      "The most common cause is screenshot quality: blurry text, overexposure, or cropped UI. It can also fail when the match is already uploaded, match ID is not recognized, or your player row is parsed incorrectly. In most cases, taking a new full-screen screenshot and uploading again solves it. If it keeps happening, send a bug report with the screenshot example.",
     profileTitle: "Navigation and menu",
     profileBody:
-      "The top bar contains the main sections and account menu. Here’s what each button does.",
+      "Here’s what each top-menu button does.",
     profileButtons: [
-      "Upload — upload/analyze match screenshots (available after login).",
+      "Upload — send and analyze screenshots (after login).",
       "Players — leaderboard and player search.",
-      "Help — this page with instructions and guides.",
+      "Help — this page.",
       "Profile (dropdown) — quick access to My Profile, Friends, Achievements, Settings, and Logout.",
-      "Language — switch between RU/EN/FR/DE.",
+      "Language — switch UI language.",
     ],
+    profileButtonsText:
+      "Use “Upload” to send screenshots and run recognition. “Players” opens leaderboard and player search. “Help” takes you here. In the “Profile” dropdown you’ll find your personal pages and logout. The language switcher changes the UI language.",
     profileTips: [
-      "On mobile, these items are inside the burger menu on the right.",
+      "On mobile, these options are inside the burger menu on the right.",
     ],
+    profileTipsText:
+      "On mobile, the same options are available inside the burger menu on the right.",
     profileAlt: "Navigation and menu guide",
+    friendsCompareTitle: "Friends and comparison",
+    friendsCompareBody:
+      "How friend requests work and where to compare stats.",
+    friendsCompareText:
+      "You can add someone from their player profile or from the Friends page. Once they accept, they appear in your friends list. Comparison is available in My Profile, where you can select a friend and see stat differences across score, KDA, damage, winrate, and other key metrics.",
     playerProfileTitle: "Player profile",
     playerProfileBody:
-      "This section explains how to read the player profile and its key blocks.",
+      "What to check first on a player profile.",
     playerProfileSteps: [
-      "Top area shows nickname, avatar, and socials. Social icons open the player’s profile.",
-      "The add‑friend button appears if the player isn’t in your friends list.",
-      "Stat blocks show averages, results, and progress over time.",
-      "Ranks show verified seasonal ranks or “not verified”.",
-      "Achievements list the best unlocked awards with dates.",
+      "Top row shows nickname, avatar, and social links.",
+      "If this player is not your friend yet, you’ll see an add-friend button.",
+      "Stat cards show averages, match results, and progress.",
+      "Ranks show verified seasonal ranks (or not verified).",
+      "Achievements show the best unlocked rewards.",
     ],
+    playerProfileStepsText:
+      "At the top of the profile, you’ll see nickname, avatar, and social links. If this player is not in your friends list, the add-friend button appears nearby. Below that, stat cards show average performance, match outcomes, and progress over time. Separate blocks show verified seasonal ranks and top unlocked achievements.",
     playerProfileTips: [
-      "If a player is banned, a banner appears and they’re excluded from global stats.",
-      "Friend comparison is available in your profile under “Compare”.",
+      "If a player is banned, you’ll see a banner in their profile.",
+      "Friend comparison is available in your own profile.",
     ],
+    playerProfileTipsText:
+      "If the player is banned, a banner is shown in their profile. Friend comparison is available in your own profile section.",
     playerProfileAlt: "Player profile guide",
+    bugReportTitle: "How to report a bug",
+    bugReportBody:
+      "What to include so a bug can be reproduced and fixed faster.",
+    bugReportText:
+      "When reporting a bug, include what you did before the issue, what you expected, and what happened instead. Add a screenshot, the approximate time, and the player UID or page link if available. The clearer your report is, the faster the issue can be investigated and fixed.",
   },
 
   roadmap: {

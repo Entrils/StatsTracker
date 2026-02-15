@@ -3,6 +3,7 @@ import fs from "fs/promises";
 import path from "path";
 import sharp from "sharp";
 import { fileURLToPath } from "url";
+import { computeHiddenElo } from "../helpers/elo.js";
 
 export function registerProfileRoutes(app, deps) {
     const {
@@ -719,6 +720,10 @@ export function registerProfileRoutes(app, deps) {
         matches,
         total: matches.length,
         name: profileData?.name || null,
+        elo:
+          Number.isFinite(Number(profileData?.hiddenElo))
+            ? Number(profileData.hiddenElo)
+            : 0,
         avatar: profileData?.avatar || null,
         provider: profileData?.provider || null,
         settings,
@@ -779,6 +784,7 @@ export function registerProfileRoutes(app, deps) {
         settings,
         ranks,
         name: data.name || null,
+        elo: Number.isFinite(Number(data.hiddenElo)) ? Number(data.hiddenElo) : 0,
         avatar: data.avatar || null,
         provider: data.provider || null,
         ban,
@@ -786,6 +792,82 @@ export function registerProfileRoutes(app, deps) {
     } catch (err) {
       logger.error("PROFILE ERROR:", err);
       return res.status(500).json({ error: "Failed to load profile" });
+    }
+  });
+
+  app.get("/admin/profile/:uid/hidden-elo", authLimiter, requireAuth, async (req, res) => {
+    try {
+      const isAdmin = req.user?.admin === true || req.user?.role === "admin";
+      if (!isAdmin) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
+
+      const { uid } = req.params;
+      if (!uid || !isValidUid(uid)) {
+        return res.status(400).json({ error: "Invalid uid" });
+      }
+
+      const aggSnap = await db.collection("leaderboard_users").doc(uid).get();
+      if (!aggSnap.exists) {
+        return res.status(404).json({ error: "Profile not found" });
+      }
+
+      const agg = aggSnap.data() || {};
+      const ranksSnap = await db
+        .collection("users")
+        .doc(uid)
+        .collection("profile")
+        .doc("ranks")
+        .get();
+      const ranks = ranksSnap.exists ? ranksSnap.data() || {} : {};
+
+      const toNum = (v) => {
+        const n = Number(v);
+        return Number.isFinite(n) ? n : 0;
+      };
+      const matches = toNum(agg.matches);
+      const score = toNum(agg.score);
+      const kills = toNum(agg.kills);
+      const deaths = toNum(agg.deaths);
+      const assists = toNum(agg.assists);
+      const damage = toNum(agg.damage);
+      const damageShare = toNum(agg.damageShare);
+      const wins = toNum(agg.wins);
+      const losses = toNum(agg.losses);
+
+      const recomputedHiddenElo = computeHiddenElo({
+        matches,
+        score,
+        kills,
+        deaths,
+        assists,
+        damage,
+        damageShare,
+        ranks,
+      });
+
+      return res.json({
+        uid,
+        hiddenElo: Number.isFinite(agg.hiddenElo) ? agg.hiddenElo : null,
+        recomputedHiddenElo,
+        hiddenEloUpdatedAt: agg.hiddenEloUpdatedAt || null,
+        stats: {
+          matches,
+          wins,
+          losses,
+          avgScore: matches ? score / matches : 0,
+          avgKills: matches ? kills / matches : 0,
+          avgDeaths: matches ? deaths / matches : 0,
+          avgAssists: matches ? assists / matches : 0,
+          avgDamage: matches ? damage / matches : 0,
+          avgDamageShare: matches ? damageShare / matches : 0,
+          kda: (kills + assists) / Math.max(1, deaths),
+        },
+        ranks,
+      });
+    } catch (err) {
+      logger.error("ADMIN HIDDEN ELO ERROR:", err);
+      return res.status(500).json({ error: "Failed to load hidden elo" });
     }
   });
 

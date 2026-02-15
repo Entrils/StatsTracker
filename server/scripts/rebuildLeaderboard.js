@@ -1,6 +1,7 @@
 import dotenv from "dotenv";
 import admin from "firebase-admin";
 import pino from "pino";
+import { computeHiddenElo } from "../helpers/elo.js";
 
 dotenv.config();
 
@@ -89,6 +90,20 @@ async function rebuild() {
   await deleteCollection(db.collection("leaderboard_users"));
 
   logger.info("Writing leaderboard_users...");
+  const playerUids = [...players.keys()];
+  const ranksByUid = new Map();
+  const ranksChunkSize = 300;
+  for (let i = 0; i < playerUids.length; i += ranksChunkSize) {
+    const chunk = playerUids.slice(i, i + ranksChunkSize);
+    const refs = chunk.map((uid) =>
+      db.collection("users").doc(uid).collection("profile").doc("ranks")
+    );
+    const snaps = await db.getAll(...refs);
+    snaps.forEach((snap, idx) => {
+      ranksByUid.set(chunk[idx], snap.exists ? snap.data() || {} : {});
+    });
+  }
+
   const batchSize = 500;
   let batch = db.batch();
   let i = 0;
@@ -106,6 +121,17 @@ async function rebuild() {
       wins: p.wins,
       losses: p.losses,
       matches: p.matches,
+      hiddenElo: computeHiddenElo({
+        matches: p.matches,
+        score: p.score,
+        kills: p.kills,
+        deaths: p.deaths,
+        assists: p.assists,
+        damage: p.damage,
+        damageShare: p.damageShare,
+        ranks: ranksByUid.get(p.uid) || {},
+      }),
+      hiddenEloUpdatedAt: Date.now(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 

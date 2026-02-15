@@ -46,6 +46,7 @@ export default function MyProfile() {
 
   const {
     profileRanks,
+    profileElo,
     banInfo,
     globalAvg,
     loadingGlobal,
@@ -433,7 +434,7 @@ export default function MyProfile() {
       <div className={styles.profileLayout}>
         <aside className={styles.sidebarColumn}>
           <div className={styles.sidebarSlot}>
-            <RanksCard t={t} profileRanks={profileRanks} />
+            <RanksCard t={t} profileRanks={profileRanks} profileElo={profileElo} />
           </div>
           <div className={styles.sidebarSlot}>{renderActivityCard()}</div>
           <div className={styles.sidebarSlot}>

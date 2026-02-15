@@ -6,6 +6,7 @@ import { dedupedJsonRequest } from "@/utils/network/dedupedFetch";
 
 export default function useProfileRemoteData({ uid, user, summary, backendUrl }) {
   const [profileRanks, setProfileRanks] = useState(null);
+  const [profileElo, setProfileElo] = useState(0);
   const [banInfo, setBanInfo] = useState(null);
   const [globalAvg, setGlobalAvg] = useState(null);
   const [loadingGlobal, setLoadingGlobal] = useState(true);
@@ -37,6 +38,7 @@ export default function useProfileRemoteData({ uid, user, summary, backendUrl })
         );
         if (!alive) return;
         setProfileRanks(data?.ranks || null);
+        setProfileElo(Number.isFinite(Number(data?.elo)) ? Number(data.elo) : 0);
         setBanInfo(data?.ban || null);
       } catch {
         // Secondary backend fallback.
@@ -56,6 +58,7 @@ export default function useProfileRemoteData({ uid, user, summary, backendUrl })
           );
           if (!alive) return;
           setProfileRanks(data?.ranks || null);
+          setProfileElo(Number.isFinite(Number(data?.elo)) ? Number(data.elo) : 0);
           setBanInfo(data?.ban || null);
           return;
         } catch {
@@ -66,8 +69,12 @@ export default function useProfileRemoteData({ uid, user, summary, backendUrl })
           const ranksSnap = await getDoc(doc(db, "users", uid, "profile", "ranks"));
           if (!alive) return;
           setProfileRanks(ranksSnap.exists() ? ranksSnap.data() || null : null);
+          setProfileElo(0);
         } catch {
-          if (alive) setProfileRanks(null);
+          if (alive) {
+            setProfileRanks(null);
+            setProfileElo(0);
+          }
         }
       }
     };
@@ -192,6 +199,7 @@ export default function useProfileRemoteData({ uid, user, summary, backendUrl })
 
   return {
     profileRanks,
+    profileElo,
     banInfo,
     globalAvg,
     loadingGlobal,

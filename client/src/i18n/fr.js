@@ -21,6 +21,7 @@
     assists: "Assists",
     avgScore: "Score moyen",
     kda: "KDA",
+    elo: "ELO",
     matches: "Matchs",
     wins: "Victoires",
     wl: "W/L",
@@ -94,6 +95,7 @@
     empty: "Aucun historique de match",
     back: "Retour",
     matches: "Matchs",
+    elo: "ELO",
     wins: "Victoires",
     losses: "Défaites",
     winrate: "Taux de victoire",
@@ -134,6 +136,7 @@
     overview: "Aperçu",
     overviewHint: "Résultats et régularité",
     matches: "Matchs",
+    elo: "ELO",
     wins: "Victoires",
     losses: "Défaites",
     winrate: "Taux de victoire",
@@ -286,51 +289,96 @@
 
   help: {
     title: "Aide",
-    subtitle: "Des instructions claires et utiles, sans blabla.",
+    tocTitle: "Sommaire",
+    subtitle: "Le plus important, expliqué simplement.",
+    eloTitle: "Classement ELO",
+    eloBody:
+      "L'ELO reflète ton niveau actuel. Il combine les rangs et les stats moyennes de tes matchs.",
+    eloFactors: [
+      "Les rangs ont le plus d'impact : plus le rang est haut, plus l'ELO monte.",
+      "Les saisons récentes comptent plus que les anciennes (S4 > S3 > S2 > S1).",
+      "Le KDA, les kills, les dégâts, la part de dégâts et le score comptent aussi.",
+      "Jusqu'à 20 matchs, l'ELO monte plus vite. Après, la progression est plus stable.",
+    ],
+    eloFactorsText:
+      "La plus grande partie de l'ELO vient des rangs, et les saisons récentes pèsent davantage que les anciennes (S4 compte plus que S1). Les statistiques de match sont aussi prises en compte : KDA, kills, dégâts, part des dégâts et score. Au début, la progression est plus rapide : jusqu'à environ 20 matchs, l'ELO monte plus vite, puis devient plus stable.",
+    eloRules: [
+      "Les anciens hauts rangs pèsent moins que les hauts rangs récents.",
+      "Au-dessus des plafonds, le gain supplémentaire est très limité.",
+    ],
+    eloRulesText:
+      "Les anciens résultats sont toujours pris en compte, mais moins que les récents. Et lorsqu'une statistique dépasse déjà sa zone utile, l'augmentation supplémentaire a peu d'effet sur l'ELO final.",
     uploadTitle: "Envoyer un screenshot",
     uploadBody:
-      "Le service lit l’historique de match depuis une capture. Un texte net et grand améliore l’OCR.",
+      "Le service lit tes stats de match depuis une capture. Plus le texte est net, mieux l’OCR fonctionne.",
     uploadSteps: [
-      "Ouvre l’historique et fais une capture en plein écran.",
-      "Utilise un PNG/JPG sans recadrage ni zoom.",
-      "Téléverse le fichier ou colle depuis le presse‑papiers (Ctrl+V), puis clique sur « Analyser le match ».",
-      "Attends « OK » — le match apparaîtra dans ton profil et le classement.",
+      "Ouvre l’historique des matchs et fais une capture en plein écran.",
+      "Utilise un PNG/JPG sans recadrer l’interface.",
+      "Téléverse le fichier (ou colle avec Ctrl+V), puis clique sur « Analyser le match ».",
+      "Quand tu vois « OK », le match est ajouté à ton profil et au classement.",
     ],
+    uploadStepsText:
+      "Ouvre l’historique des matchs et fais une capture en plein écran. Utilise un PNG ou JPG en gardant toute l’interface visible. Ensuite, téléverse le fichier (ou colle-le avec Ctrl+V) et clique sur « Analyser le match ». Dès que le statut « OK » apparaît, le match est ajouté automatiquement à ton profil et au classement.",
     uploadTips: [
-      "Les images floues ou trop claires réduisent la précision.",
+      "Les images floues ou trop claires donnent souvent de moins bons résultats.",
       "Interfaces RU/EN/FR/DE prises en charge.",
-      "Un match déjà envoyé affiche un statut de doublon.",
+      "Si le match est déjà enregistré, tu verras un statut de doublon.",
     ],
+    uploadTipsText:
+      "Les captures nettes, sans surexposition, donnent de bien meilleurs résultats. Les interfaces RU/EN/FR/DE sont prises en charge. Si un match est déjà présent, le système affiche simplement un statut de doublon.",
     uploadAlt: "Guide d’envoi de capture",
+    matchIssuesTitle: "Pourquoi le match n’a pas été chargé",
+    matchIssuesBody:
+      "Causes fréquentes d’échec OCR/upload et solutions rapides.",
+    matchIssuesText:
+      "La cause la plus fréquente reste la qualité de la capture : texte flou, image surexposée ou interface recadrée. L’échec peut aussi venir d’un match déjà enregistré, d’un ID de match non reconnu ou d’une mauvaise détection de la ligne du joueur. Dans la plupart des cas, refaire une capture plein écran puis relancer l’envoi suffit. Si le problème continue, envoie un bug report avec la capture.",
     profileTitle: "Navigation et menu",
     profileBody:
-      "La barre du haut contient les sections principales et le menu du compte. Voici chaque bouton.",
+      "Voici à quoi servent les boutons du menu en haut.",
     profileButtons: [
-      "Upload — téléverser/analyser des captures (après connexion).",
+      "Upload — envoyer et analyser des captures (après connexion).",
       "Joueurs — classement et recherche de joueurs.",
-      "Aide — cette page d’instructions.",
+      "Aide — cette page.",
       "Profil (menu) — accès rapide à Mon profil, Amis, Exploits, Paramètres et Déconnexion.",
-      "Langue — passer entre RU/EN/FR/DE.",
+      "Langue — changer la langue de l’interface.",
     ],
+    profileButtonsText:
+      "Avec « Upload », tu envoies des captures et lances l’analyse. « Joueurs » ouvre le classement et la recherche. « Aide » mène à cette page. Le menu « Profil » donne accès à tes sections personnelles et à la déconnexion. Le sélecteur de langue change la langue de l’interface.",
     profileTips: [
-      "Sur mobile, ces éléments sont dans le menu burger à droite.",
+      "Sur mobile, ces options sont dans le menu burger à droite.",
     ],
+    profileTipsText:
+      "Sur mobile, ces mêmes options se trouvent dans le menu burger à droite.",
     profileAlt: "Guide de navigation et menu",
+    friendsCompareTitle: "Amis et comparaison",
+    friendsCompareBody:
+      "Comment gérer les amis et comparer vos stats.",
+    friendsCompareText:
+      "Tu peux ajouter un joueur depuis son profil ou depuis la page Amis. Une fois la demande acceptée, il apparaît dans ta liste. La comparaison est disponible dans Mon profil : tu choisis un ami et tu vois les écarts sur le score, le KDA, les dégâts, le winrate et les autres métriques importantes.",
     playerProfileTitle: "Profil du joueur",
     playerProfileBody:
-      "Cette section explique comment lire le profil et ses blocs clés.",
+      "Les éléments importants à lire sur un profil joueur.",
     playerProfileSteps: [
-      "En haut : pseudo, avatar et réseaux sociaux. Les icônes ouvrent le profil du joueur.",
-      "Le bouton d’ajout apparaît si le joueur n’est pas encore dans vos amis.",
-      "Les blocs de stats montrent les moyennes, résultats et la progression.",
-      "Les rangs affichent les saisons vérifiées ou « non vérifié ».",
-      "Les succès listent les meilleures récompenses avec la date d’obtention.",
+      "En haut : pseudo, avatar et liens sociaux.",
+      "Si le joueur n’est pas encore ami, le bouton d’ajout s’affiche.",
+      "Les blocs de stats montrent les moyennes, les résultats et la progression.",
+      "Les rangs affichent les saisons vérifiées (ou non vérifié).",
+      "Les succès affichent les récompenses les plus marquantes.",
     ],
+    playerProfileStepsText:
+      "En haut du profil, tu vois le pseudo, l’avatar et les liens sociaux. Si le joueur n’est pas encore dans tes amis, le bouton d’ajout apparaît juste à côté. Plus bas, les blocs affichent les moyennes, les résultats et la progression. Des sections séparées montrent les rangs vérifiés par saison et les succès les plus importants.",
     playerProfileTips: [
-      "En cas de bannissement, un bandeau apparaît et le joueur est exclu des stats globales.",
-      "La comparaison avec un ami se fait dans votre profil (onglet « Comparer »).",
+      "En cas de bannissement, un bandeau apparaît sur le profil.",
+      "La comparaison avec les amis se fait dans ton propre profil.",
     ],
+    playerProfileTipsText:
+      "En cas de bannissement actif, un bandeau est visible sur le profil. La comparaison avec les amis est disponible dans ton propre profil.",
     playerProfileAlt: "Guide du profil joueur",
+    bugReportTitle: "Comment signaler un bug",
+    bugReportBody:
+      "Les infos utiles pour un correctif rapide.",
+    bugReportText:
+      "Dans ton signalement, indique ce que tu faisais juste avant l’erreur, le résultat attendu, puis le résultat réel. Ajoute une capture d’écran, l’heure approximative et, si possible, l’UID du joueur ou le lien de la page. Plus le rapport est précis, plus la correction est rapide.",
   },
 
   roadmap: {
