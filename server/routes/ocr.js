@@ -10,6 +10,43 @@ export function registerOcrRoutes(app, deps) {
     admin,
   } = deps;
 
+  const fetchWithTimeoutRetry = async (
+    url,
+    options = {},
+    { timeoutMs = 12000, retries = 1, retryDelayMs = 500 } = {}
+  ) => {
+    let lastError = null;
+
+    for (let attempt = 0; attempt <= retries; attempt += 1) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const response = await fetch(url, {
+          ...options,
+          signal: controller.signal,
+        });
+        clearTimeout(timer);
+
+        if (
+          (response.status === 429 || response.status >= 500) &&
+          attempt < retries
+        ) {
+          await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
+          continue;
+        }
+
+        return response;
+      } catch (err) {
+        clearTimeout(timer);
+        lastError = err;
+        if (attempt >= retries) break;
+        await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
+      }
+    }
+
+    throw lastError || new Error("Request failed");
+  };
+
   app.post("/ocr", ocrLimiter, requireAuth, ocrDailyLimiter, async (req, res) => {
     try {
       const uid = req.user?.uid;
@@ -47,7 +84,8 @@ export function registerOcrRoutes(app, deps) {
       if (!process.env.OCR_SPACE_API_KEY) {
         return res.status(500).json({ error: "OCR key not configured" });
       }
-      const requestedLang = lang === "rus" ? "rus" : "eng";
+      const allowedLangs = new Set(["eng", "rus", "fre", "ger"]);
+      const requestedLang = allowedLangs.has(lang) ? lang : "eng";
 
       const runOcr = async (ocrLang) => {
         const form = new URLSearchParams();
@@ -58,7 +96,7 @@ export function registerOcrRoutes(app, deps) {
         form.append("isOverlayRequired", "false");
         form.append("base64Image", base64Image);
 
-        const r = await fetch("https://api.ocr.space/parse/image", {
+        const r = await fetchWithTimeoutRetry("https://api.ocr.space/parse/image", {
           method: "POST",
           headers: { "Content-Type": "application/x-www-form-urlencoded" },
           body: form.toString(),
@@ -81,7 +119,7 @@ export function registerOcrRoutes(app, deps) {
 
       let result = await runOcr(requestedLang);
       if (
-        requestedLang === "rus" &&
+        requestedLang !== "eng" &&
         (result.ok === false || result.errored || !result.hasText)
       ) {
         const fallback = await runOcr("eng");

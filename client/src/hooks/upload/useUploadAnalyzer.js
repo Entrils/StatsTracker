@@ -60,6 +60,31 @@ export default function useUploadAnalyzer({
       const total = queue.length;
       const worker = await ensureTesseract();
       const uid = user.uid;
+      opencvWorker = new Worker(
+        new URL("../../workers/opencvWorker.js", import.meta.url),
+        { type: "classic" }
+      );
+
+      const runOpenCvCrop = (imageData) =>
+        new Promise((resolve, reject) => {
+          const cleanup = () => {
+            opencvWorker.onmessage = null;
+            opencvWorker.onerror = null;
+          };
+
+          opencvWorker.onerror = (event) => {
+            cleanup();
+            reject(event?.error || new Error("OpenCV worker failed"));
+          };
+
+          opencvWorker.onmessage = (event) => {
+            cleanup();
+            resolve(event.data);
+          };
+
+          opencvWorker.postMessage({ imageData });
+        });
+
       let matchesList = await fetchUserMatches(uid);
       const idToken = user ? await user.getIdToken() : null;
       const { friendCount, friendDates } = await fetchFriendsMeta(idToken);
@@ -212,16 +237,7 @@ export default function useUploadAnalyzer({
         ctx.drawImage(bitmap, 0, 0);
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
-        opencvWorker = new Worker(
-          new URL("../../workers/opencvWorker.js", import.meta.url),
-          { type: "classic" }
-        );
-
-        const opencvResult = await new Promise((resolve, reject) => {
-          opencvWorker.onerror = reject;
-          opencvWorker.onmessage = (e) => resolve(e.data);
-          opencvWorker.postMessage({ imageData });
-        });
+        const opencvResult = await runOpenCvCrop(imageData);
 
         const { blob, error } = opencvResult || {};
         if (error || !blob) {
