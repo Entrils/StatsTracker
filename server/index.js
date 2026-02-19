@@ -12,6 +12,7 @@ import { registerStatsRoutes } from "./routes/stats.js";
 import { registerClientErrorRoutes } from "./routes/clientError.js";
 import { registerBanRoutes } from "./routes/bans.js";
 import { registerFriendsRoutes } from "./routes/friends.js";
+import { registerTournamentRoutes } from "./routes/tournaments.js";
 import { createCorsMiddleware } from "./middleware/cors.js";
 import { createHelmetMiddleware } from "./middleware/helmet.js";
 import { createRateLimiters } from "./middleware/rateLimits.js";
@@ -35,9 +36,34 @@ import { loadConfig } from "./config.js";
 dotenv.config();
 const config = loadConfig(process.env);
 
+function disableBrokenLocalProxyEnv(loggerInstance) {
+  const proxyKeys = [
+    "HTTP_PROXY",
+    "HTTPS_PROXY",
+    "ALL_PROXY",
+    "http_proxy",
+    "https_proxy",
+    "all_proxy",
+  ];
+  const brokenProxyPattern = /127\.0\.0\.1:9/i;
+  let changed = false;
+  proxyKeys.forEach((key) => {
+    const value = String(process.env[key] || "");
+    if (!value || !brokenProxyPattern.test(value)) return;
+    delete process.env[key];
+    changed = true;
+  });
+  if (changed) {
+    loggerInstance?.warn?.(
+      "Disabled local proxy env variables (127.0.0.1:9) to restore Firestore connectivity"
+    );
+  }
+}
+
 const app = express();
 app.set("trust proxy", 1);
 const logger = pino({ level: config.logLevel });
+disableBrokenLocalProxyEnv(logger);
 app.use(createRequestLogger(logger));
 
 const CLIENT_ERROR_LOG = config.clientErrorLog;
@@ -178,6 +204,7 @@ registerStatsRoutes(app, routesDeps);
 registerClientErrorRoutes(app, routesDeps);
 registerBanRoutes(app, routesDeps);
 registerFriendsRoutes(app, routesDeps);
+registerTournamentRoutes(app, routesDeps);
 
 app.use(payloadTooLargeHandler);
 

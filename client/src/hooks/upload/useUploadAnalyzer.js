@@ -79,7 +79,7 @@ export default function useUploadAnalyzer({
       let matchesList = await fetchUserMatches(uid);
       throwIfAborted(signal);
       const idToken = user ? await user.getIdToken() : null;
-      const { friendCount, friendDates } = await fetchFriendsMeta(idToken);
+      const { friendCount, friendDates, friendMilestones } = await fetchFriendsMeta(idToken);
       throwIfAborted(signal);
 
       const getUnlockedIds = (achievementsData) => {
@@ -118,6 +118,7 @@ export default function useUploadAnalyzer({
         matches: matchesList,
         friendDates,
         friendCount,
+        friendMilestones,
       });
       let unlockedIds = getUnlockedIds(baseAchievements);
 
@@ -177,6 +178,7 @@ export default function useUploadAnalyzer({
             matches: matchesList,
             friendDates,
             friendCount,
+            friendMilestones,
           });
           const nextUnlocked = getUnlockedIds(newAchievements);
           Object.entries(newAchievements).forEach(([key, list]) => {

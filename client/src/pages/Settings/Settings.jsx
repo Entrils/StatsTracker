@@ -3,8 +3,10 @@ import imageCompression from "browser-image-compression";
 import styles from "@/pages/Settings/Settings.module.css";
 import { useAuth } from "@/auth/AuthContext";
 import { useLang } from "@/i18n/LanguageContext";
+import Button from "@/components/ui/Button";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+const FRAGPUNK_ID_REGEX = /^[A-Za-z0-9._-]{3,24}#[A-Za-z0-9]{2,8}$/;
 
 export default function Settings() {
   const { user } = useAuth();
@@ -13,6 +15,7 @@ export default function Settings() {
     twitch: "",
     youtube: "",
     tiktok: "",
+    fragpunkId: "",
   });
   const [status, setStatus] = useState("");
   const [tone, setTone] = useState("");
@@ -21,6 +24,7 @@ export default function Settings() {
     twitch: false,
     youtube: false,
     tiktok: false,
+    fragpunkId: false,
   });
   const [errors, setErrors] = useState({});
   const [rankSeason, setRankSeason] = useState("s1");
@@ -32,6 +36,9 @@ export default function Settings() {
   const [rankTone, setRankTone] = useState("");
   const [rankSending, setRankSending] = useState(false);
   const [rankOpen, setRankOpen] = useState(false);
+  const [fragStatus, setFragStatus] = useState("");
+  const [fragTone, setFragTone] = useState("");
+  const [fragSaving, setFragSaving] = useState(false);
   const rankRef = useRef(null);
 
   useEffect(() => {
@@ -45,6 +52,7 @@ export default function Settings() {
           twitch: s.twitch || "",
           youtube: s.youtube || "",
           tiktok: s.tiktok || "",
+          fragpunkId: s.fragpunkId || "",
         });
       })
       .catch(() => {});
@@ -74,6 +82,9 @@ export default function Settings() {
   const validateSocial = (type, value) => {
     const v = value.trim();
     if (!v) return "";
+    if (type === "fragpunkId") {
+      return FRAGPUNK_ID_REGEX.test(v) ? "" : "format";
+    }
 
     if (isUrl(v)) {
       const url = safeUrl(v);
@@ -108,7 +119,7 @@ export default function Settings() {
     return /^[a-zA-Z0-9._]{2,24}$/.test(v.replace(/^@/, "")) ? "" : "format";
   };
 
-  const validateAll = () => {
+  const validateSocials = () => {
     const next = {};
     const twitchError = validateSocial("twitch", socials.twitch);
     const youtubeError = validateSocial("youtube", socials.youtube);
@@ -118,6 +129,15 @@ export default function Settings() {
     if (tiktokError) next.tiktok = tiktokError;
     setErrors(next);
     return Object.keys(next).length === 0;
+  };
+
+  const validateFragpunkId = () => {
+    const fragpunkError = validateSocial("fragpunkId", socials.fragpunkId);
+    setErrors((prev) => ({
+      ...prev,
+      fragpunkId: fragpunkError || undefined,
+    }));
+    return !fragpunkError;
   };
 
   const rankOptions = useMemo(() => {
@@ -237,7 +257,7 @@ export default function Settings() {
 
   const saveSocials = async () => {
     if (!user) return;
-    if (!validateAll()) {
+    if (!validateSocials()) {
       setStatus(t.me?.saveError || "Save failed");
       setTone("bad");
       return;
@@ -253,17 +273,59 @@ export default function Settings() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ settings: socials }),
+        body: JSON.stringify({
+          settings: {
+            twitch: socials.twitch,
+            youtube: socials.youtube,
+            tiktok: socials.tiktok,
+          },
+        }),
       });
       if (!res.ok) throw new Error("Failed");
       setStatus(t.me?.saved || "Saved");
       setTone("good");
-      setEditing({ twitch: false, youtube: false, tiktok: false });
+      setEditing((prev) => ({ ...prev, twitch: false, youtube: false, tiktok: false }));
     } catch {
       setStatus(t.me?.saveError || "Save failed");
       setTone("bad");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const saveFragpunkId = async () => {
+    if (!user) return;
+    if (!validateFragpunkId()) {
+      setFragStatus(t.me?.saveError || "Save failed");
+      setFragTone("bad");
+      return;
+    }
+    setFragSaving(true);
+    setFragStatus(t.me?.saving || "Saving...");
+    setFragTone("neutral");
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch(`${BACKEND_URL}/profile/settings`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          settings: {
+            fragpunkId: socials.fragpunkId,
+          },
+        }),
+      });
+      if (!res.ok) throw new Error("Failed");
+      setFragStatus(t.me?.saved || "Saved");
+      setFragTone("good");
+      setEditing((prev) => ({ ...prev, fragpunkId: false }));
+    } catch {
+      setFragStatus(t.me?.saveError || "Save failed");
+      setFragTone("bad");
+    } finally {
+      setFragSaving(false);
     }
   };
 
@@ -281,6 +343,71 @@ export default function Settings() {
       <div className={styles.card}>
         <h1 className={styles.title}>{t.me?.settings || "Settings"}</h1>
         <div className={styles.settingsLayout}>
+          <div className={styles.leftCol}>
+          <div className={styles.fragpunkBlock}>
+            <h2 className={styles.sectionTitle}>{t.me?.fragpunkId || "FragPunk ID"}</h2>
+            <p className={styles.hint}>
+              {t.me?.socialInvalidFragpunkHint || "Format: nickname#tag"}
+            </p>
+            <label className={styles.socialField}>
+              <span className={styles.socialLabel}>
+                {t.me?.fragpunkId || "FragPunk ID"}
+              </span>
+              {socials.fragpunkId && !editing.fragpunkId ? (
+                <div className={styles.socialValue}>
+                  <span>{socials.fragpunkId}</span>
+                  <button
+                    type="button"
+                    className={styles.editBtn}
+                    onClick={() =>
+                      setEditing((e) => ({ ...e, fragpunkId: true }))
+                    }
+                    title={t.me?.edit || "Edit"}
+                  >
+                    вњЋ
+                  </button>
+                </div>
+              ) : (
+                <input
+                  className={`${styles.socialInput} ${
+                    errors.fragpunkId ? styles.inputError : ""
+                  }`}
+                  value={socials.fragpunkId}
+                  onChange={(e) =>
+                    (setSocials((s) => ({ ...s, fragpunkId: e.target.value })),
+                    setEditing((ed) => ({ ...ed, fragpunkId: true })))
+                  }
+                  placeholder="nickname#tag"
+                />
+              )}
+              {errors.fragpunkId && (
+                <span className={styles.errorText}>
+                  {t.me?.socialInvalidFragpunk ||
+                    "Invalid FragPunk ID format. Use nickname#tag"}
+                </span>
+              )}
+            </label>
+            <div className={styles.fragpunkActions}>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={saveFragpunkId}
+                disabled={fragSaving}
+              >
+                {fragSaving ? t.me?.saving || "Saving..." : t.me?.save || "Save"}
+              </Button>
+              {fragStatus && (
+                <span
+                  className={`${styles.socialsStatus} ${
+                    fragTone === "good" ? styles.good : fragTone === "bad" ? styles.bad : ""
+                  }`}
+                >
+                  {fragStatus}
+                </span>
+              )}
+            </div>
+          </div>
+
           <div className={styles.rankBlock}>
           <h2 className={styles.rankTitle}>
             {t.me?.rankVerifyTitle || "Rank verification"}
@@ -391,16 +518,19 @@ export default function Settings() {
             </div>
           )}
 
+          
+
           <div className={styles.rankActions}>
-            <button
-              className={styles.saveBtn}
+            <Button
+              variant="secondary"
+              size="sm"
               onClick={submitRank}
               disabled={rankSending}
             >
               {rankSending
                 ? t.me?.rankSending || "Sending..."
                 : t.me?.rankSubmit || "Submit"}
-            </button>
+            </Button>
             {rankStatus && (
               <span
                 className={`${styles.socialsStatus} ${
@@ -415,6 +545,7 @@ export default function Settings() {
               </span>
             )}
           </div>
+        </div>
         </div>
 
           <div className={styles.socialsBlock}>
@@ -542,13 +673,14 @@ export default function Settings() {
               </label>
             </div>
             <div className={styles.socialsActions}>
-              <button
-                className={styles.saveBtn}
+              <Button
+                variant="secondary"
+                size="sm"
                 onClick={saveSocials}
                 disabled={saving}
               >
                 {saving ? t.me?.saving || "Saving..." : t.me?.save || "Save"}
-              </button>
+              </Button>
               {status && (
                 <span
                   className={`${styles.socialsStatus} ${
@@ -565,3 +697,5 @@ export default function Settings() {
     </div>
   );
 }
+
+

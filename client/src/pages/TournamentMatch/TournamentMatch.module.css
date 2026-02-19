@@ -1,0 +1,442 @@
+.wrapper {
+  padding: var(--space-6) var(--space-5);
+  display: grid;
+  gap: var(--space-4);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.title {
+  margin: 0;
+  color: #f4f8ff;
+}
+
+.backLink {
+  color: #9fffea;
+  text-decoration: none;
+  font-size: var(--text-sm);
+}
+
+.mainCard {
+  background: rgba(8, 12, 22, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(440px, 1.4fr) minmax(220px, 1fr);
+  gap: var(--space-3);
+}
+
+.sidePanel {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+
+.sideHeader {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 10px;
+  background: rgba(5, 8, 15, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.teamAvatar {
+  width: 84px;
+  height: 84px;
+  border-radius: 12px;
+  object-fit: cover;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.teamName {
+  margin: 0;
+  color: #f4f8ff;
+  text-align: center;
+}
+
+.entityLink {
+  color: inherit;
+  text-decoration: none;
+}
+
+.entityLink:hover {
+  text-decoration: underline;
+}
+
+.soloElo {
+  margin: 0;
+  color: #99a9ca;
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.soloFragId {
+  margin: 0;
+  color: #9aa4c1;
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+.membersList {
+  display: grid;
+  gap: 8px;
+}
+
+.memberRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(5, 8, 15, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 7px 8px;
+  color: #dbe7ff;
+}
+
+.memberAvatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  object-fit: cover;
+}
+
+.memberText {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.memberName {
+  font-size: 0.92rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.memberElo {
+  color: #99a9ca;
+  font-size: 0.76rem;
+}
+
+.memberFragId {
+  color: #9aa4c1;
+  font-size: 0.72rem;
+}
+
+.centerCol {
+  display: grid;
+  align-content: start;
+  justify-items: stretch;
+  gap: 8px;
+}
+
+.matchMeta {
+  margin: 0;
+  color: #8da6cf;
+  text-align: center;
+}
+
+.status {
+  margin: 0;
+  color: #f4f8ff;
+  font-size: 1.4rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.soloVs {
+  margin: 0;
+  color: #dbe7ff;
+  font-weight: 700;
+  text-align: center;
+}
+
+.schedule {
+  margin: 0 0 4px;
+  color: #9eb0d8;
+  text-align: center;
+}
+
+.vetoCard {
+  background: rgba(8, 12, 22, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+}
+
+.readyCard {
+  background: rgba(8, 12, 22, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+}
+
+.blockTitle {
+  margin: 0 0 var(--space-3);
+  color: #f4f8ff;
+  text-align: center;
+}
+
+.hint {
+  margin: 0 0 var(--space-2);
+  color: #9aa4c1;
+  text-align: center;
+}
+
+.readyRows {
+  display: grid;
+  gap: 8px;
+}
+
+.readyRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  background: rgba(5, 8, 15, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: #dbe7ff;
+}
+
+.readyButton {
+  width: 100%;
+  margin-top: var(--space-3);
+  border: 1px solid rgba(180, 241, 223, 0.45);
+  background: rgba(80, 190, 150, 0.18);
+  color: #e8fff9;
+  border-radius: 8px;
+  padding: 9px 12px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.readyButton:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.mapGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.mapCard {
+  display: grid;
+  gap: 8px;
+  background: rgba(5, 8, 15, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  padding: 8px;
+  color: #dbe7ff;
+  cursor: pointer;
+  text-align: left;
+}
+
+.mapCardDisabled {
+  opacity: 0.5;
+}
+
+.mapThumb {
+  position: relative;
+  height: 72px;
+  border-radius: 6px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background:
+    linear-gradient(120deg, rgba(78, 95, 140, 0.5), rgba(46, 58, 90, 0.45)),
+    repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.06) 0 10px, rgba(255, 255, 255, 0) 10px 20px);
+}
+
+.mapImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mapThumbFallback {
+  color: #d3ddf0;
+  font-weight: 700;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+}
+
+.mapBannedTag {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(120, 8, 8, 0.56);
+  color: #ff4b4b;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+.mapPickedTag {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(10, 92, 36, 0.5);
+  color: #56f08f;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+.mapLabel {
+  font-size: 0.84rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.finalMapCard {
+  display: grid;
+  gap: 10px;
+}
+
+.finalMapThumb {
+  position: relative;
+  height: 220px;
+  border-radius: 10px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background:
+    linear-gradient(120deg, rgba(78, 95, 140, 0.5), rgba(46, 58, 90, 0.45)),
+    repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.06) 0 10px, rgba(255, 255, 255, 0) 10px 20px);
+}
+
+.finalMapLabel {
+  text-align: center;
+  color: #f4f8ff;
+  font-weight: 800;
+  font-size: 1.02rem;
+}
+
+.seriesGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.seriesCard {
+  display: grid;
+  gap: 8px;
+}
+
+.seriesList {
+  display: grid;
+  gap: 10px;
+}
+
+.seriesRow {
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.seriesThumb {
+  position: relative;
+  height: 74px;
+  border-radius: 8px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background:
+    linear-gradient(120deg, rgba(78, 95, 140, 0.5), rgba(46, 58, 90, 0.45)),
+    repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.06) 0 10px, rgba(255, 255, 255, 0) 10px 20px);
+}
+
+.seriesLabel {
+  color: #f4f8ff;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.logList {
+  display: grid;
+  gap: 6px;
+  margin-top: var(--space-3);
+}
+
+.logRow {
+  display: grid;
+  grid-template-columns: 26px minmax(120px, 1fr) auto minmax(120px, 1fr);
+  gap: 8px;
+  align-items: center;
+  background: rgba(5, 8, 15, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 8px;
+  color: #dbe7ff;
+}
+
+.logIdx {
+  color: #8da6cf;
+}
+
+.logAction {
+  color: #ff6f85;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+}
+
+.logActionPick {
+  color: #68e194;
+}
+
+.pickResult,
+.turnText {
+  margin: var(--space-3) 0 0;
+  color: #dbe7ff;
+  text-align: center;
+}
+
+.turnTimer {
+  margin: 6px 0 0;
+  color: #9fffea;
+  font-weight: 700;
+  text-align: center;
+}
+
+@media (max-width: 1180px) {
+  .mainCard {
+    grid-template-columns: 1fr;
+  }
+
+  .mapGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .wrapper {
+    padding: var(--space-4) var(--space-3);
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .mapGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

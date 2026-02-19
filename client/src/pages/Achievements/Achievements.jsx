@@ -10,7 +10,11 @@ export default function AchievementsPage() {
   const { user } = useAuth();
   const { t } = useLang();
   const [matches, setMatches] = useState([]);
-  const [friends, setFriends] = useState([]);
+  const [friendMeta, setFriendMeta] = useState({
+    friendCount: 0,
+    milestoneDates: {},
+    latestFriendAt: null,
+  });
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -20,12 +24,20 @@ export default function AchievementsPage() {
       setLoading(true);
       try {
         const token = await user.getIdToken();
-        const friendsRes = await fetch(`${BACKEND_URL}/friends/list`, {
+        const friendsRes = await fetch(`${BACKEND_URL}/friends/meta`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const friendsData = await friendsRes.json().catch(() => null);
         if (!alive) return;
-        setFriends(Array.isArray(friendsData?.rows) ? friendsData.rows : []);
+        const friendCountRaw = Number(friendsData?.friendCount ?? friendsData?.count);
+        setFriendMeta({
+          friendCount: Number.isFinite(friendCountRaw) ? friendCountRaw : 0,
+          milestoneDates:
+            friendsData?.milestoneDates && typeof friendsData.milestoneDates === "object"
+              ? friendsData.milestoneDates
+              : {},
+          latestFriendAt: friendsData?.latestFriendAt || null,
+        });
 
         const matchesRes = await fetch(`${BACKEND_URL}/player/${user.uid}?limit=500`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -60,8 +72,11 @@ export default function AchievementsPage() {
       ) : (
         <Achievements
           matches={matches}
-          friends={friends}
-          friendDates={friends.map((f) => f.createdAt).filter(Boolean)}
+          friendCount={friendMeta.friendCount}
+          friendMilestones={friendMeta.milestoneDates}
+          friendDates={
+            friendMeta.latestFriendAt ? [friendMeta.latestFriendAt] : []
+          }
         />
       )}
     </div>

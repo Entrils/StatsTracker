@@ -36,10 +36,11 @@ export default function Achievements({
   friends = [],
   friendDates = [],
   friendCount = null,
+  friendMilestones = null,
   mode = "full",
 }) {
   const { t } = useLang();
-  const data = buildAchievements({ matches, friends, friendDates, friendCount });
+  const data = buildAchievements({ matches, friends, friendDates, friendCount, friendMilestones });
   const titles = labels(t);
   const isSummary = mode === "summary";
 

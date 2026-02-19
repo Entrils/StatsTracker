@@ -58,11 +58,46 @@ describe("auth routes", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     const app = createApp(deps);
-    const res = await request(app).post("/auth/discord").send({ code: "abc" });
+    const agent = request.agent(app);
+    const userAgent = "vitest-agent";
+    const stateRes = await agent
+      .get("/auth/discord/state")
+      .set("user-agent", userAgent);
+    const { state } = stateRes.body;
+    const res = await agent
+      .post("/auth/discord")
+      .set("user-agent", userAgent)
+      .send({ code: "abc", state });
 
     expect(res.status).toBe(200);
     expect(res.body.firebaseToken).toBe("firebase-token");
     expect(setMock).toHaveBeenCalled();
+    expect(setMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        uid: "discord:1",
+        hiddenElo: 500,
+      }),
+      { merge: true }
+    );
+  });
+
+  it("rejects oauth request when state is missing", async () => {
+    const app = createApp(deps);
+    const res = await request(app).post("/auth/discord").send({ code: "abc" });
+
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({ error: "Missing code or state" });
+  });
+
+  it("rejects oauth request when state is invalid", async () => {
+    const app = createApp(deps);
+    const res = await request(app)
+      .post("/auth/discord")
+      .set("user-agent", "vitest-agent")
+      .send({ code: "abc", state: "invalid-state" });
+
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({ error: "Invalid OAuth state" });
   });
 
   it("does not leak oauth details to client on discord failure", async () => {
@@ -74,7 +109,16 @@ describe("auth routes", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     const app = createApp(deps);
-    const res = await request(app).post("/auth/discord").send({ code: "abc" });
+    const agent = request.agent(app);
+    const userAgent = "vitest-agent";
+    const stateRes = await agent
+      .get("/auth/discord/state")
+      .set("user-agent", userAgent);
+    const { state } = stateRes.body;
+    const res = await agent
+      .post("/auth/discord")
+      .set("user-agent", userAgent)
+      .send({ code: "abc", state });
 
     expect(res.status).toBe(502);
     expect(res.body).toEqual({ error: "OAuth failed" });

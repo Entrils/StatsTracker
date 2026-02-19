@@ -57,6 +57,15 @@ export function registerLeaderboardRoutes(app, deps) {
         };
         const wins = m.result === "victory" ? 1 : 0;
         const losses = m.result === "defeat" ? 1 : 0;
+        const currentStreakRaw = toNum(current.currentStreak);
+        const bestStreakRaw = toNum(current.bestStreak);
+        const nextCurrentStreak =
+          m.result === "victory"
+            ? currentStreakRaw + 1
+            : m.result === "defeat"
+              ? 0
+              : currentStreakRaw;
+        const nextBestStreak = Math.max(bestStreakRaw, nextCurrentStreak);
         const totals = {
           score: toNum(current.score) + toNum(m.score),
           kills: toNum(current.kills) + toNum(m.kills),
@@ -70,6 +79,9 @@ export function registerLeaderboardRoutes(app, deps) {
         };
         const ranks = ranksSnap.exists ? ranksSnap.data() || {} : {};
         const hiddenElo = computeHiddenElo({ ...totals, ranks });
+        const avgScore = totals.matches ? totals.score / totals.matches : 0;
+        const kda = (totals.kills + totals.assists) / Math.max(1, totals.deaths);
+        const winrate = (totals.wins / Math.max(1, totals.matches)) * 100 || 0;
 
         const aggPayload = {
           uid,
@@ -83,6 +95,12 @@ export function registerLeaderboardRoutes(app, deps) {
           matches: totals.matches,
           wins: totals.wins,
           losses: totals.losses,
+          avgScore,
+          kda,
+          winrate,
+          maxKills: Math.max(toNum(current.maxKills), toNum(m.kills)),
+          currentStreak: nextCurrentStreak,
+          bestStreak: nextBestStreak,
           hiddenElo,
           hiddenEloUpdatedAt: Date.now(),
           updatedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -151,6 +169,7 @@ export function registerLeaderboardRoutes(app, deps) {
             wins: 0,
             losses: 0,
             matches: 0,
+            maxKills: 0,
             firstMatchAt: null,
           };
 
@@ -167,6 +186,7 @@ export function registerLeaderboardRoutes(app, deps) {
           if (m.result === "victory") prev.wins += 1;
           else if (m.result === "defeat") prev.losses += 1;
           prev.matches += 1;
+          prev.maxKills = Math.max(prev.maxKills || 0, Number(m.kills || 0));
           if (typeof m.createdAt === "number") {
             if (!prev.firstMatchAt || m.createdAt < prev.firstMatchAt) {
               prev.firstMatchAt = m.createdAt;
@@ -209,6 +229,10 @@ export function registerLeaderboardRoutes(app, deps) {
           wins: p.wins,
           losses: p.losses,
           matches: p.matches,
+          maxKills: Number(p.maxKills || 0),
+          avgScore: p.matches ? p.score / p.matches : 0,
+          kda: (p.kills + p.assists) / Math.max(1, p.deaths || 0),
+          winrate: (p.wins / Math.max(1, p.matches)) * 100 || 0,
           hiddenElo: computeHiddenElo({
             matches: p.matches,
             score: p.score,
@@ -286,19 +310,33 @@ export function registerLeaderboardRoutes(app, deps) {
       }
 
       const limitRaw = parseIntParam(req.query.limit, 100);
-      const offsetRaw = parseIntParam(req.query.offset, 0);
-      if (limitRaw === null || offsetRaw === null) {
+      if (limitRaw === null) {
         return res.status(400).json({ error: "Invalid pagination params" });
       }
       const limit = Math.min(Math.max(limitRaw, 1), 500);
-      const offset = Math.max(offsetRaw, 0);
+      const afterUid = String(req.query.afterUid || "").trim();
+      const afterHiddenEloRaw = req.query.afterHiddenElo;
+      const afterHiddenEloNum = Number(afterHiddenEloRaw);
+      const hasCursor = Boolean(afterUid) && Number.isFinite(afterHiddenEloNum);
+      const hasOffset = req.query.offset !== undefined;
+      const offsetRaw = hasOffset ? parseIntParam(req.query.offset, 0) : 0;
+      if (hasOffset && offsetRaw === null) {
+        return res.status(400).json({ error: "Invalid pagination params" });
+      }
+      const offset = Math.max(offsetRaw || 0, 0);
 
-      const snap = await db
+      let query = db
         .collection("leaderboard_users")
         .orderBy("hiddenElo", "desc")
-        .offset(offset)
-        .limit(limit)
-        .get();
+        .orderBy(admin.firestore.FieldPath.documentId(), "asc");
+      if (hasCursor && typeof query.startAfter === "function") {
+        query = query.startAfter(afterHiddenEloNum, afterUid);
+      } else if (hasOffset && offset > 0 && typeof query.offset === "function") {
+        // Legacy fallback for old clients.
+        query = query.offset(offset);
+      }
+      query = query.limit(limit);
+      const snap = await query.get();
 
       const toNum = (v) => {
         const n = Number(v);
@@ -327,7 +365,22 @@ export function registerLeaderboardRoutes(app, deps) {
         };
       });
 
-      return res.json({ limit, offset, rows });
+      const lastDoc = snap.docs[snap.docs.length - 1] || null;
+      const lastData = lastDoc?.data ? lastDoc.data() || {} : {};
+      const nextAfterUid = lastDoc?.id || null;
+      const nextAfterHiddenElo = Number.isFinite(Number(lastData.hiddenElo))
+        ? Number(lastData.hiddenElo)
+        : null;
+      return res.json({
+        limit,
+        offset: hasOffset ? offset : 0,
+        rows,
+        hasMore: snap.docs.length === limit,
+        nextCursor:
+          nextAfterUid && nextAfterHiddenElo !== null
+            ? { afterUid: nextAfterUid, afterHiddenElo: nextAfterHiddenElo }
+            : null,
+      });
     } catch (err) {
       logger.error("ADMIN HIDDEN ELO LIST ERROR:", err);
       return res.status(500).json({ error: "Failed to load hidden elo list" });
@@ -482,6 +535,206 @@ export function registerLeaderboardRoutes(app, deps) {
     } catch (err) {
       logger.error("ADMIN HIDDEN ELO RECOMPUTE ERROR:", err);
       return res.status(500).json({ error: "Failed to recompute hidden elo" });
+    }
+  });
+
+  app.post("/admin/share-metrics/backfill", authLimiter, requireAuth, async (req, res) => {
+    try {
+      const isAdmin = req.user?.admin === true || req.user?.role === "admin";
+      if (!isAdmin) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
+
+      const readNum = (value, fallback) => {
+        const raw = value === undefined ? fallback : value;
+        const n = Number.parseInt(raw, 10);
+        return Number.isFinite(n) ? n : null;
+      };
+      const isEnabled = (value, fallback = true) => {
+        if (value === undefined || value === null || value === "") return fallback;
+        const normalized = String(value).trim().toLowerCase();
+        return normalized !== "0" && normalized !== "false" && normalized !== "no";
+      };
+
+      const limitRaw = readNum(req.body?.limit ?? req.query?.limit, 50);
+      if (limitRaw === null) {
+        return res.status(400).json({ error: "Invalid limit" });
+      }
+      const limit = Math.min(Math.max(limitRaw, 1), 200);
+      const startAfterUid = String(req.body?.startAfterUid ?? req.query?.startAfterUid ?? "").trim();
+      const apply = isEnabled(req.body?.apply ?? req.query?.apply, true);
+      const onlyMissing = isEnabled(req.body?.onlyMissing ?? req.query?.onlyMissing, true);
+      const maxMatchesPerUserRaw = readNum(
+        req.body?.maxMatchesPerUser ?? req.query?.maxMatchesPerUser,
+        10000
+      );
+      if (maxMatchesPerUserRaw === null) {
+        return res.status(400).json({ error: "Invalid maxMatchesPerUser" });
+      }
+      const maxMatchesPerUser = Math.min(Math.max(maxMatchesPerUserRaw, 100), 50000);
+
+      const baseQuery = db
+        .collection("leaderboard_users")
+        .orderBy(admin.firestore.FieldPath.documentId())
+        .limit(limit);
+      const usersSnap = startAfterUid ? await baseQuery.startAfter(startAfterUid).get() : await baseQuery.get();
+      const docs = Array.isArray(usersSnap?.docs) ? usersSnap.docs : [];
+      if (!docs.length) {
+        return res.json({
+          ok: true,
+          scanned: 0,
+          patched: 0,
+          dryRun: !apply,
+          onlyMissing,
+          hasMore: false,
+          nextCursor: null,
+        });
+      }
+
+      const toNum = (value, fallback = 0) => {
+        const n = Number(value);
+        return Number.isFinite(n) ? n : fallback;
+      };
+      const hasFiniteNumber = (value) => typeof value === "number" && Number.isFinite(value);
+
+      const statsByUid = new Map();
+      for (const userDoc of docs) {
+        const uid = String(userDoc.id || "");
+        if (!uid) continue;
+        const profile = userDoc.data() || {};
+        const hasFriendCount = hasFiniteNumber(profile.friendCount);
+        const hasBestStreak = hasFiniteNumber(profile.bestStreak);
+        const hasMaxKills = hasFiniteNumber(profile.maxKills);
+        if (onlyMissing && hasFriendCount && hasBestStreak && hasMaxKills) continue;
+
+        const next = {
+          uid,
+          friendCount: hasFriendCount ? toNum(profile.friendCount, 0) : null,
+          bestStreak: hasBestStreak ? toNum(profile.bestStreak, 0) : null,
+          maxKills: hasMaxKills ? toNum(profile.maxKills, 0) : null,
+          scannedMatches: 0,
+          truncatedMatches: false,
+        };
+
+        if (next.friendCount === null) {
+          try {
+            const friendsRef = db.collection("users").doc(uid).collection("friends");
+            if (typeof friendsRef.count === "function") {
+              const countSnap = await friendsRef.count().get();
+              next.friendCount = toNum(countSnap?.data?.()?.count, 0);
+            } else {
+              let total = 0;
+              let lastDoc = null;
+              while (true) {
+                let q = friendsRef.orderBy("__name__").limit(500);
+                if (lastDoc && typeof q.startAfter === "function") q = q.startAfter(lastDoc);
+                const chunk = await q.get();
+                const chunkDocs = Array.isArray(chunk?.docs) ? chunk.docs : [];
+                if (!chunkDocs.length) break;
+                total += chunkDocs.length;
+                if (chunkDocs.length < 500) break;
+                lastDoc = chunkDocs[chunkDocs.length - 1];
+              }
+              next.friendCount = total;
+            }
+          } catch {
+            next.friendCount = 0;
+          }
+        }
+
+        if (next.bestStreak === null || next.maxKills === null) {
+          let bestStreak = 0;
+          let currentStreak = 0;
+          let maxKills = 0;
+          let scannedMatches = 0;
+          let lastMatchDoc = null;
+          const matchesRef = db.collection("users").doc(uid).collection("matches");
+          while (scannedMatches < maxMatchesPerUser) {
+            let q = matchesRef.orderBy("createdAt", "asc").limit(500);
+            if (lastMatchDoc && typeof q.startAfter === "function") q = q.startAfter(lastMatchDoc);
+            const chunk = await q.get();
+            const chunkDocs = Array.isArray(chunk?.docs) ? chunk.docs : [];
+            if (!chunkDocs.length) break;
+            for (const matchDoc of chunkDocs) {
+              if (scannedMatches >= maxMatchesPerUser) break;
+              const match = matchDoc.data() || {};
+              const kills = toNum(match.kills, 0);
+              if (kills > maxKills) maxKills = kills;
+              if (match.result === "victory") {
+                currentStreak += 1;
+                if (currentStreak > bestStreak) bestStreak = currentStreak;
+              } else if (match.result === "defeat") {
+                currentStreak = 0;
+              }
+              scannedMatches += 1;
+            }
+            if (chunkDocs.length < 500) break;
+            lastMatchDoc = chunkDocs[chunkDocs.length - 1];
+          }
+          next.scannedMatches = scannedMatches;
+          next.truncatedMatches = scannedMatches >= maxMatchesPerUser;
+          if (next.bestStreak === null) next.bestStreak = bestStreak;
+          if (next.maxKills === null) next.maxKills = maxKills;
+        }
+
+        statsByUid.set(uid, next);
+      }
+
+      let patched = 0;
+      let scannedMatches = 0;
+      let truncatedUsers = 0;
+      if (apply && statsByUid.size > 0) {
+        let batch = db.batch();
+        let batchOps = 0;
+        for (const stats of statsByUid.values()) {
+          scannedMatches += toNum(stats.scannedMatches, 0);
+          if (stats.truncatedMatches) truncatedUsers += 1;
+          batch.set(
+            db.collection("leaderboard_users").doc(stats.uid),
+            {
+              friendCount: toNum(stats.friendCount, 0),
+              bestStreak: toNum(stats.bestStreak, 0),
+              maxKills: toNum(stats.maxKills, 0),
+              updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            },
+            { merge: true }
+          );
+          batchOps += 1;
+          patched += 1;
+          if (batchOps >= 400) {
+            await batch.commit();
+            batch = db.batch();
+            batchOps = 0;
+          }
+        }
+        if (batchOps > 0) {
+          await batch.commit();
+        }
+      } else {
+        for (const stats of statsByUid.values()) {
+          scannedMatches += toNum(stats.scannedMatches, 0);
+          if (stats.truncatedMatches) truncatedUsers += 1;
+        }
+      }
+
+      const lastCursor = docs[docs.length - 1]?.id || null;
+      const hasMore = docs.length === limit;
+      return res.json({
+        ok: true,
+        dryRun: !apply,
+        onlyMissing,
+        limit,
+        scanned: docs.length,
+        candidates: statsByUid.size,
+        patched,
+        scannedMatches,
+        truncatedUsers,
+        hasMore,
+        nextCursor: hasMore ? lastCursor : null,
+      });
+    } catch (err) {
+      logger.error("ADMIN SHARE METRICS BACKFILL ERROR:", err);
+      return res.status(500).json({ error: "Failed to backfill share metrics" });
     }
   });
 }

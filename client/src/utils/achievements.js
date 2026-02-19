@@ -85,17 +85,32 @@ const getFriendCount = (friends, friendCount, friendDates) => {
   return 0;
 };
 
+const normalizeFriendMilestones = (friendMilestones = null) => {
+  if (!friendMilestones || typeof friendMilestones !== "object") return {};
+  const out = {};
+  Object.entries(friendMilestones).forEach(([key, value]) => {
+    const threshold = Number.parseInt(String(key), 10);
+    const ts = toMs(value);
+    if (Number.isFinite(threshold) && ts) {
+      out[threshold] = ts;
+    }
+  });
+  return out;
+};
+
 export function buildAchievements({
   matches = [],
   friends = [],
   friendDates = [],
   friendCount = null,
+  friendMilestones = null,
 } = {}) {
   const matchCount = matches.length;
   const maxKills = getMaxKills(matches);
   const maxStreak = getMaxStreak(matches);
   const friendDatesSorted = getFriendDates(friends, friendDates);
   const friendsTotal = getFriendCount(friends, friendCount, friendDatesSorted);
+  const milestones = normalizeFriendMilestones(friendMilestones);
 
   const buildItems = (thresholds, current, dateFn, imageBase) =>
     thresholds.map((value) => {
@@ -121,7 +136,7 @@ export function buildAchievements({
     friends: buildItems(
       FRIEND_THRESHOLDS,
       friendsTotal,
-      (value) => friendDatesSorted[value - 1] || null,
+      (value) => milestones[value] || friendDatesSorted[value - 1] || null,
       "/achievments/friends/friend"
     ),
     kills: buildItems(

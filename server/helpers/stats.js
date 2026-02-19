@@ -309,8 +309,8 @@ export function createStatsHelpers({
         rows.push({
           uid,
           name: p.name || "Unknown",
-          elo: Number.isFinite(Number(p.hiddenElo)) ? Number(p.hiddenElo) : 0,
-          settings: p.settings || p.socials || null,
+          elo: Number.isFinite(Number(p.hiddenElo)) ? Number(p.hiddenElo) : 500,
+          settings: p.settings || null,
           score: p.score || 0,
           kills: p.kills || 0,
           deaths: p.deaths || 0,
@@ -389,41 +389,6 @@ export function createStatsHelpers({
 
     if (hasUpdates) {
       await batch.commit();
-    }
-
-    const missingSettings = pageRows.filter(
-      (r) => !r.settings || !Object.keys(r.settings || {}).length
-    );
-
-    if (missingSettings.length) {
-      const refs = missingSettings.map((r) =>
-        db.collection("users").doc(r.uid).collection("profile").doc("settings")
-      );
-      const snaps = await db.getAll(...refs);
-      snaps.forEach((snap, i) => {
-        const data = snap.exists ? snap.data() || {} : {};
-        const settings = data.settings || null;
-        if (settings && Object.keys(settings).length) {
-          missingSettings[i].settings = settings;
-        }
-      });
-
-      const stillMissing = missingSettings.filter(
-        (r) => !r.settings || !Object.keys(r.settings || {}).length
-      );
-      if (stillMissing.length) {
-        const legacyRefs = stillMissing.map((r) =>
-          db.collection("users").doc(r.uid).collection("profile").doc("socials")
-        );
-        const legacySnaps = await db.getAll(...legacyRefs);
-        legacySnaps.forEach((snap, i) => {
-          const data = snap.exists ? snap.data() || {} : {};
-          const settings = data.socials || null;
-          if (settings && Object.keys(settings).length) {
-            stillMissing[i].settings = settings;
-          }
-        });
-      }
     }
 
     return { rows: pageRows, total };

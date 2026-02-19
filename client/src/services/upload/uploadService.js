@@ -25,17 +25,24 @@ export async function fetchUserMatches(uid) {
 
 export async function fetchFriendsMeta(idToken) {
   try {
-    const friendsRes = await fetch(`${BACKEND_URL}/friends/list`, {
+    const friendsRes = await fetch(`${BACKEND_URL}/friends/meta`, {
       headers: idToken ? { Authorization: `Bearer ${idToken}` } : {},
     });
     const friendsJson = await friendsRes.json().catch(() => null);
-    const friendRows = Array.isArray(friendsJson?.rows) ? friendsJson.rows : [];
+    const friendCountRaw = Number(friendsJson?.friendCount ?? friendsJson?.count);
+    const friendCount = Number.isFinite(friendCountRaw) ? friendCountRaw : 0;
+    const milestoneDates =
+      friendsJson?.milestoneDates && typeof friendsJson.milestoneDates === "object"
+        ? friendsJson.milestoneDates
+        : {};
     return {
-      friendCount: friendRows.length,
-      friendDates: friendRows.map((f) => f?.createdAt).filter(Boolean),
+      friendCount,
+      friendDates: [],
+      friendMilestones: milestoneDates,
+      latestFriendAt: friendsJson?.latestFriendAt || null,
     };
   } catch {
-    return { friendCount: 0, friendDates: [] };
+    return { friendCount: 0, friendDates: [], friendMilestones: {}, latestFriendAt: null };
   }
 }
 

@@ -1,16 +1,43 @@
 import styles from "@/buttons/DiscordLoginButton/DiscordLoginButton.module.css";
 import { useLang } from "@/i18n/LanguageContext";
 
+const DISCORD_OAUTH_STATE_KEY = "discord_oauth_state";
+const DISCORD_OAUTH_STATE_TS_KEY = "discord_oauth_state_ts";
+
 export default function DiscordLoginButton() {
   const { t } = useLang();
   const redirectUri = encodeURIComponent(
     `${window.location.origin}/auth/discord/callback`
   );
 
-  const url = `https://discord.com/oauth2/authorize?client_id=1465137820330102968&response_type=code&redirect_uri=${redirectUri}&scope=identify`;
+  const handleLogin = async (event) => {
+    event.preventDefault();
+
+    const backendUrl =
+      import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+
+    let state = "";
+    try {
+      const res = await fetch(`${backendUrl}/auth/discord/state`);
+      if (!res.ok) throw new Error("Failed to request oauth state");
+      const payload = await res.json();
+      state = String(payload?.state || "");
+    } catch {
+      return;
+    }
+    if (!state) return;
+
+    sessionStorage.setItem(DISCORD_OAUTH_STATE_KEY, state);
+    sessionStorage.setItem(DISCORD_OAUTH_STATE_TS_KEY, String(Date.now()));
+
+    const url = `https://discord.com/oauth2/authorize?client_id=1465137820330102968&response_type=code&redirect_uri=${redirectUri}&scope=identify&state=${encodeURIComponent(
+      state
+    )}`;
+    window.location.assign(url);
+  };
 
   return (
-    <a href={url} className={styles.link}>
+    <a href="#" className={styles.link} onClick={handleLogin}>
       <button className={styles.button}>
         <span className={styles.icon} aria-hidden="true">
           <svg viewBox="0 0 24 24" role="img" focusable="false">

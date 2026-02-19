@@ -49,4 +49,40 @@ describe("friends routes", () => {
     expect(res.status).toBe(400);
     expect(res.body.error).toBe("Cannot add yourself");
   });
+
+  it("returns materialized friends meta", async () => {
+    const app = createApp({
+      ...deps,
+      db: {
+        collection: (name) => {
+          if (name !== "users") return { doc: () => ({}) };
+          return {
+            doc: () => ({
+              collection: (sub) => {
+                if (sub !== "profile") return { doc: () => ({}) };
+                return {
+                  doc: () => ({
+                    get: async () => ({
+                      exists: true,
+                      data: () => ({
+                        count: 7,
+                        latestFriendAt: 12345,
+                        milestoneDates: { "1": 1000, "3": 3000 },
+                      }),
+                    }),
+                  }),
+                };
+              },
+            }),
+          };
+        },
+      },
+    });
+
+    const res = await request(app).get("/friends/meta");
+    expect(res.status).toBe(200);
+    expect(res.body.friendCount).toBe(7);
+    expect(res.body.latestFriendAt).toBe(12345);
+    expect(res.body.milestoneDates).toEqual({ "1": 1000, "3": 3000 });
+  });
 });

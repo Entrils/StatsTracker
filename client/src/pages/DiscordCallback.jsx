@@ -1,7 +1,11 @@
-﻿import { useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { signInWithCustomToken } from "firebase/auth";
 import { auth } from "@/firebase";
+
+const DISCORD_OAUTH_STATE_KEY = "discord_oauth_state";
+const DISCORD_OAUTH_STATE_TS_KEY = "discord_oauth_state_ts";
+const DISCORD_OAUTH_STATE_MAX_AGE_MS = 10 * 60 * 1000;
 
 export default function DiscordCallback() {
   const navigate = useNavigate();
@@ -13,11 +17,30 @@ export default function DiscordCallback() {
 
     const params = new URLSearchParams(window.location.search);
     const code = params.get("code");
+    const state = params.get("state");
+    const storedState = sessionStorage.getItem(DISCORD_OAUTH_STATE_KEY);
+    const stateTs = Number.parseInt(
+      sessionStorage.getItem(DISCORD_OAUTH_STATE_TS_KEY) || "",
+      10
+    );
+    const stateAgeMs = Number.isFinite(stateTs) ? Date.now() - stateTs : Number.NaN;
+    const isStateValid =
+      Boolean(state) &&
+      Boolean(storedState) &&
+      state === storedState &&
+      Number.isFinite(stateAgeMs) &&
+      stateAgeMs >= 0 &&
+      stateAgeMs <= DISCORD_OAUTH_STATE_MAX_AGE_MS;
 
-    if (!code) {
+    if (!code || !isStateValid) {
+      sessionStorage.removeItem(DISCORD_OAUTH_STATE_KEY);
+      sessionStorage.removeItem(DISCORD_OAUTH_STATE_TS_KEY);
       navigate("/", { replace: true });
       return;
     }
+
+    sessionStorage.removeItem(DISCORD_OAUTH_STATE_KEY);
+    sessionStorage.removeItem(DISCORD_OAUTH_STATE_TS_KEY);
 
     const usedCode = sessionStorage.getItem("discord_oauth_code");
     if (usedCode === code) {
@@ -29,23 +52,22 @@ export default function DiscordCallback() {
 
     const login = async () => {
       try {
-      const backendUrl =
-        import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
-      const res = await fetch(`${backendUrl}/auth/discord`, {
+        const backendUrl =
+          import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+        const res = await fetch(`${backendUrl}/auth/discord`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ code }),
+          body: JSON.stringify({ code, state }),
         });
 
-        const text = await res.text(); // РїРѕР»СѓС‡Р°РµРј raw text РґР»СЏ РґРµР±Р°РіР°
+        const text = await res.text();
 
         let data;
         try {
           data = JSON.parse(text);
-        } catch (parseErr) {
+        } catch {
           throw new Error("Backend returned invalid JSON");
         }
-
 
         if (!res.ok) {
           throw new Error("Backend auth failed");
@@ -57,8 +79,6 @@ export default function DiscordCallback() {
 
         await signInWithCustomToken(auth, data.firebaseToken);
 
-
-        // Р–РґС‘Рј, РїРѕРєР° Firebase РѕР±РЅРѕРІРёС‚ user
         await new Promise((resolve) => {
           const unsubscribe = auth.onAuthStateChanged((user) => {
             if (user) {
@@ -71,7 +91,7 @@ export default function DiscordCallback() {
         sessionStorage.removeItem("discord_oauth_code");
         window.history.replaceState({}, document.title, "/");
         navigate("/", { replace: true });
-      } catch (err) {
+      } catch {
         sessionStorage.removeItem("discord_oauth_code");
         navigate("/", { replace: true });
       }

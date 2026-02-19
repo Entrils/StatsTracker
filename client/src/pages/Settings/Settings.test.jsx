@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import Settings from "@/pages/Settings/Settings";
 
@@ -56,7 +56,10 @@ describe("Settings", () => {
 
     await screen.findByRole("heading", { name: "Settings" });
     await user.type(screen.getByPlaceholderText("twitch.tv/username"), "bad url!!!");
-    await user.click(screen.getByRole("button", { name: "Save" }));
+    const socialsSection = screen
+      .getByRole("heading", { name: "Socials" })
+      .closest("div");
+    await user.click(within(socialsSection).getByRole("button", { name: "Save" }));
 
     await waitFor(() => {
       expect(

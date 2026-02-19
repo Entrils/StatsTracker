@@ -27,6 +27,7 @@ describe("DiscordCallback", () => {
     signInWithCustomTokenMock.mockReset();
     authMock.onAuthStateChanged.mockReset();
     sessionStorage.clear();
+    global.fetch = vi.fn();
     window.history.pushState({}, "", "/auth/discord/callback");
   });
 
@@ -38,8 +39,34 @@ describe("DiscordCallback", () => {
     });
   });
 
+  it("redirects to home when oauth state is missing", async () => {
+    window.history.pushState({}, "", "/auth/discord/callback?code=abc123&state=state-1");
+
+    render(<DiscordCallback />);
+
+    await waitFor(() => {
+      expect(navigateMock).toHaveBeenCalledWith("/", { replace: true });
+      expect(global.fetch).not.toHaveBeenCalled();
+    });
+  });
+
+  it("redirects to home when oauth state does not match", async () => {
+    sessionStorage.setItem("discord_oauth_state", "expected-state");
+    sessionStorage.setItem("discord_oauth_state_ts", String(Date.now()));
+    window.history.pushState({}, "", "/auth/discord/callback?code=abc123&state=other-state");
+
+    render(<DiscordCallback />);
+
+    await waitFor(() => {
+      expect(navigateMock).toHaveBeenCalledWith("/", { replace: true });
+      expect(global.fetch).not.toHaveBeenCalled();
+    });
+  });
+
   it("completes login flow and redirects to home", async () => {
-    window.history.pushState({}, "", "/auth/discord/callback?code=abc123");
+    sessionStorage.setItem("discord_oauth_state", "state-1");
+    sessionStorage.setItem("discord_oauth_state_ts", String(Date.now()));
+    window.history.pushState({}, "", "/auth/discord/callback?code=abc123&state=state-1");
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       text: async () => JSON.stringify({ firebaseToken: "token-1" }),
@@ -56,6 +83,13 @@ describe("DiscordCallback", () => {
 
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledTimes(1);
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining("/auth/discord"),
+        expect.objectContaining({
+          method: "POST",
+          body: JSON.stringify({ code: "abc123", state: "state-1" }),
+        })
+      );
       expect(signInWithCustomTokenMock).toHaveBeenCalledWith(authMock, "token-1");
       expect(navigateMock).toHaveBeenCalledWith("/", { replace: true });
     });

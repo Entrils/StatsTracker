@@ -26,7 +26,7 @@ export default function useProfileRemoteData({ uid, user, summary, backendUrl })
         const data = await dedupedJsonRequest(
           `player-profile-lite:${uid}`,
           async () => {
-            const res = await fetch(`${backendUrl}/player/${uid}?limit=1`);
+            const res = await fetch(`${backendUrl}/player/${uid}?limit=1&lite=1`);
             if (!res.ok) {
               const error = new Error("Failed to load profile");
               error.status = res.status;
@@ -46,7 +46,7 @@ export default function useProfileRemoteData({ uid, user, summary, backendUrl })
           const data = await dedupedJsonRequest(
             `profile:${uid}`,
             async () => {
-              const res = await fetch(`${backendUrl}/profile/${uid}`);
+              const res = await fetch(`${backendUrl}/profile/${uid}?lite=1`);
               if (!res.ok) {
                 const error = new Error("Failed to load profile");
                 error.status = res.status;
@@ -164,9 +164,9 @@ export default function useProfileRemoteData({ uid, user, summary, backendUrl })
       try {
         const token = await user.getIdToken();
         const data = await dedupedJsonRequest(
-          `friends-list:${user.uid}`,
+          `friends-list:compact:${user.uid}`,
           async () => {
-            const res = await fetch(`${backendUrl}/friends/list`, {
+            const res = await fetch(`${backendUrl}/friends/list?view=compact`, {
               headers: { Authorization: `Bearer ${token}` },
             });
             if (!res.ok) {

@@ -25,6 +25,25 @@
   align-items: start;
 }
 
+.leftCol {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.fragpunkBlock {
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: rgba(8, 12, 22, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.fragpunkActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+
 .socialsBlock {
   padding: var(--space-3);
   border-radius: var(--radius-md);

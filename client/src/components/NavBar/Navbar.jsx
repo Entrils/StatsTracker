@@ -21,6 +21,7 @@ export default function Navbar() {
   const dropdownRef = useRef(null);
   const langRef = useRef(null);
   const langMobileRef = useRef(null);
+  const requestsLoadedForUidRef = useRef("");
 
   let discordAvatarUrl = null;
   let discordUsername = null;
@@ -73,9 +74,11 @@ export default function Navbar() {
 
   useEffect(() => {
     if (!user) {
+      requestsLoadedForUidRef.current = "";
       setFriendRequests(0);
       return;
     }
+    if (requestsLoadedForUidRef.current === user.uid) return;
     let alive = true;
     const loadRequests = async () => {
       try {
@@ -100,19 +103,19 @@ export default function Navbar() {
         if (!alive) return;
         const count = Array.isArray(data?.rows) ? data.rows.length : 0;
         setFriendRequests(count);
+        requestsLoadedForUidRef.current = user.uid;
       } catch {
         if (alive) setFriendRequests(0);
       }
     };
     loadRequests();
-    const id = setInterval(loadRequests, 60 * 1000);
     const handleRefresh = () => {
+      requestsLoadedForUidRef.current = "";
       loadRequests();
     };
     window.addEventListener("friends-requests-refresh", handleRefresh);
     return () => {
       alive = false;
-      clearInterval(id);
       window.removeEventListener("friends-requests-refresh", handleRefresh);
     };
   }, [user]);
@@ -132,6 +135,8 @@ export default function Navbar() {
     languages.find((item) => item.code === lang) || languages[0];
   const isPlayersActive =
     location.pathname === "/" || location.pathname.startsWith("/players");
+  const isAdmin = user && (claims?.admin === true || claims?.role === "admin");
+  const tournamentsLabel = t.nav.tournaments || "Tournaments";
 
   return (
     <nav className={styles.navbar}>
@@ -162,6 +167,16 @@ export default function Navbar() {
           >
             {t.nav.players}
           </NavLink>
+          <span
+            className={`${styles.link} ${styles.linkLocked}`}
+            aria-disabled="true"
+            title="Locked"
+          >
+            <span className={styles.linkStack}>
+              <span>{tournamentsLabel}</span>
+              <span className={styles.linkSoon}>soon</span>
+            </span>
+          </span>
           <NavLink
             to="/help"
             className={({ isActive }) =>
@@ -170,7 +185,7 @@ export default function Navbar() {
           >
             {t.nav.help || "Help"}
           </NavLink>
-          {user && (claims?.admin === true || claims?.role === "admin") && (
+          {isAdmin && (
             <NavLink
               to="/admin"
               className={({ isActive }) =>
@@ -239,6 +254,15 @@ export default function Navbar() {
                   {!!friendRequests && (
                     <span className={styles.badge}>{friendRequests}</span>
                   )}
+                </button>
+                <button
+                  onClick={() => {
+                    setOpen(false);
+                    navigate("/my-teams");
+                  }}
+                  className={styles.dropdownItem}
+                >
+                  {t.nav.myTeams || "My teams"}
                 </button>
                 <button
                   onClick={() => {
@@ -377,6 +401,16 @@ export default function Navbar() {
           >
             {t.nav.players}
           </NavLink>
+          <span
+            className={`${styles.offcanvasLink} ${styles.linkLocked} ${styles.offcanvasLocked}`}
+            aria-disabled="true"
+            title="Locked"
+          >
+            <span className={styles.linkStack}>
+              <span>{tournamentsLabel}</span>
+              <span className={styles.linkSoon}>soon</span>
+            </span>
+          </span>
           <NavLink
             to="/help"
             onClick={closeMobile}
@@ -413,6 +447,17 @@ export default function Navbar() {
           )}
           {user && (
             <NavLink
+              to="/my-teams"
+              onClick={closeMobile}
+              className={({ isActive }) =>
+                `${styles.offcanvasLink} ${isActive ? styles.active : ""}`
+              }
+            >
+              {t.nav.myTeams || "My teams"}
+            </NavLink>
+          )}
+          {user && (
+            <NavLink
               to="/achievements"
               onClick={closeMobile}
               className={({ isActive }) =>
@@ -433,7 +478,7 @@ export default function Navbar() {
               {t.nav.settings || "Settings"}
             </NavLink>
           )}
-          {user && (claims?.admin === true || claims?.role === "admin") && (
+          {isAdmin && (
             <NavLink
               to="/admin"
               onClick={closeMobile}

@@ -16,6 +16,14 @@ import Friends from "@/pages/Friends/Friends";
 import AchievementsPage from "@/pages/Achievements/Achievements";
 import Help from "@/pages/Help/Help";
 import Roadmap from "@/pages/Roadmap/Roadmap";
+import Tournaments from "@/pages/TournamentsPage/Tournaments";
+import TournamentDetails from "@/pages/TournamentDetails/TournamentDetails";
+import TournamentMatch from "@/pages/TournamentMatch/TournamentMatch";
+import TournamentCreate from "@/pages/TournamentCreate/TournamentCreate";
+import MyTeams from "@/pages/MyTeams/MyTeams";
+import MyTeamCreate from "@/pages/MyTeamCreate/MyTeamCreate";
+import MyTeamDetails from "@/pages/MyTeamDetails/MyTeamDetails";
+import TeamDetails from "@/pages/TeamDetails/TeamDetails";
 
 export default function App() {
   useEffect(() => {
@@ -59,6 +67,14 @@ export default function App() {
           <Route path="/achievements" element={<AchievementsPage />} />
           <Route path="/achievments" element={<AchievementsPage />} />
           <Route path="/help" element={<Help />} />
+          <Route path="/tournaments" element={<Tournaments />} />
+          <Route path="/tournaments/create" element={<TournamentCreate />} />
+          <Route path="/tournaments/:id" element={<TournamentDetails />} />
+          <Route path="/tournaments/:id/matches/:matchId" element={<TournamentMatch />} />
+          <Route path="/my-teams" element={<MyTeams />} />
+          <Route path="/my-teams/create" element={<MyTeamCreate />} />
+          <Route path="/my-teams/:id" element={<MyTeamDetails />} />
+          <Route path="/teams/:id" element={<TeamDetails />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/policy" element={<Policy />} />
           <Route path="/support" element={<Support />} />

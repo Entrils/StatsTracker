@@ -48,7 +48,12 @@ describe("uploadService", () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("net")));
 
     const out = await fetchFriendsMeta("tok");
-    expect(out).toEqual({ friendCount: 0, friendDates: [] });
+    expect(out).toEqual({
+      friendCount: 0,
+      friendDates: [],
+      friendMilestones: {},
+      latestFriendAt: null,
+    });
   });
 
   it("updates match result only if existing document has empty result", async () => {

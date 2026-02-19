@@ -29,4 +29,16 @@ describe("buildAchievements", () => {
     });
     expect(out.friends[3].unlocked).toBe(true);
   });
+
+  it("uses friend milestone dates when provided", () => {
+    const out = buildAchievements({
+      matches: [],
+      friendCount: 10,
+      friendMilestones: { 1: 1000, 3: 3000, 5: 5000, 10: 10000 },
+    });
+    expect(out.friends[0].unlockedAt).toBe(1000);
+    expect(out.friends[1].unlockedAt).toBe(3000);
+    expect(out.friends[2].unlockedAt).toBe(5000);
+    expect(out.friends[3].unlockedAt).toBe(10000);
+  });
 });

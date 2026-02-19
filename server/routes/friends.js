@@ -38,12 +38,95 @@ function buildStatsFromProfile(profile) {
 export function registerFriendsRoutes(app, deps) {
   const { admin, db, logger, requireAuth, authLimiter, statsLimiter, isValidUid } =
     deps;
+  const FRIEND_MILESTONE_THRESHOLDS = [1, 3, 5, 10];
+  const getAllDocs = async (refs = []) => {
+    if (!Array.isArray(refs) || refs.length === 0) return [];
+    return typeof db.getAll === "function"
+      ? db.getAll(...refs)
+      : Promise.all(refs.map((ref) => ref.get()));
+  };
+  const toMillis = (raw) => {
+    if (!raw) return null;
+    if (typeof raw?.toMillis === "function") return raw.toMillis();
+    if (typeof raw === "number" && Number.isFinite(raw)) return raw;
+    if (typeof raw?.seconds === "number") return raw.seconds * 1000;
+    return null;
+  };
+  const incrementValue = (delta) =>
+    typeof admin?.firestore?.FieldValue?.increment === "function"
+      ? admin.firestore.FieldValue.increment(delta)
+      : delta;
 
   const friendsRef = (uid) => db.collection("users").doc(uid).collection("friends");
+  const friendsMetaRef = (uid) =>
+    db.collection("users").doc(uid).collection("profile").doc("friends_meta");
   const incomingRef = (uid) =>
     db.collection("users").doc(uid).collection("friend_requests");
   const outgoingRef = (uid) =>
     db.collection("users").doc(uid).collection("friend_outgoing");
+  const buildMilestoneDates = (datesAsc = []) => {
+    const out = {};
+    FRIEND_MILESTONE_THRESHOLDS.forEach((threshold) => {
+      const ts = datesAsc[threshold - 1];
+      if (typeof ts === "number" && Number.isFinite(ts)) {
+        out[String(threshold)] = ts;
+      }
+    });
+    return out;
+  };
+  const countFriends = async (uid) => {
+    const collectionRef = friendsRef(uid);
+    if (typeof collectionRef.count === "function") {
+      const countSnap = await collectionRef.count().get();
+      const countValue = Number(countSnap?.data?.()?.count);
+      return Number.isFinite(countValue) ? countValue : 0;
+    }
+    if (typeof collectionRef.orderBy === "function") {
+      let total = 0;
+      let lastDoc = null;
+      while (true) {
+        let q = collectionRef.orderBy("__name__").limit(500);
+        if (lastDoc && typeof q.startAfter === "function") {
+          q = q.startAfter(lastDoc);
+        }
+        const snap = await q.get();
+        const docs = Array.isArray(snap?.docs) ? snap.docs : [];
+        if (!docs.length) break;
+        total += docs.length;
+        if (docs.length < 500) break;
+        lastDoc = docs[docs.length - 1];
+      }
+      return total;
+    }
+    const snap = await collectionRef.get();
+    if (typeof snap?.size === "number") return snap.size;
+    return Array.isArray(snap?.docs) ? snap.docs.length : 0;
+  };
+  const refreshFriendsMeta = async (uid) => {
+    const safeUid = String(uid || "").trim();
+    if (!safeUid) return { count: 0, latestFriendAt: null, milestoneDates: {} };
+    const [count, firstTenSnap, latestSnap] = await Promise.all([
+      countFriends(safeUid),
+      friendsRef(safeUid).orderBy("createdAt", "asc").limit(10).get(),
+      friendsRef(safeUid).orderBy("createdAt", "desc").limit(1).get(),
+    ]);
+    const firstTenDates = (Array.isArray(firstTenSnap?.docs) ? firstTenSnap.docs : [])
+      .map((doc) => toMillis(doc.data()?.createdAt))
+      .filter(Boolean);
+    const latestFriendAt = toMillis(
+      Array.isArray(latestSnap?.docs) && latestSnap.docs[0]
+        ? latestSnap.docs[0].data()?.createdAt
+        : null
+    );
+    const payload = {
+      count: Number.isFinite(Number(count)) ? Number(count) : 0,
+      latestFriendAt,
+      milestoneDates: buildMilestoneDates(firstTenDates),
+      updatedAt: Date.now(),
+    };
+    await friendsMetaRef(safeUid).set(payload, { merge: true });
+    return payload;
+  };
 
   app.get("/friends/status/:uid", statsLimiter, requireAuth, async (req, res) => {
     try {
@@ -118,9 +201,20 @@ export function registerFriendsRoutes(app, deps) {
       const batch = db.batch();
       batch.set(friendsRef(uid).doc(requesterUid), { uid: requesterUid, createdAt });
       batch.set(friendsRef(requesterUid).doc(uid), { uid, createdAt });
+      batch.set(
+        db.collection("leaderboard_users").doc(uid),
+        { friendCount: incrementValue(1) },
+        { merge: true }
+      );
+      batch.set(
+        db.collection("leaderboard_users").doc(requesterUid),
+        { friendCount: incrementValue(1) },
+        { merge: true }
+      );
       batch.delete(incomingRef(uid).doc(requesterUid));
       batch.delete(outgoingRef(requesterUid).doc(uid));
       await batch.commit();
+      await Promise.allSettled([refreshFriendsMeta(uid), refreshFriendsMeta(requesterUid)]);
 
       return res.json({ status: "friend" });
     } catch (err) {
@@ -160,7 +254,18 @@ export function registerFriendsRoutes(app, deps) {
       const batch = db.batch();
       batch.delete(friendsRef(uid).doc(targetUid));
       batch.delete(friendsRef(targetUid).doc(uid));
+      batch.set(
+        db.collection("leaderboard_users").doc(uid),
+        { friendCount: incrementValue(-1) },
+        { merge: true }
+      );
+      batch.set(
+        db.collection("leaderboard_users").doc(targetUid),
+        { friendCount: incrementValue(-1) },
+        { merge: true }
+      );
       await batch.commit();
+      await Promise.allSettled([refreshFriendsMeta(uid), refreshFriendsMeta(targetUid)]);
 
       return res.json({ status: "removed" });
     } catch (err) {
@@ -193,6 +298,8 @@ export function registerFriendsRoutes(app, deps) {
     try {
       const uid = req.user?.uid;
       if (!uid) return res.status(401).json({ error: "Missing auth token" });
+      const viewRaw = String(req.query.view || "full").trim().toLowerCase();
+      const view = ["full", "compact", "minimal"].includes(viewRaw) ? viewRaw : "full";
 
       const friendsSnap = await friendsRef(uid).limit(200).get();
       const ids = friendsSnap.docs.map((d) => d.id).filter(Boolean);
@@ -205,15 +312,36 @@ export function registerFriendsRoutes(app, deps) {
       );
       if (!ids.length) return res.json({ rows: [] });
 
+      if (view === "minimal") {
+        const rows = ids.map((id) => ({
+          uid: id,
+          createdAt: createdAtMap.get(id) || null,
+        }));
+        return res.json({ rows });
+      }
+
       const profileRefs = ids.map((id) => db.collection("leaderboard_users").doc(id));
+      const profileSnaps = await getAllDocs(profileRefs);
+      if (view === "compact") {
+        const rows = ids.map((id, i) => {
+          const profile = profileSnaps[i]?.data() || {};
+          return {
+            uid: id,
+            name: profile.name || id,
+            avatar: profile.avatar || null,
+            provider: profile.provider || null,
+            matches: toNumber(profile.matches, 0),
+            createdAt: createdAtMap.get(id) || null,
+          };
+        });
+        return res.json({ rows });
+      }
+
       const rankRefs = ids.map((id) =>
         db.collection("users").doc(id).collection("profile").doc("ranks")
       );
-
-      const [profileSnaps, rankSnaps, last5Snaps, settingsSnaps, legacySnaps] =
-        await Promise.all([
-        db.getAll(...profileRefs),
-        db.getAll(...rankRefs),
+      const [rankSnaps, last5Snaps] = await Promise.all([
+        getAllDocs(rankRefs),
         Promise.all(
           ids.map((id) =>
             db
@@ -225,32 +353,12 @@ export function registerFriendsRoutes(app, deps) {
               .get()
           )
         ),
-        db.getAll(
-          ...ids.map((id) =>
-            db.collection("users").doc(id).collection("profile").doc("settings")
-          )
-        ),
-        db.getAll(
-          ...ids.map((id) =>
-            db.collection("users").doc(id).collection("profile").doc("socials")
-          )
-        ),
       ]);
 
       const rows = ids.map((id, i) => {
         const profile = profileSnaps[i]?.data() || {};
         const ranks = rankSnaps[i]?.exists ? rankSnaps[i].data() || null : null;
-        const settingsData = settingsSnaps[i]?.exists
-          ? settingsSnaps[i].data() || {}
-          : {};
-        const legacyData = legacySnaps[i]?.exists ? legacySnaps[i].data() || {} : {};
-        const settings =
-          profile.settings ||
-          settingsData.settings ||
-          settingsData.socials ||
-          legacyData.settings ||
-          legacyData.socials ||
-          null;
+        const settings = profile.settings || null;
         const last5 = last5Snaps[i]?.docs?.map((doc) => {
           const r = doc.data()?.result;
           if (r === "victory") return "W";
@@ -278,6 +386,34 @@ export function registerFriendsRoutes(app, deps) {
     }
   });
 
+  app.get("/friends/meta", statsLimiter, requireAuth, async (req, res) => {
+    try {
+      const uid = req.user?.uid;
+      if (!uid) return res.status(401).json({ error: "Missing auth token" });
+      const snap = await friendsMetaRef(uid).get();
+      let payload = snap.exists ? snap.data() || {} : null;
+      const hasCount = Number.isFinite(Number(payload?.count));
+      if (!payload || !hasCount) {
+        payload = await refreshFriendsMeta(uid);
+      }
+      const count = Number.isFinite(Number(payload?.count)) ? Number(payload.count) : 0;
+      const latestFriendAt = toMillis(payload?.latestFriendAt);
+      const milestoneDates =
+        payload?.milestoneDates && typeof payload.milestoneDates === "object"
+          ? payload.milestoneDates
+          : {};
+      return res.json({
+        count,
+        friendCount: count,
+        latestFriendAt,
+        milestoneDates,
+      });
+    } catch (err) {
+      logger.error("FRIENDS META ERROR:", err);
+      return res.status(500).json({ error: "Failed to load friends meta" });
+    }
+  });
+
   app.get("/friends/requests", statsLimiter, requireAuth, async (req, res) => {
     try {
       const uid = req.user?.uid;
@@ -292,8 +428,8 @@ export function registerFriendsRoutes(app, deps) {
         db.collection("users").doc(id).collection("profile").doc("ranks")
       );
       const [profileSnaps, rankSnaps] = await Promise.all([
-        db.getAll(...profileRefs),
-        db.getAll(...rankRefs),
+        getAllDocs(profileRefs),
+        getAllDocs(rankRefs),
       ]);
 
       const rows = ids.map((id, i) => {
@@ -311,7 +447,7 @@ export function registerFriendsRoutes(app, deps) {
       return res.json({ rows });
     } catch (err) {
       logger.error("FRIENDS REQUESTS ERROR:", err);
-      return res.status(500).json({ error: "Failed to load requests" });
+      return res.json({ rows: [] });
     }
   });
 
@@ -329,8 +465,8 @@ export function registerFriendsRoutes(app, deps) {
         db.collection("users").doc(id).collection("profile").doc("ranks")
       );
       const [profileSnaps, rankSnaps] = await Promise.all([
-        db.getAll(...profileRefs),
-        db.getAll(...rankRefs),
+        getAllDocs(profileRefs),
+        getAllDocs(rankRefs),
       ]);
 
       const rows = ids.map((id, i) => {

@@ -1,9 +1,12 @@
 import axios from "axios";
+import crypto from "crypto";
 import fs from "fs/promises";
 import path from "path";
 import sharp from "sharp";
 import { fileURLToPath } from "url";
 import { computeHiddenElo } from "../helpers/elo.js";
+
+const FRAGPUNK_ID_REGEX = /^[A-Za-z0-9._-]{3,24}#[A-Za-z0-9]{2,8}$/;
 
 export function registerProfileRoutes(app, deps) {
     const {
@@ -20,6 +23,8 @@ export function registerProfileRoutes(app, deps) {
     const __dirname = path.dirname(fileURLToPath(import.meta.url));
     const repoRoot = path.resolve(__dirname, "..", "..");
     const imageCache = new Map();
+    const shareDataCache = new Map();
+    const SHARE_DATA_CACHE_TTL_MS = 30 * 1000;
 
   const getCachedDataUri = async (relativePath) => {
     if (imageCache.has(relativePath)) return imageCache.get(relativePath);
@@ -43,7 +48,64 @@ export function registerProfileRoutes(app, deps) {
     }
   };
 
+  const getCachedShareData = (uid) => {
+    const key = String(uid || "");
+    if (!key) return null;
+    const cached = shareDataCache.get(key);
+    const now = Date.now();
+    if (!cached) return null;
+    if (now - cached.ts >= SHARE_DATA_CACHE_TTL_MS) {
+      shareDataCache.delete(key);
+      return null;
+    }
+    return cached.payload;
+  };
+
+  const setCachedShareData = (uid, payload) => {
+    const key = String(uid || "");
+    if (!key || !payload || typeof payload !== "object") return;
+    shareDataCache.set(key, { ts: Date.now(), payload });
+  };
+  const buildShareEtag = (uid, lang, shareData = {}) => {
+    try {
+      const basis = {
+        uid: String(uid || ""),
+        lang: String(lang || ""),
+        updatedAt: Number(shareData?.updatedAt || 0),
+        matches: Number(shareData?.matches || 0),
+        wins: Number(shareData?.wins || 0),
+        losses: Number(shareData?.losses || 0),
+        avgScore: Number(shareData?.avgScore || 0),
+        kda: Number(shareData?.kda || 0),
+        winrate: Number(shareData?.winrate || 0),
+        maxKills: Number(shareData?.maxKills || 0),
+        bestStreak: Number(shareData?.bestStreak || 0),
+        friendCount: Number(shareData?.friendCount || 0),
+      };
+      const hash = crypto.createHash("sha1").update(JSON.stringify(basis)).digest("hex");
+      return `"${hash}"`;
+    } catch {
+      return null;
+    }
+  };
+  const requestHasEtag = (req, etag) => {
+    if (!etag) return false;
+    const raw = String(req.headers["if-none-match"] || "").trim();
+    if (!raw) return false;
+    if (raw === "*") return true;
+    return raw
+      .split(",")
+      .map((v) => String(v || "").trim())
+      .includes(etag);
+  };
+  const setPublicCacheHeaders = (res, { etag = null, maxAge = 300, swr = 900 } = {}) => {
+    res.set("Cache-Control", `public, max-age=${Math.max(0, maxAge)}, stale-while-revalidate=${Math.max(0, swr)}`);
+    if (etag) res.set("ETag", etag);
+  };
+
   const buildShareData = async (uid, lang) => {
+    const cached = getCachedShareData(uid);
+    if (cached) return { ...cached, lang };
     const profileSnap = await db.collection("leaderboard_users").doc(uid).get();
     const profileData = profileSnap.exists ? profileSnap.data() : null;
     const name = profileData?.name || uid;
@@ -90,23 +152,25 @@ export function registerProfileRoutes(app, deps) {
       .get();
     const ranks = ranksSnap.exists ? ranksSnap.data() || null : null;
 
-    const matchDocs = await db
-      .collection("users")
-      .doc(uid)
-      .collection("matches")
-      .orderBy("createdAt", "asc")
-      .limit(2000)
-      .get();
-    const matchRows = matchDocs.docs.map((doc) => doc.data());
-    const matchCount = matchRows.length;
-
-    const friendsDocs = await db
-      .collection("users")
-      .doc(uid)
-      .collection("friends")
-      .limit(20)
-      .get();
-    const friendCount = friendsDocs.size;
+    const matchCount = Number.isFinite(profileData?.matches) ? Number(profileData.matches) : 0;
+    const maxKills = Number.isFinite(profileData?.maxKills) ? Number(profileData.maxKills) : null;
+    const bestStreak = Number.isFinite(profileData?.bestStreak) ? Number(profileData.bestStreak) : null;
+    let friendCount = Number.isFinite(profileData?.friendCount) ? Number(profileData.friendCount) : null;
+    if (friendCount === null) {
+      try {
+        const friendCountQuery = db.collection("users").doc(uid).collection("friends");
+        if (typeof friendCountQuery.count === "function") {
+          const friendCountSnap = await friendCountQuery.count().get();
+          const countValue = Number(friendCountSnap?.data?.()?.count);
+          friendCount = Number.isFinite(countValue) ? countValue : 0;
+        } else {
+          const friendsDocs = await friendCountQuery.limit(20).get();
+          friendCount = friendsDocs.size;
+        }
+      } catch {
+        friendCount = 0;
+      }
+    }
 
     const updatedAtRaw = profileData?.updatedAt;
     let updatedAt = null;
@@ -117,14 +181,7 @@ export function registerProfileRoutes(app, deps) {
     } else if (updatedAtRaw?.seconds) {
       updatedAt = updatedAtRaw.seconds * 1000;
     }
-    if (updatedAt === null && matchCount) {
-      const lastMatch = matchRows[matchRows.length - 1];
-      if (typeof lastMatch?.createdAt === "number") {
-        updatedAt = lastMatch.createdAt;
-      }
-    }
-
-    return {
+    const payload = {
       name,
       avatarUrl,
       matches,
@@ -135,11 +192,14 @@ export function registerProfileRoutes(app, deps) {
       winrate,
       updatedAt,
       ranks,
-      matchRows,
       matchCount,
+      maxKills,
+      bestStreak,
       friendCount,
       lang,
     };
+    setCachedShareData(uid, payload);
+    return payload;
   };
 
   const rankOrder = [
@@ -168,23 +228,6 @@ export function registerProfileRoutes(app, deps) {
     return best;
   };
 
-  const getMaxKills = (rows = []) =>
-    rows.reduce((max, m) => Math.max(max, m.kills || 0), 0);
-
-  const getMaxStreak = (rows = []) => {
-    let streak = 0;
-    let max = 0;
-    for (const m of rows) {
-      if (m.result === "victory") {
-        streak += 1;
-        max = Math.max(max, streak);
-      } else if (m.result === "defeat") {
-        streak = 0;
-      }
-    }
-    return max;
-  };
-
   const pickBestAchievement = (value, thresholds) => {
     const sorted = [...thresholds].sort((a, b) => a - b);
     let best = null;
@@ -196,12 +239,6 @@ export function registerProfileRoutes(app, deps) {
 
   app.get("/share/player/:uid/image.png", statsLimiter, async (req, res) => {
     try {
-      res.setHeader(
-        "Cache-Control",
-        "no-store, no-cache, must-revalidate, proxy-revalidate"
-      );
-      res.setHeader("Pragma", "no-cache");
-      res.setHeader("Expires", "0");
       const { uid } = req.params;
       logger.info(`SHARE IMAGE request uid=${uid} lang=${req.query.lang || ""}`);
       if (!uid || !isValidUid(uid)) {
@@ -210,6 +247,11 @@ export function registerProfileRoutes(app, deps) {
 
       const lang = String(req.query.lang || "").toLowerCase();
       const shareData = await buildShareData(uid, lang);
+      const etag = buildShareEtag(uid, lang, shareData);
+      setPublicCacheHeaders(res, { etag, maxAge: 300, swr: 1800 });
+      if (requestHasEtag(req, etag)) {
+        return res.status(304).end();
+      }
 
       const width = 1200;
       const height = 630;
@@ -221,8 +263,9 @@ export function registerProfileRoutes(app, deps) {
         kda,
         winrate,
         ranks,
-        matchRows,
         matchCount,
+        maxKills,
+        bestStreak,
         friendCount,
       } = shareData;
 
@@ -329,8 +372,8 @@ export function registerProfileRoutes(app, deps) {
 
       const bestMatches = pickBestAchievement(matchCount, [5, 10, 25, 100, 500, 1000]);
       const bestFriends = pickBestAchievement(friendCount, [1, 3, 5, 10]);
-      const bestKills = pickBestAchievement(getMaxKills(matchRows), [10, 15, 20, 25]);
-      const bestStreak = pickBestAchievement(getMaxStreak(matchRows), [3, 5, 7, 10]);
+      const bestKills = pickBestAchievement(maxKills || 0, [10, 15, 20, 25]);
+      const bestStreakBadge = pickBestAchievement(bestStreak || 0, [3, 5, 7, 10]);
 
       const achievements = [
         bestMatches
@@ -351,10 +394,10 @@ export function registerProfileRoutes(app, deps) {
               image: `client/public/achievments/kills/kills${bestKills}.png`,
             }
           : null,
-        bestStreak
+        bestStreakBadge
           ? {
-              label: `${labels.streak}: ${bestStreak}`,
-              image: `client/public/achievments/streak/streak${bestStreak}.png`,
+              label: `${labels.streak}: ${bestStreakBadge}`,
+              image: `client/public/achievments/streak/streak${bestStreakBadge}.png`,
             }
           : null,
       ].filter(Boolean);
@@ -519,7 +562,6 @@ export function registerProfileRoutes(app, deps) {
 
       const out = await base.png().toBuffer();
       res.setHeader("Content-Type", "image/png");
-      res.setHeader("Cache-Control", "public, max-age=300");
       return res.status(200).send(out);
     } catch (err) {
       logger.error("SHARE IMAGE ERROR:", err);
@@ -529,12 +571,6 @@ export function registerProfileRoutes(app, deps) {
 
   app.get("/share/player/:uid", statsLimiter, async (req, res) => {
     try {
-      res.setHeader(
-        "Cache-Control",
-        "no-store, no-cache, must-revalidate, proxy-revalidate"
-      );
-      res.setHeader("Pragma", "no-cache");
-      res.setHeader("Expires", "0");
       const { uid } = req.params;
       if (!uid || !isValidUid(uid)) {
         return res.status(400).send("Invalid uid");
@@ -542,6 +578,11 @@ export function registerProfileRoutes(app, deps) {
 
       const lang = String(req.query.lang || "").toLowerCase();
       const shareData = await buildShareData(uid, lang);
+      const etag = buildShareEtag(uid, lang, shareData);
+      setPublicCacheHeaders(res, { etag, maxAge: 300, swr: 1800 });
+      if (requestHasEtag(req, etag)) {
+        return res.status(304).end();
+      }
       const { name, matches, winrate, updatedAt } = shareData;
 
       const siteUrlRaw =
@@ -652,6 +693,7 @@ export function registerProfileRoutes(app, deps) {
       if (!uid || !isValidUid(uid)) {
         return res.status(400).json({ error: "Invalid uid" });
       }
+      const lite = String(req.query.lite || "") === "1";
 
       const banSnap = await db.collection("bans").doc(uid).get();
       const ban = banSnap.exists ? banSnap.data() || null : null;
@@ -665,27 +707,9 @@ export function registerProfileRoutes(app, deps) {
       const matchesRef = db.collection("users").doc(uid).collection("matches");
       const profileSnap = await db.collection("leaderboard_users").doc(uid).get();
       const profileData = profileSnap.exists ? profileSnap.data() : null;
-      let settings = profileData?.settings || profileData?.socials || null;
+      let settings = profileData?.settings || null;
       if (settings && typeof settings === "object" && !Object.keys(settings).length) {
         settings = null;
-      }
-      if (!settings) {
-        const profileDoc = await db
-          .collection("users")
-          .doc(uid)
-          .collection("profile")
-          .doc("settings")
-          .get();
-        settings = profileDoc.exists ? profileDoc.data()?.settings || null : null;
-      }
-      if (!settings) {
-        const legacyDoc = await db
-          .collection("users")
-          .doc(uid)
-          .collection("profile")
-          .doc("socials")
-          .get();
-        settings = legacyDoc.exists ? legacyDoc.data()?.socials || null : null;
       }
       const ranksSnap = await db
         .collection("users")
@@ -694,26 +718,32 @@ export function registerProfileRoutes(app, deps) {
         .doc("ranks")
         .get();
       const ranks = ranksSnap.exists ? ranksSnap.data() || null : null;
-      const snap = await matchesRef.orderBy("createdAt", "asc").limit(limit).get();
-      const friendsSnap = await db
-        .collection("users")
-        .doc(uid)
-        .collection("friends")
-        .orderBy("createdAt", "asc")
-        .limit(10)
-        .get();
-      const friendDates = friendsSnap.docs
-        .map((doc) => {
-          const raw = doc.data()?.createdAt || null;
-          return raw?.toMillis ? raw.toMillis() : null;
-        })
-        .filter(Boolean);
+      const snap = lite ? { docs: [] } : await matchesRef.orderBy("createdAt", "asc").limit(limit).get();
+      const friendsSnap = lite
+        ? { docs: [], size: 0 }
+        : await db
+            .collection("users")
+            .doc(uid)
+            .collection("friends")
+            .orderBy("createdAt", "asc")
+            .limit(10)
+            .get();
+      const friendDates = lite
+        ? []
+        : friendsSnap.docs
+            .map((doc) => {
+              const raw = doc.data()?.createdAt || null;
+              return raw?.toMillis ? raw.toMillis() : null;
+            })
+            .filter(Boolean);
 
-      const matches = snap.docs.map((doc, i) => ({
-        index: i + 1,
-        id: doc.id,
-        ...doc.data(),
-      }));
+      const matches = lite
+        ? []
+        : snap.docs.map((doc, i) => ({
+            index: i + 1,
+            id: doc.id,
+            ...doc.data(),
+          }));
 
       return res.json({
         uid,
@@ -723,12 +753,13 @@ export function registerProfileRoutes(app, deps) {
         elo:
           Number.isFinite(Number(profileData?.hiddenElo))
             ? Number(profileData.hiddenElo)
-            : 0,
+            : 500,
         avatar: profileData?.avatar || null,
         provider: profileData?.provider || null,
         settings,
         ranks,
         ban,
+        lite,
         friendCount: friendsSnap.size,
         friendDates,
       });
@@ -741,7 +772,10 @@ export function registerProfileRoutes(app, deps) {
   app.get("/profile/:uid", statsLimiter, async (req, res) => {
     try {
       const { uid } = req.params;
-      if (!uid) return res.status(400).json({ error: "Missing uid" });
+      if (!uid || !isValidUid(uid)) {
+        return res.status(400).json({ error: "Invalid uid" });
+      }
+      const lite = String(req.query.lite || "") === "1";
 
       const banSnap = await db.collection("bans").doc(uid).get();
       const ban = banSnap.exists ? banSnap.data() || null : null;
@@ -749,27 +783,9 @@ export function registerProfileRoutes(app, deps) {
       const snap = await db.collection("leaderboard_users").doc(uid).get();
       const data = snap.exists ? snap.data() || {} : {};
 
-      let settings = data.settings || data.socials || null;
+      let settings = data.settings || null;
       if (settings && typeof settings === "object" && !Object.keys(settings).length) {
         settings = null;
-      }
-      if (!settings) {
-        const profileSnap = await db
-          .collection("users")
-          .doc(uid)
-          .collection("profile")
-          .doc("settings")
-          .get();
-        settings = profileSnap.exists ? profileSnap.data()?.settings || null : null;
-      }
-      if (!settings) {
-        const legacySnap = await db
-          .collection("users")
-          .doc(uid)
-          .collection("profile")
-          .doc("socials")
-          .get();
-        settings = legacySnap.exists ? legacySnap.data()?.socials || null : null;
       }
       const ranksSnap = await db
         .collection("users")
@@ -783,15 +799,28 @@ export function registerProfileRoutes(app, deps) {
         uid,
         settings,
         ranks,
+        lite,
         name: data.name || null,
-        elo: Number.isFinite(Number(data.hiddenElo)) ? Number(data.hiddenElo) : 0,
+        elo: Number.isFinite(Number(data.hiddenElo)) ? Number(data.hiddenElo) : 500,
+        matches: Number.isFinite(Number(data.matches)) ? Number(data.matches) : 0,
         avatar: data.avatar || null,
         provider: data.provider || null,
         ban,
       });
     } catch (err) {
       logger.error("PROFILE ERROR:", err);
-      return res.status(500).json({ error: "Failed to load profile" });
+      const uid = String(req.params?.uid || "");
+      return res.json({
+        uid,
+        settings: null,
+        ranks: null,
+        name: uid || null,
+        elo: 500,
+        matches: 0,
+        avatar: null,
+        provider: null,
+        ban: null,
+      });
     }
   });
 
@@ -877,13 +906,16 @@ export function registerProfileRoutes(app, deps) {
       if (!uid) return res.status(401).json({ error: "Missing auth token" });
 
       const settings = req.body?.settings || {};
-      const allowed = ["twitch", "youtube", "tiktok"];
+      const allowed = ["twitch", "youtube", "tiktok", "fragpunkId"];
       const updates = {};
 
       for (const key of allowed) {
+        if (!Object.prototype.hasOwnProperty.call(settings, key)) continue;
         const raw = typeof settings[key] === "string" ? settings[key].trim() : "";
         if (!raw) {
           updates[`settings.${key}`] = admin.firestore.FieldValue.delete();
+        } else if (key === "fragpunkId" && !FRAGPUNK_ID_REGEX.test(raw)) {
+          return res.status(400).json({ error: "Invalid fragpunkId" });
         } else if (raw.length > 120) {
           return res.status(400).json({ error: `Invalid ${key}` });
         } else {
@@ -902,13 +934,6 @@ export function registerProfileRoutes(app, deps) {
           },
           { merge: true }
         );
-
-      await db
-        .collection("users")
-        .doc(uid)
-        .collection("profile")
-        .doc("settings")
-        .set({ settings }, { merge: true });
 
       return res.json({ ok: true });
     } catch (err) {

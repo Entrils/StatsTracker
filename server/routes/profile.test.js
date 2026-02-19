@@ -84,6 +84,30 @@ describe("profile routes", () => {
     expect(set).toHaveBeenCalled();
   });
 
+  it("validates fragpunkId format in settings", async () => {
+    const set = vi.fn().mockResolvedValue();
+    const deps = {
+      ...baseDeps,
+      db: {
+        collection: () => ({
+          doc: () => ({
+            set,
+            collection: () => ({
+              doc: () => ({ set }),
+            }),
+          }),
+        }),
+      },
+    };
+    const app = createApp(deps);
+
+    const bad = await request(app)
+      .post("/profile/settings")
+      .send({ settings: { fragpunkId: "bad-format" } });
+    expect(bad.status).toBe(400);
+    expect(bad.body.error).toBe("Invalid fragpunkId");
+  });
+
   it("forbids hidden elo endpoint for non-admin", async () => {
     const deps = {
       ...baseDeps,

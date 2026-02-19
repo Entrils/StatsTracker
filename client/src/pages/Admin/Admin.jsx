@@ -138,7 +138,7 @@ export default function Admin() {
     setEloLoading(true);
     try {
       const token = await user.getIdToken();
-      const res = await fetch(`${BACKEND_URL}/admin/hidden-elo?limit=20&offset=0`, {
+      const res = await fetch(`${BACKEND_URL}/admin/hidden-elo?limit=20`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json().catch(() => null);
