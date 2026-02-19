@@ -28,9 +28,7 @@ export default function TournamentBoardRow({
   tt,
   lang,
   user,
-  isAdmin,
   registeringId,
-  generatingId,
   selectedTeamId = "",
   countdownText = "",
   participating = false,
@@ -38,10 +36,8 @@ export default function TournamentBoardRow({
   reqState = { eloOk: false, matchesOk: false, fragpunkOk: false },
   onTeamSelect,
   onRegister,
-  onGenerateBracket,
 }) {
   const full = Number(row.registeredTeams) >= Number(row.maxTeams);
-  const canGenerateBracket = Number(row.registeredTeams) >= 2;
   const solo = isSoloFormat(row.teamFormat);
   const statusLabel = tt?.tabs?.[row.status] || row.status;
 
@@ -120,24 +116,6 @@ export default function TournamentBoardRow({
           <span className={styles.rowSubText}>
             {(tt.countdown || "Until start: {time}").replace("{time}", countdownText)}
           </span>
-        )}
-
-        {isAdmin && (
-          <>
-            <Button
-              variant="secondary"
-              size="sm"
-              disabled={generatingId === row.id || !canGenerateBracket}
-              onClick={() => onGenerateBracket(row.id)}
-            >
-              {generatingId === row.id ? tt.generating || "Generating..." : tt.generate || "Generate bracket"}
-            </Button>
-            {!canGenerateBracket && (
-              <span className={styles.rowSubText}>
-                {tt.minParticipants || "At least 2 participants required"}
-              </span>
-            )}
-          </>
         )}
       </div>
     </article>

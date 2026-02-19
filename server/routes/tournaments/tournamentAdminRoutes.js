@@ -677,13 +677,7 @@ export function registerTournamentAdminRoutes(app, ctx) {
       try {
         await removeTournamentFromUserContexts([...affectedUserUids], tournamentId);
       } catch (err) {
-        logger.error("TOURNAMENT DELETE CONTEXT CLEANUP ERROR:", err);
-        return res.status(500).json({
-          ok: false,
-          error: "Tournament deleted, but failed to clean user tournament context",
-          deletedMatches,
-          deletedRegistrations,
-        });
+        logger.warn("TOURNAMENT DELETE CONTEXT CLEANUP ERROR:", err);
       }
       try {
         const removeOp = admin.firestore.FieldValue.arrayRemove(tournamentId);

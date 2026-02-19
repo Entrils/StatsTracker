@@ -34,6 +34,71 @@ function makeDeps(db) {
 }
 
 describe("team core routes", () => {
+  it("blocks creating team when name lock is already held by another team", async () => {
+    const db = createFakeFirestore({
+      "team_name_locks/alpha": {
+        teamId: "existing-team",
+        nameLower: "alpha",
+      },
+    });
+    const app = createApp(makeDeps(db));
+
+    const res = await request(app)
+      .post("/teams")
+      .set("x-user-uid", "u1")
+      .send({ name: "Alpha", maxMembers: 5 });
+
+    expect(res.status).toBe(409);
+    expect(String(res.body.error || "")).toContain("Team name already exists");
+  });
+
+  it("creates team with explicit teamFormat and +1 reserve slot", async () => {
+    const db = createFakeFirestore({});
+    const app = createApp(makeDeps(db));
+
+    const res = await request(app)
+      .post("/teams")
+      .set("x-user-uid", "u1")
+      .send({ name: "Alpha", teamFormat: "3x3" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+    const createdId = String(res.body.id || "");
+    const created = db._store.get(`teams/${createdId}`) || {};
+    expect(created.teamFormat).toBe("3x3");
+    expect(created.maxMembers).toBe(4);
+    expect(created.memberUids).toEqual(["u1"]);
+  });
+
+  it("blocks renaming team when target name lock is held by another team", async () => {
+    const db = createFakeFirestore({
+      "teams/team7": {
+        name: "Bravo",
+        nameLower: "bravo",
+        captainUid: "u1",
+        memberUids: ["u1", "u2"],
+      },
+      "team_name_locks/bravo": {
+        teamId: "team7",
+        nameLower: "bravo",
+      },
+      "team_name_locks/alpha": {
+        teamId: "other-team",
+        nameLower: "alpha",
+      },
+    });
+    const app = createApp(makeDeps(db));
+
+    const res = await request(app)
+      .patch("/teams/team7")
+      .set("x-user-uid", "u1")
+      .send({ name: "Alpha" });
+
+    expect(res.status).toBe(409);
+    expect(String(res.body.error || "")).toContain("Team name already exists");
+    expect((db._store.get("teams/team7") || {}).name).toBe("Bravo");
+  });
+
   it("blocks kick when team has active upcoming registration", async () => {
     const now = Date.now();
     const db = createFakeFirestore({
@@ -120,5 +185,25 @@ describe("team core routes", () => {
     expect(res.status).toBe(200);
     expect(res.body.ok).toBe(true);
     expect((db._store.get("teams/team4") || {}).captainUid).toBe("u2");
+  });
+
+  it("sets member role to reserve via set-role endpoint", async () => {
+    const db = createFakeFirestore({
+      "teams/team5": {
+        captainUid: "u1",
+        memberUids: ["u1", "u2", "u3"],
+        reserveUid: "",
+      },
+    });
+    const app = createApp(makeDeps(db));
+
+    const res = await request(app)
+      .post("/teams/team5/set-role")
+      .set("x-user-uid", "u1")
+      .send({ uid: "u3", role: "reserve" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+    expect((db._store.get("teams/team5") || {}).reserveUid).toBe("u3");
   });
 });

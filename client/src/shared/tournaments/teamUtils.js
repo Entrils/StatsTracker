@@ -25,11 +25,18 @@ export function teamSizeByFormat(format) {
   return Number.isFinite(n) ? Math.min(Math.max(n, 1), 5) : 5;
 }
 
+export function teamMaxMembersByFormat(format) {
+  const size = teamSizeByFormat(format);
+  if (size <= 1) return 1;
+  return size + 1;
+}
+
 export function teamFormatByMembers(maxMembers) {
   const n = Number(maxMembers);
   if (!Number.isFinite(n) || n < 2) return "5x5";
-  const size = Math.min(Math.max(Math.round(n), 2), 5);
-  return `${size}x${size}`;
+  if (n <= 2) return "2x2";
+  if (n <= 4) return "3x3";
+  return "5x5";
 }
 
 export function isSoloFormat(format) {

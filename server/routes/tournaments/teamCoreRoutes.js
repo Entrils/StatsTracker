@@ -4,6 +4,9 @@ import {
   toAnyMillis,
   normalizeUidList,
   normalizeTeamCountry,
+  TEAM_ROSTER_FORMATS,
+  normalizeTeamFormat,
+  getTeamMaxMembersForFormat,
   resolveProfileAvatarUrl,
   getProfileFragpunkId,
   getTournamentStatus,
@@ -29,8 +32,24 @@ export function registerTeamCoreRoutes(app, ctx) {
   } = ctx;
   const TEAMS_MY_CACHE_TTL_MS = 60 * 1000;
   const TEAM_PUBLIC_DETAILS_CACHE_TTL_MS = 30 * 1000;
+  const normalizeReserveUid = (team = {}, members = null, captainUid = "") => {
+    const memberList = Array.isArray(members)
+      ? normalizeUidList(members)
+      : normalizeUidList(team?.memberUids || []);
+    const captain = String(captainUid || team?.captainUid || "");
+    const reserveUid = String(team?.reserveUid || "").trim();
+    if (!reserveUid || reserveUid === captain) return "";
+    return memberList.includes(reserveUid) ? reserveUid : "";
+  };
   const teamsMyCache = teamsCache?.my || new Map();
   const teamsPublicDetailsCache = teamsCache?.publicDetails || new Map();
+  const normalizeTeamNameLower = (value = "") => String(value || "").trim().toLowerCase();
+  const makeRandomId = (prefix = "id") => {
+    if (typeof crypto.randomUUID === "function") return `${prefix}_${crypto.randomUUID()}`;
+    return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+  };
+  const teamNameLockRef = (nameLower = "") =>
+    db.collection("team_name_locks").doc(encodeURIComponent(String(nameLower || "").trim()));
   const buildEtag = (payload) => {
     try {
       const hash = crypto.createHash("sha1").update(JSON.stringify(payload ?? null)).digest("hex");
@@ -187,6 +206,7 @@ export function registerTeamCoreRoutes(app, ctx) {
       typeof db.getAll === "function"
         ? await db.getAll(...profileRefs)
         : await Promise.all(profileRefs.map((ref) => ref.get()));
+    const reserveUid = normalizeReserveUid(team, members, row.captainUid);
     const roster = members.map((memberUid, idx) => {
       const profile = profileSnaps[idx]?.exists ? profileSnaps[idx].data() || {} : {};
       return {
@@ -196,7 +216,12 @@ export function registerTeamCoreRoutes(app, ctx) {
         elo: toInt(profile.hiddenElo ?? profile.elo, 500),
         matches: toInt(profile.matches, 0),
         fragpunkId: getProfileFragpunkId(profile),
-        role: memberUid === row.captainUid ? "captain" : "player",
+        role:
+          memberUid === row.captainUid
+            ? "captain"
+            : memberUid === reserveUid
+            ? "reserve"
+            : "player",
       };
     });
 
@@ -354,21 +379,22 @@ export function registerTeamCoreRoutes(app, ctx) {
       const name = String(req.body?.name || "").trim();
       if (!name) return res.status(400).json({ error: "Team name is required" });
       const safeName = name.slice(0, 60);
-      const safeNameLower = safeName.toLowerCase();
+      const safeNameLower = normalizeTeamNameLower(safeName);
 
-      const [duplicateByLower, duplicateByExact] = await Promise.all([
-        db.collection("teams").where("nameLower", "==", safeNameLower).limit(1).get(),
-        db.collection("teams").where("name", "==", safeName).limit(1).get(),
-      ]);
-      if (!duplicateByLower.empty || !duplicateByExact.empty) {
-        return res.status(409).json({ error: "Team name already exists" });
+      const legacyMaxMembers = Math.min(Math.max(toInt(req.body?.maxMembers, 5), 1), 6);
+      const requestedFormat = String(req.body?.teamFormat || "").trim();
+      if (requestedFormat && !TEAM_ROSTER_FORMATS.has(requestedFormat.toLowerCase())) {
+        return res.status(400).json({ error: "Invalid team format" });
       }
-
-      const maxMembers = Math.min(Math.max(toInt(req.body?.maxMembers, 5), 1), 5);
-      if (maxMembers < 2) {
-        return res.status(400).json({ error: "Teams for 1x1 are not allowed" });
-      }
-      const ownTeamSameFormat = await findUserTeamInFormat({ uid, maxMembers });
+      const teamFormat = requestedFormat
+        ? normalizeTeamFormat(requestedFormat, "5x5")
+        : legacyMaxMembers <= 2
+        ? "2x2"
+        : legacyMaxMembers <= 3
+        ? "3x3"
+        : "5x5";
+      const maxMembers = getTeamMaxMembersForFormat(teamFormat);
+      const ownTeamSameFormat = await findUserTeamInFormat({ uid, teamFormat });
       if (ownTeamSameFormat) {
         return res.status(409).json({ error: "You can be in only one team per format" });
       }
@@ -377,19 +403,46 @@ export function registerTeamCoreRoutes(app, ctx) {
         return res.status(400).json({ error: "Team avatar is too large" });
       }
       const country = normalizeTeamCountry(req.body?.country);
-      const ref = await db.collection("teams").add({
-        name: safeName,
-        nameLower: safeNameLower,
-        captainUid: uid,
-        memberUids: [uid],
-        maxMembers,
-        avatarUrl,
-        country,
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      const teamRef = db.collection("teams").doc(makeRandomId("team"));
+      const lockRef = teamNameLockRef(safeNameLower);
+      const outcome = await db.runTransaction(async (tx) => {
+        const [teamSnap, lockSnap] = await Promise.all([tx.get(teamRef), tx.get(lockRef)]);
+        if (teamSnap.exists) return { status: 409, error: "Try again" };
+        const lockData = lockSnap.exists ? lockSnap.data() || {} : {};
+        const lockTeamId = String(lockData.teamId || "");
+        if (lockTeamId && lockTeamId !== teamRef.id) {
+          return { status: 409, error: "Team name already exists" };
+        }
+
+        tx.set(teamRef, {
+          name: safeName,
+          nameLower: safeNameLower,
+          teamFormat,
+          captainUid: uid,
+          reserveUid: "",
+          memberUids: [uid],
+          maxMembers,
+          avatarUrl,
+          country,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        tx.set(
+          lockRef,
+          {
+            nameLower: safeNameLower,
+            teamId: teamRef.id,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          },
+          { merge: true }
+        );
+        return { ok: true, id: teamRef.id };
       });
+      if (outcome?.error) {
+        return res.status(outcome.status || 400).json({ error: outcome.error });
+      }
       invalidateUserTeamDerivedCaches([uid]);
-      return res.json({ ok: true, id: ref.id });
+      return res.json({ ok: true, id: outcome.id });
     } catch (err) {
       return respondServerError(res, logger, "TEAM CREATE ERROR", "Failed to create team", err);
     }
@@ -402,48 +455,70 @@ export function registerTeamCoreRoutes(app, ctx) {
       if (!uid || !teamId) return res.status(400).json({ error: "Invalid params" });
 
       const teamRef = db.collection("teams").doc(teamId);
-      const snap = await teamRef.get();
-      if (!snap.exists) return res.status(404).json({ error: "Team not found" });
-      const team = snap.data() || {};
-      if (team.captainUid !== uid) {
-        return res.status(403).json({ error: "Only captain can edit team" });
-      }
-
       const nextNameRaw = String(req.body?.name ?? "").trim();
       const nextAvatarRaw = String(req.body?.avatarUrl ?? "").trim();
-
-      const patch = {
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      };
-
-      if (nextNameRaw) {
-        const safeName = nextNameRaw.slice(0, 60);
-        const safeNameLower = safeName.toLowerCase();
-        if (safeNameLower !== String(team.nameLower || String(team.name || "").toLowerCase())) {
-          const [duplicateByLower, duplicateByExact] = await Promise.all([
-            db.collection("teams").where("nameLower", "==", safeNameLower).limit(1).get(),
-            db.collection("teams").where("name", "==", safeName).limit(1).get(),
-          ]);
-          const hasConflict =
-            duplicateByLower.docs.some((d) => d.id !== teamId) ||
-            duplicateByExact.docs.some((d) => d.id !== teamId);
-          if (hasConflict) {
-            return res.status(409).json({ error: "Team name already exists" });
-          }
-        }
-        patch.name = safeName;
-        patch.nameLower = safeNameLower;
-      }
-
       if (nextAvatarRaw) {
         if (nextAvatarRaw.length > MAX_TEAM_AVATAR_URL_LENGTH) {
           return res.status(400).json({ error: "Team avatar is too large" });
         }
-        patch.avatarUrl = nextAvatarRaw;
       }
+      const outcome = await db.runTransaction(async (tx) => {
+        const snap = await tx.get(teamRef);
+        if (!snap.exists) return { status: 404, error: "Team not found" };
+        const team = snap.data() || {};
+        if (team.captainUid !== uid) {
+          return { status: 403, error: "Only captain can edit team" };
+        }
+        const patch = {
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        };
 
-      await teamRef.set(patch, { merge: true });
-      const affectedUids = normalizeUidList(team.memberUids || []);
+        if (nextNameRaw) {
+          const safeName = nextNameRaw.slice(0, 60);
+          const safeNameLower = normalizeTeamNameLower(safeName);
+          const currentNameLower = normalizeTeamNameLower(team.nameLower || team.name || "");
+          if (safeNameLower !== currentNameLower) {
+            const newLockRef = teamNameLockRef(safeNameLower);
+            const newLockSnap = await tx.get(newLockRef);
+            const lockTeamId = String((newLockSnap.exists ? newLockSnap.data() || {} : {}).teamId || "");
+            if (lockTeamId && lockTeamId !== teamId) {
+              return { status: 409, error: "Team name already exists" };
+            }
+
+            tx.set(
+              newLockRef,
+              {
+                nameLower: safeNameLower,
+                teamId,
+                updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+              },
+              { merge: true }
+            );
+
+            if (currentNameLower) {
+              const oldLockRef = teamNameLockRef(currentNameLower);
+              const oldLockSnap = await tx.get(oldLockRef);
+              const oldLockTeamId = String((oldLockSnap.exists ? oldLockSnap.data() || {} : {}).teamId || "");
+              if (!oldLockTeamId || oldLockTeamId === teamId) {
+                tx.delete(oldLockRef);
+              }
+            }
+          }
+          patch.name = safeName;
+          patch.nameLower = safeNameLower;
+        }
+
+        if (nextAvatarRaw) {
+          patch.avatarUrl = nextAvatarRaw;
+        }
+
+        tx.set(teamRef, patch, { merge: true });
+        return { ok: true, affectedUids: normalizeUidList(team.memberUids || []) };
+      });
+      if (outcome?.error) {
+        return res.status(outcome.status || 400).json({ error: outcome.error });
+      }
+      const affectedUids = normalizeUidList(outcome?.affectedUids || []);
       invalidateUserTeamDerivedCaches(affectedUids);
       return res.json({ ok: true });
     } catch (err) {
@@ -493,6 +568,11 @@ export function registerTeamCoreRoutes(app, ctx) {
           teamRef,
           {
             memberUids: members.filter((memberUid) => memberUid !== targetUid),
+            reserveUid: normalizeReserveUid(
+              team,
+              members.filter((memberUid) => memberUid !== targetUid),
+              team.captainUid
+            ),
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
           },
           { merge: true }
@@ -551,6 +631,7 @@ export function registerTeamCoreRoutes(app, ctx) {
           teamRef,
           {
             captainUid: targetUid,
+            reserveUid: normalizeReserveUid(team, members, targetUid),
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
           },
           { merge: true }
@@ -569,6 +650,87 @@ export function registerTeamCoreRoutes(app, ctx) {
         "Failed to transfer captain role",
         err
       );
+    }
+  });
+
+  app.post("/teams/:id/set-role", authLimiter, requireAuth, async (req, res) => {
+    try {
+      const uid = req.user?.uid;
+      const teamId = String(req.params.id || "");
+      const targetUid = String(req.body?.uid || "").trim();
+      const role = String(req.body?.role || "").trim().toLowerCase();
+      if (!uid || !teamId || !targetUid || !isValidUid(targetUid)) {
+        return res.status(400).json({ error: "Invalid params" });
+      }
+      if (!["captain", "reserve", "player"].includes(role)) {
+        return res.status(400).json({ error: "Invalid role" });
+      }
+
+      const teamRef = db.collection("teams").doc(teamId);
+      const outcome = await db.runTransaction(async (tx) => {
+        const snap = await tx.get(teamRef);
+        if (!snap.exists) return { status: 404, error: "Team not found" };
+        const team = snap.data() || {};
+        if (team.captainUid !== uid) {
+          return { status: 403, error: "Only captain can change roles" };
+        }
+        const activeRegistrationInTx = await findActiveTeamTournamentRegistration({
+          db,
+          admin,
+          teamId,
+          team,
+          teamRef,
+          tx,
+        });
+        if (activeRegistrationInTx) {
+          return {
+            status: 409,
+            error: "Cannot change roles while team is registered in upcoming/ongoing tournament",
+          };
+        }
+
+        const members = normalizeUidList(team.memberUids || []);
+        if (!members.includes(targetUid)) {
+          return { status: 404, error: "Player is not in this team" };
+        }
+
+        let captainUid = String(team.captainUid || "");
+        let reserveUid = normalizeReserveUid(team, members, captainUid);
+
+        if (role === "captain") {
+          captainUid = targetUid;
+          if (reserveUid === targetUid) reserveUid = "";
+        } else if (role === "reserve") {
+          if (targetUid === captainUid) {
+            return { status: 409, error: "Captain cannot be reserve" };
+          }
+          reserveUid = targetUid;
+        } else if (role === "player") {
+          if (targetUid === captainUid) {
+            return { status: 409, error: "Captain role cannot be removed" };
+          }
+          if (reserveUid === targetUid) reserveUid = "";
+        }
+
+        tx.set(
+          teamRef,
+          {
+            captainUid,
+            reserveUid,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          },
+          { merge: true }
+        );
+
+        return { ok: true, affectedUids: members };
+      });
+
+      if (outcome?.ok) {
+        invalidateUserTeamDerivedCaches(outcome.affectedUids || [uid, targetUid]);
+      }
+      return respondWithOutcome(res, outcome);
+    } catch (err) {
+      return respondServerError(res, logger, "TEAM SET ROLE ERROR", "Failed to change player role", err);
     }
   });
 
@@ -661,6 +823,19 @@ export function registerTeamCoreRoutes(app, ctx) {
 
       await deleteCollectionInChunks(teamRef.collection("invites"), 200, "team invites");
       await teamRef.delete();
+      const teamNameLower = normalizeTeamNameLower(team.nameLower || team.name || "");
+      if (teamNameLower) {
+        const lockRef = teamNameLockRef(teamNameLower);
+        try {
+          const lockSnap = await lockRef.get();
+          const lockTeamId = String((lockSnap.exists ? lockSnap.data() || {} : {}).teamId || "");
+          if (!lockTeamId || lockTeamId === teamId) {
+            await lockRef.delete();
+          }
+        } catch (lockErr) {
+          logger.warn("TEAM NAME LOCK DELETE ERROR:", lockErr?.message || lockErr);
+        }
+      }
       const affectedUids = normalizeUidList(team.memberUids || []);
       invalidateUserTeamDerivedCaches(affectedUids);
       return res.json({ ok: true });
@@ -704,6 +879,11 @@ export function registerTeamCoreRoutes(app, ctx) {
           teamRef,
           {
             memberUids: members.filter((memberUid) => memberUid !== uid),
+            reserveUid: normalizeReserveUid(
+              team,
+              members.filter((memberUid) => memberUid !== uid),
+              team.captainUid
+            ),
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
           },
           { merge: true }

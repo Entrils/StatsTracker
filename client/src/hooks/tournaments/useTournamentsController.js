@@ -3,12 +3,10 @@ import { isSoloFormat, teamSizeByFormat } from "@/shared/tournaments/teamUtils";
 
 export default function useTournamentsController({
   user,
-  isAdmin,
   tt,
   backendUrl,
 }) {
   const cacheKeyForStatus = (status) => `tournaments-cache:${status}`;
-  const fallbackStatuses = ["upcoming", "ongoing", "past"];
   const tabs = useMemo(
     () => [
       { key: "upcoming", label: tt?.tabs?.upcoming || "Upcoming" },
@@ -26,7 +24,6 @@ export default function useTournamentsController({
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [registeringId, setRegisteringId] = useState("");
-  const [generatingId, setGeneratingId] = useState("");
   const [teamSelectByTournament, setTeamSelectByTournament] = useState({});
   const [participatingByTournament, setParticipatingByTournament] = useState({});
   const [nowMs, setNowMs] = useState(() => Date.now());
@@ -52,6 +49,18 @@ export default function useTournamentsController({
         const res = await fetch(`${backendUrl}/tournaments?status=${status}&limit=30`, {
           signal: controller.signal,
         });
+        if (res.status === 304) {
+          let cachedRows = [];
+          try {
+            const raw = localStorage.getItem(cacheKeyForStatus(status));
+            cachedRows = raw ? JSON.parse(raw) : [];
+          } catch {
+            cachedRows = [];
+          }
+          if (tournamentsRequestRef.current.id !== requestId) return;
+          setRows(Array.isArray(cachedRows) ? cachedRows : []);
+          return;
+        }
         if (!res.ok) {
           const data = await res.json().catch(() => null);
           const message = String(data?.error || "Failed to load tournaments");
@@ -75,17 +84,6 @@ export default function useTournamentsController({
         try {
           const raw = localStorage.getItem(cacheKeyForStatus(status));
           cachedRows = raw ? JSON.parse(raw) : [];
-          if (!Array.isArray(cachedRows) || !cachedRows.length) {
-            for (const s of fallbackStatuses) {
-              if (s === status) continue;
-              const fallbackRaw = localStorage.getItem(cacheKeyForStatus(s));
-              const parsed = fallbackRaw ? JSON.parse(fallbackRaw) : [];
-              if (Array.isArray(parsed) && parsed.length) {
-                cachedRows = parsed;
-                break;
-              }
-            }
-          }
         } catch {
           cachedRows = [];
         }
@@ -209,31 +207,13 @@ export default function useTournamentsController({
     }
   };
 
-  const onGenerateBracket = async (id) => {
-    if (!user || !isAdmin) return;
-    setGeneratingId(id);
-    setNotice("");
-    try {
-      const token = await user.getIdToken();
-      const res = await fetch(`${backendUrl}/tournaments/${id}/generate-bracket`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json().catch(() => null);
-      if (!res.ok) throw new Error(data?.error || "Failed to generate bracket");
-      setNotice(`${tt.generate || "Generate bracket"}: ${data?.matches ?? 0}`);
-      loadTournaments(tab);
-    } catch (err) {
-      setNotice(err?.message || "Bracket generation error");
-    } finally {
-      setGeneratingId("");
-    }
-  };
-
   const availableTeamsForTournament = (tournament) =>
     teams.filter(
       (team) =>
-        team.isCaptain && team.memberCount === teamSizeByFormat(tournament.teamFormat)
+        team.isCaptain &&
+        String(team.teamFormat || "") === String(tournament?.teamFormat || "") &&
+        team.memberCount >= teamSizeByFormat(tournament.teamFormat) &&
+        team.memberCount <= teamSizeByFormat(tournament.teamFormat) + 1
     );
 
   const requirementState = (tournament) => {
@@ -274,7 +254,6 @@ export default function useTournamentsController({
     notice,
     user,
     registeringId,
-    generatingId,
     teamSelectByTournament,
     participatingByTournament,
     nowMs,
@@ -282,7 +261,6 @@ export default function useTournamentsController({
     requirementState,
     setTeamSelectByTournament,
     onRegisterTeam,
-    onGenerateBracket,
   };
 }
 

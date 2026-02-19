@@ -7,6 +7,7 @@ import {
   normalizeUidList,
   normalizeTeamCountry,
   normalizeMapPool,
+  getTeamRosterConfig,
   resolveProfileAvatarUrl,
   getProfileFragpunkId,
   serializeTournament,
@@ -164,8 +165,7 @@ export function registerTournamentReadRoutes(app, ctx) {
     const snap = await query.get();
     const allRows = (snap?.docs || []).map((doc) => serializeTournament(doc, now));
     const filtered = status ? allRows.filter((row) => row.status === status) : allRows;
-    if (filtered.length > 0) return filtered.slice(0, limit);
-    return allRows.slice(0, limit);
+    return filtered.slice(0, limit);
   };
   const approxJsonSize = (value) => {
     try {
@@ -179,6 +179,7 @@ export function registerTournamentReadRoutes(app, ctx) {
     const sourceTeams = Array.isArray(payload?.teams) ? payload.teams : [];
     const compactTeam = (team = {}) => {
       const memberUids = normalizeUidList(team.memberUids || []).slice(0, 10);
+      const roster = getTeamRosterConfig(team);
       const sourceStats = Array.isArray(team.membersStats) ? team.membersStats : [];
       const membersStats = sourceStats.slice(0, 10).map((member) => ({
         uid: String(member?.uid || ""),
@@ -189,10 +190,11 @@ export function registerTournamentReadRoutes(app, ctx) {
       return {
         id: String(team.id || ""),
         name: String(team.name || "").slice(0, 80),
+        teamFormat: String(roster.teamFormat || "5x5"),
         captainUid: String(team.captainUid || ""),
         memberUids,
         memberCount: toInt(team.memberCount, memberUids.length),
-        maxMembers: toInt(team.maxMembers, 5),
+        maxMembers: toInt(team.maxMembers, roster.maxMembers),
         avatarUrl: String(team.avatarUrl || "").slice(0, 400),
         country: normalizeTeamCountry(team.country),
         isCaptain: team.isCaptain === true,
@@ -250,61 +252,102 @@ export function registerTournamentReadRoutes(app, ctx) {
       }
     }
 
-    const [profileSnap, teamsSnap, regsSnap] = await Promise.all([
-      db.collection("leaderboard_users").doc(uid).get(),
-      db.collection("teams").where("memberUids", "array-contains", uid).limit(50).get(),
-      db
-        .collectionGroup("registrations")
-        .where("memberUids", "array-contains", uid)
-        .limit(TOURNAMENTS_CONTEXT_REGS_LIMIT)
-        .get(),
+    const profilePromise = db.collection("leaderboard_users").doc(uid).get();
+    const teamsPromise = db.collection("teams").where("memberUids", "array-contains", uid).limit(50).get();
+    const regsPromise =
+      typeof db.collectionGroup === "function"
+        ? db
+            .collectionGroup("registrations")
+            .where("memberUids", "array-contains", uid)
+            .limit(TOURNAMENTS_CONTEXT_REGS_LIMIT)
+            .get()
+        : Promise.resolve({ docs: [] });
+    const [profileResult, teamsResult, regsResult] = await Promise.allSettled([
+      profilePromise,
+      teamsPromise,
+      regsPromise,
     ]);
-    readEstimate += 1 + teamsSnap.docs.length + regsSnap.docs.length;
+    if (profileResult.status === "rejected") {
+      logger.warn("TOURNAMENTS CONTEXT PROFILE QUERY ERROR:", profileResult.reason?.message || profileResult.reason);
+    }
+    if (teamsResult.status === "rejected") {
+      logger.warn("TOURNAMENTS CONTEXT TEAMS QUERY ERROR:", teamsResult.reason?.message || teamsResult.reason);
+    }
+    if (regsResult.status === "rejected") {
+      logger.warn("TOURNAMENTS CONTEXT REGISTRATIONS QUERY ERROR:", regsResult.reason?.message || regsResult.reason);
+    }
+    const profileSnap =
+      profileResult.status === "fulfilled"
+        ? profileResult.value
+        : { exists: false, data: () => ({}) };
+    const teamsSnap =
+      teamsResult.status === "fulfilled"
+        ? teamsResult.value
+        : { docs: [] };
+    const regsSnap = regsResult.status === "fulfilled" ? regsResult.value : { docs: [] };
+    readEstimate +=
+      (profileResult.status === "fulfilled" ? 1 : 0) +
+      teamsSnap.docs.length +
+      regsSnap.docs.length;
 
     const profile = profileSnap.exists ? profileSnap.data() || {} : {};
     const teamRows = teamsSnap.docs.map((doc) => {
       const d = doc.data() || {};
+      const roster = getTeamRosterConfig(d);
       const memberUids = normalizeUidList(d.memberUids || []);
       return {
         id: doc.id,
         name: d.name || "Team",
+        teamFormat: roster.teamFormat,
         captainUid: d.captainUid || "",
         memberUids,
         memberCount: memberUids.length,
-        maxMembers: toInt(d.maxMembers, 5),
+        maxMembers: roster.maxMembers,
         avatarUrl: d.avatarUrl || "",
         country: normalizeTeamCountry(d.country),
         isCaptain: d.captainUid === uid,
         membersStats: [],
       };
     });
+    const teamActiveTournamentIds = normalizeUidList(
+      teamsSnap.docs.flatMap((doc) => {
+        const d = doc.data() || {};
+        return Array.isArray(d.activeTournamentIds) ? d.activeTournamentIds : [];
+      })
+    );
 
     const uniqueMemberUids = [
       ...new Set(teamRows.filter((team) => team.isCaptain).flatMap((team) => team.memberUids || [])),
     ];
     let memberStatsByUid = new Map();
+    let memberStatsDegraded = false;
     if (uniqueMemberUids.length) {
-      const refs = uniqueMemberUids.map((id) => db.collection("leaderboard_users").doc(id));
-      const snaps =
-        typeof db.getAll === "function"
-          ? await db.getAll(...refs)
-          : await Promise.all(refs.map((ref) => ref.get()));
-      readEstimate += snaps.length;
-      memberStatsByUid = new Map(
-        snaps.map((snap, idx) => {
-          const data = snap?.exists ? snap.data() || {} : {};
-          const memberUid = uniqueMemberUids[idx];
-          return [
-            memberUid,
-            {
-              uid: memberUid,
-              elo: toInt(data.hiddenElo ?? data.elo, 500),
-              matches: toInt(data.matches, 0),
-              fragpunkId: getProfileFragpunkId(data),
-            },
-          ];
-        })
-      );
+      try {
+        const refs = uniqueMemberUids.map((id) => db.collection("leaderboard_users").doc(id));
+        const snaps =
+          typeof db.getAll === "function"
+            ? await db.getAll(...refs)
+            : await Promise.all(refs.map((ref) => ref.get()));
+        readEstimate += snaps.length;
+        memberStatsByUid = new Map(
+          snaps.map((snap, idx) => {
+            const data = snap?.exists ? snap.data() || {} : {};
+            const memberUid = uniqueMemberUids[idx];
+            return [
+              memberUid,
+              {
+                uid: memberUid,
+                elo: toInt(data.hiddenElo ?? data.elo, 500),
+                matches: toInt(data.matches, 0),
+                fragpunkId: getProfileFragpunkId(data),
+              },
+            ];
+          })
+        );
+      } catch (err) {
+        memberStatsDegraded = true;
+        logger.warn("TOURNAMENTS CONTEXT MEMBER STATS QUERY ERROR:", err?.message || err);
+      }
     }
 
     const teams = teamRows.map((team) => ({
@@ -320,7 +363,7 @@ export function registerTournamentReadRoutes(app, ctx) {
       ),
     }));
 
-    const tournamentIds = [];
+    const tournamentIds = [...teamActiveTournamentIds];
     regsSnap.docs.forEach((doc) => {
       const tId = String(doc.ref.parent?.parent?.id || "");
       if (!tId || tournamentIds.includes(tId)) return;
@@ -338,6 +381,11 @@ export function registerTournamentReadRoutes(app, ctx) {
         tournamentIds,
         updatedAt: now,
       },
+      degraded:
+        profileResult.status !== "fulfilled" ||
+        teamsResult.status !== "fulfilled" ||
+        regsResult.status !== "fulfilled" ||
+        memberStatsDegraded,
       readEstimate,
     };
   };
@@ -1043,11 +1091,18 @@ export function registerTournamentReadRoutes(app, ctx) {
           const hasIdsSource = hasPayloadIds || hasLegacyIds;
           const isFresh = updatedAt > 0 && now - updatedAt < USER_TOURNAMENT_CONTEXT_TTL_MS;
           if (hasIdsSource) {
-            tournamentsMyRegistrationsCache.set(uid, { ts: now, ids });
+            if (isFresh) {
+              tournamentsMyRegistrationsCache.set(uid, { ts: now, ids });
+            }
             return sendJsonWithReads(
               res,
               "/tournaments/my-registrations",
-              { tournamentIds: ids, materialized: true, cached: isFresh, stale: !isFresh },
+              {
+                tournamentIds: isFresh ? ids : [],
+                materialized: true,
+                cached: isFresh,
+                stale: !isFresh,
+              },
               readEstimate
             );
           }
@@ -1126,10 +1181,13 @@ export function registerTournamentReadRoutes(app, ctx) {
         tournamentIds: [],
         updatedAt: now,
       };
+      const degraded = contextResult?.degraded === true;
       readEstimate += Math.max(0, Number(contextResult?.readEstimate) || 0);
-      tournamentsContextCache.set(uid, { ts: now, payload });
-      tournamentsMyRegistrationsCache.set(uid, { ts: now, ids: payload.tournamentIds || [] });
-      if (typeof userTournamentContextRef === "function") {
+      if (!degraded) {
+        tournamentsContextCache.set(uid, { ts: now, payload });
+        tournamentsMyRegistrationsCache.set(uid, { ts: now, ids: payload.tournamentIds || [] });
+      }
+      if (!degraded && typeof userTournamentContextRef === "function") {
         const compactPayload = buildMaterializedContextPayload(payload);
         userTournamentContextRef(uid)
           .set(
@@ -1142,7 +1200,14 @@ export function registerTournamentReadRoutes(app, ctx) {
           )
           .catch((err) => logger.warn("TOURNAMENTS CONTEXT MATERIALIZED WRITE ERROR:", err?.message || err));
       }
-      return sendJsonWithReads(res, "/tournaments/context/my", payload, readEstimate);
+      return sendJsonWithReads(
+        res,
+        "/tournaments/context/my",
+        degraded
+          ? { ...payload, degraded: true, stale: true }
+          : payload,
+        readEstimate
+      );
     } catch (err) {
       if (isQuotaExceededError(err)) {
         const uid = String(req.user?.uid || "");

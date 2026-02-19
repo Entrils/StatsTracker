@@ -87,6 +87,8 @@ export default function TournamentDetailsPage() {
   const [generatingPlayoff, setGeneratingPlayoff] = useState(false);
   const [deletingTournament, setDeletingTournament] = useState(false);
   const [savingResultId, setSavingResultId] = useState("");
+  const [confirmGenerateOpen, setConfirmGenerateOpen] = useState(false);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const isSolo = String(tournament?.teamFormat || "") === "1x1";
   const [scoreModal, setScoreModal] = useState({
     open: false,
@@ -327,9 +329,10 @@ export default function TournamentDetailsPage() {
     );
   };
 
-  const onGenerate = async () => {
+  const onConfirmGenerate = async () => {
     if (!user || !isAdmin || !tournament?.id) return;
     setGenerating(true);
+    setConfirmGenerateOpen(false);
     setNotice("");
     try {
       const token = await user.getIdToken();
@@ -346,6 +349,11 @@ export default function TournamentDetailsPage() {
     } finally {
       setGenerating(false);
     }
+  };
+
+  const onGenerate = () => {
+    if (!user || !isAdmin || !tournament?.id) return;
+    setConfirmGenerateOpen(true);
   };
 
   const buildMatchHref = useCallback(
@@ -491,11 +499,9 @@ export default function TournamentDetailsPage() {
     }
   };
 
-  const onDeleteTournament = async () => {
+  const onConfirmDeleteTournament = async () => {
     if (!user || !isAdmin || !tournament?.id || deletingTournament) return;
-    const confirmText = td?.deleteConfirm || "Delete this tournament? This action cannot be undone.";
-    if (!window.confirm(confirmText)) return;
-
+    setConfirmDeleteOpen(false);
     setDeletingTournament(true);
     setNotice("");
     try {
@@ -512,6 +518,11 @@ export default function TournamentDetailsPage() {
     } finally {
       setDeletingTournament(false);
     }
+  };
+
+  const onDeleteTournament = () => {
+    if (!user || !isAdmin || !tournament?.id || deletingTournament) return;
+    setConfirmDeleteOpen(true);
   };
 
   if (loading) {
@@ -637,6 +648,75 @@ export default function TournamentDetailsPage() {
           getMatchScoreText={getMatchScoreText}
           buildMatchHref={buildMatchHref}
         />
+      ) : null}
+
+      {confirmGenerateOpen ? (
+        <div className={styles.modalBackdrop} role="dialog" aria-modal="true">
+          <div className={styles.modalCard}>
+            <h3 className={styles.formTitle}>
+              {td?.bracket?.confirmGenerateTitle || "Generate bracket"}
+            </h3>
+            <p className={styles.hint}>
+              {td?.bracket?.confirmGenerateText || "Generate bracket now? Existing bracket matches will be replaced."}
+            </p>
+            <div className={styles.formActions}>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => setConfirmGenerateOpen(false)}
+                disabled={generating}
+              >
+                {td?.modal?.cancel || "Cancel"}
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                onClick={onConfirmGenerate}
+                disabled={generating || !canGenerateBracket}
+              >
+                {generating
+                  ? td?.bracket?.generating || "Generating..."
+                  : td?.bracket?.confirmGenerateAction || td?.bracket?.generate || "Generate bracket"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {confirmDeleteOpen ? (
+        <div className={styles.modalBackdrop} role="dialog" aria-modal="true">
+          <div className={styles.modalCard}>
+            <h3 className={styles.formTitle}>
+              {td?.delete || "Delete tournament"}
+            </h3>
+            <p className={styles.hint}>
+              {td?.deleteConfirm || "Delete this tournament? This action cannot be undone."}
+            </p>
+            <div className={styles.formActions}>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => setConfirmDeleteOpen(false)}
+                disabled={deletingTournament}
+              >
+                {td?.modal?.cancel || "Cancel"}
+              </Button>
+              <Button
+                type="button"
+                variant="danger"
+                size="sm"
+                onClick={onConfirmDeleteTournament}
+                disabled={deletingTournament}
+              >
+                {deletingTournament
+                  ? td?.deleting || "Deleting..."
+                  : td?.delete || "Delete tournament"}
+              </Button>
+            </div>
+          </div>
+        </div>
       ) : null}
 
       <ScoreModal

@@ -142,6 +142,7 @@ describe("myTeamDetails components", () => {
     const user = userEvent.setup();
     const onTransferCaptain = vi.fn();
     const onKickMember = vi.fn();
+    const onSetMemberRole = vi.fn();
 
     render(
       <>
@@ -164,9 +165,10 @@ describe("myTeamDetails components", () => {
             { uid: "c1", name: "Captain", role: "captain", avatarUrl: "" },
             { uid: "p1", name: "Player", role: "player", avatarUrl: "" },
           ]}
-          tm={{ transferCaptain: "Transfer", kickMember: "Kick" }}
+          tm={{ transferCaptain: "Transfer", setReserve: "Reserve", kickMember: "Kick" }}
           onTransferCaptain={onTransferCaptain}
           onKickMember={onKickMember}
+          onSetMemberRole={onSetMemberRole}
         />
       </>
     );
@@ -175,9 +177,11 @@ describe("myTeamDetails components", () => {
     expect(screen.getByText("Cup - #2")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Transfer" }));
+    await user.click(screen.getByRole("button", { name: "Reserve" }));
     await user.click(screen.getByRole("button", { name: "Kick" }));
 
     expect(onTransferCaptain).toHaveBeenCalledWith("p1");
+    expect(onSetMemberRole).toHaveBeenCalledWith("p1", "reserve");
     expect(onKickMember).toHaveBeenCalledWith("p1");
   });
 });

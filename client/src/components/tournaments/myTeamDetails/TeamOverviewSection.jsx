@@ -52,7 +52,7 @@ export default function TeamOverviewSection({
       <div className={styles.teamInfoBar}>
         <div>
           <p className={styles.metaLabel}>{tm.format || "Format"}</p>
-          <p className={styles.meta}>{teamFormatByMembers(row.maxMembers)}</p>
+          <p className={styles.meta}>{row.teamFormat || teamFormatByMembers(row.maxMembers)}</p>
         </div>
         <div>
           <p className={styles.metaLabel}>{tm.teamSize || tm.members || "Members"}</p>

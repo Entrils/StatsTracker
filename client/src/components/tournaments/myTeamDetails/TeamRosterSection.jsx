@@ -7,6 +7,7 @@ export default function TeamRosterSection({
   tm,
   onTransferCaptain,
   onKickMember,
+  onSetMemberRole,
 }) {
   const membersCount = Array.isArray(roster) ? roster.length : Number(row?.memberCount || 0);
   const maxMembers = Number(row?.maxMembers || 0);
@@ -27,7 +28,11 @@ export default function TeamRosterSection({
             <div>
               <p className={styles.participantName}>{member.name}</p>
               <p className={styles.meta}>
-                {member.role === "captain" ? (tm.captainRole || "Captain") : (tm.playerRole || "Player")}
+                {member.role === "captain"
+                  ? (tm.captainRole || "Captain")
+                  : member.role === "reserve"
+                  ? (tm.reserveRole || "Reserve")
+                  : (tm.playerRole || "Player")}
               </p>
               <p className={styles.meta}>
                 FragPunk ID: {member.fragpunkId || "—"}
@@ -36,6 +41,20 @@ export default function TeamRosterSection({
                 <div className={styles.teamMemberActions}>
                   <Button variant="secondary" size="sm" onClick={() => onTransferCaptain(member.uid)}>
                     {tm.transferCaptain || "Transfer captain"}
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() =>
+                      onSetMemberRole(
+                        member.uid,
+                        member.role === "reserve" ? "player" : "reserve"
+                      )
+                    }
+                  >
+                    {member.role === "reserve"
+                      ? (tm.setMain || "Set as main")
+                      : (tm.setReserve || "Set as reserve")}
                   </Button>
                   <Button variant="secondary" size="sm" onClick={() => onKickMember(member.uid)}>
                     {tm.kickMember || "Kick"}

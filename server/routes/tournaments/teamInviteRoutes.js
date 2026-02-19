@@ -1,6 +1,6 @@
 import {
-  toInt,
   normalizeUidList,
+  getTeamRosterConfig,
   findActiveTeamTournamentRegistration,
 } from "./helpers.js";
 import { respondServerError, respondWithOutcome } from "./routeHelpers.js";
@@ -56,13 +56,14 @@ export function registerTeamInviteRoutes(app, ctx) {
       const team = teamSnap.data() || {};
       if (team.captainUid !== uid) return res.status(403).json({ error: "Only captain can invite" });
       const members = normalizeUidList(team.memberUids || []);
-      const maxMembers = Math.min(Math.max(toInt(team.maxMembers, 5), 1), 5);
+      const roster = getTeamRosterConfig(team);
+      const maxMembers = roster.maxMembers;
       if (members.includes(targetUid)) {
         return res.status(409).json({ error: "User is already in team" });
       }
       const targetTeamSameFormat = await findUserTeamInFormat({
         uid: targetUid,
-        maxMembers,
+        teamFormat: roster.teamFormat,
         excludeTeamId: teamId,
       });
       if (targetTeamSameFormat) {
@@ -178,13 +179,14 @@ export function registerTeamInviteRoutes(app, ctx) {
 
         const team = teamSnap.data() || {};
         const members = normalizeUidList(team.memberUids || []);
-        const maxMembers = Math.min(Math.max(toInt(team.maxMembers, 5), 1), 5);
+        const roster = getTeamRosterConfig(team);
+        const maxMembers = roster.maxMembers;
         if (!members.includes(uid) && members.length >= maxMembers) {
           return { status: 409, error: "Team is full" };
         }
         const sameFormatConflict = await findUserTeamInFormat({
           uid,
-          maxMembers,
+          teamFormat: roster.teamFormat,
           excludeTeamId: teamId,
           tx,
         });

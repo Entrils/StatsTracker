@@ -55,6 +55,7 @@ export default function MyTeamDetailsPage() {
     onLeaveTeam,
     onKickMember,
     onTransferCaptain,
+    onSetMemberRole,
   } = useMyTeamDetailsController({
     id,
     navigate,
@@ -137,6 +138,7 @@ export default function MyTeamDetailsPage() {
           tm={tm}
           onTransferCaptain={onTransferCaptain}
           onKickMember={onKickMember}
+          onSetMemberRole={onSetMemberRole}
         />
 
         {row.isCaptain && slotsLeft > 0 ? (

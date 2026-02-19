@@ -42,7 +42,6 @@ describe("tournaments basics components", () => {
     const user = userEvent.setup();
     const onTeamSelect = vi.fn();
     const onRegister = vi.fn();
-    const onGenerateBracket = vi.fn();
 
     const row = {
       id: "tour-1",
@@ -63,15 +62,12 @@ describe("tournaments basics components", () => {
         tt={{
           tabs: { upcoming: "Upcoming" },
           register: "Register",
-          generate: "Generate",
           countdown: "Until start: {time}",
           selectTeam: "Select team",
         }}
         lang="en"
         user={{ uid: "u1" }}
-        isAdmin
         registeringId=""
-        generatingId=""
         selectedTeamId=""
         countdownText="1d"
         participating={false}
@@ -79,7 +75,6 @@ describe("tournaments basics components", () => {
         reqState={{ eloOk: true, matchesOk: false }}
         onTeamSelect={onTeamSelect}
         onRegister={onRegister}
-        onGenerateBracket={onGenerateBracket}
       />
     );
 
@@ -88,9 +83,6 @@ describe("tournaments basics components", () => {
 
     const registerBtn = screen.getByRole("button", { name: "Register" });
     expect(registerBtn).toBeDisabled();
-
-    await user.click(screen.getByRole("button", { name: "Generate" }));
-    expect(onGenerateBracket).toHaveBeenCalledWith("tour-1");
 
     expect(screen.getByText("Until start: 1d")).toBeInTheDocument();
   });
@@ -114,9 +106,7 @@ describe("tournaments basics components", () => {
         tt={{ tabs: { upcoming: "Upcoming" }, registered: "Participating" }}
         lang="en"
         user={{ uid: "u1" }}
-        isAdmin={false}
         registeringId=""
-        generatingId=""
         selectedTeamId=""
         countdownText="30m"
         participating
@@ -124,7 +114,6 @@ describe("tournaments basics components", () => {
         reqState={{ eloOk: true, matchesOk: true }}
         onTeamSelect={vi.fn()}
         onRegister={vi.fn()}
-        onGenerateBracket={vi.fn()}
       />
     );
 

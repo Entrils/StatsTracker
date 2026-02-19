@@ -610,6 +610,9 @@
       bracket: {
         title: "Сетка",
         generate: "Сгенерировать сетку",
+        confirmGenerateTitle: "Сгенерировать сетку",
+        confirmGenerateText: "Сгенерировать сетку сейчас? Существующие матчи сетки будут заменены.",
+        confirmGenerateAction: "Сгенерировать сетку",
         generating: "Генерация...",
         localPreview: "Превью сетки (локально)",
         useReal: "Показать реальную сетку",

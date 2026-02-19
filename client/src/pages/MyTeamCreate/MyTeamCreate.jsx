@@ -21,8 +21,8 @@ export default function MyTeamCreatePage() {
   const {
     teamName,
     setTeamName,
-    teamMaxMembers,
-    setTeamMaxMembers,
+    teamFormat,
+    setTeamFormat,
     teamCountry,
     setTeamCountry,
     teamAvatarPreview,
@@ -65,8 +65,8 @@ export default function MyTeamCreatePage() {
         tm={tm}
         teamName={teamName}
         setTeamName={setTeamName}
-        teamMaxMembers={teamMaxMembers}
-        setTeamMaxMembers={setTeamMaxMembers}
+        teamFormat={teamFormat}
+        setTeamFormat={setTeamFormat}
         teamCountry={teamCountry}
         setTeamCountry={setTeamCountry}
         teamCountries={teamCountries}

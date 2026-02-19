@@ -560,6 +560,9 @@
       bracket: {
         title: "Bracket",
         generate: "Generer le bracket",
+        confirmGenerateTitle: "Generer le bracket",
+        confirmGenerateText: "Generer le bracket maintenant ? Les matchs existants seront remplaces.",
+        confirmGenerateAction: "Generer le bracket",
         generating: "Generation...",
         localPreview: "Apercu du bracket (local)",
         useReal: "Afficher le vrai bracket",

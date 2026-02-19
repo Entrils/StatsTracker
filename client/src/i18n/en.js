@@ -619,6 +619,9 @@
       bracket: {
         title: "Bracket",
         generate: "Generate bracket",
+        confirmGenerateTitle: "Generate bracket",
+        confirmGenerateText: "Generate bracket now? Existing bracket matches will be replaced.",
+        confirmGenerateAction: "Generate bracket",
         generating: "Generating...",
         localPreview: "Preview bracket (local)",
         useReal: "Use real bracket",

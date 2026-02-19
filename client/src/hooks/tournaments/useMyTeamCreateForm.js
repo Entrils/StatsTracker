@@ -3,7 +3,7 @@ import { fileToOptimizedDataUrl } from "@/shared/tournaments/imageDataUrl";
 
 export default function useMyTeamCreateForm({ user, tm, backendUrl, navigate }) {
   const [teamName, setTeamName] = useState("");
-  const [teamMaxMembers, setTeamMaxMembers] = useState(5);
+  const [teamFormat, setTeamFormat] = useState("5x5");
   const [teamCountry, setTeamCountry] = useState("");
   const [teamAvatarUrl, setTeamAvatarUrl] = useState("");
   const [teamAvatarPreview, setTeamAvatarPreview] = useState("");
@@ -33,7 +33,7 @@ export default function useMyTeamCreateForm({ user, tm, backendUrl, navigate }) 
         },
         body: JSON.stringify({
           name,
-          maxMembers: Number(teamMaxMembers) || 5,
+          teamFormat,
           avatarUrl: teamAvatarUrl || "",
           country: teamCountry || "",
         }),
@@ -73,8 +73,8 @@ export default function useMyTeamCreateForm({ user, tm, backendUrl, navigate }) 
   return {
     teamName,
     setTeamName,
-    teamMaxMembers,
-    setTeamMaxMembers,
+    teamFormat,
+    setTeamFormat,
     teamCountry,
     setTeamCountry,
     teamAvatarPreview,

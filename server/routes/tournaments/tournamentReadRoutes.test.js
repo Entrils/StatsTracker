@@ -42,6 +42,28 @@ function makeDeps(db) {
 }
 
 describe("tournament read routes", () => {
+  it("returns empty list for status with no matching tournaments", async () => {
+    const now = Date.now();
+    const db = createFakeFirestore({
+      "tournaments/t-upcoming-1": {
+        title: "Future Cup",
+        startsAt: now + 24 * 60 * 60 * 1000,
+      },
+      "tournaments/t-upcoming-2": {
+        title: "Future Cup 2",
+        startsAt: now + 48 * 60 * 60 * 1000,
+      },
+    });
+    const app = createApp(makeDeps(db));
+
+    const res = await request(app).get("/tournaments?status=ongoing&limit=30");
+
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe("ongoing");
+    expect(Array.isArray(res.body.rows)).toBe(true);
+    expect(res.body.rows).toEqual([]);
+  });
+
   it("my-registrations prefers payload.tournamentIds even when empty", async () => {
     const now = Date.now();
     const db = createFakeFirestore({
@@ -82,6 +104,28 @@ describe("tournament read routes", () => {
     expect(res.status).toBe(200);
     expect(res.body.tournamentIds).toEqual(["legacy-1", "legacy-2"]);
     expect(res.body.materialized).toBe(true);
+  });
+
+  it("my-registrations returns empty ids when materialized context is stale", async () => {
+    const staleTs = Date.now() - 10 * 60 * 1000;
+    const db = createFakeFirestore({
+      "user_tournament_context/u1": {
+        uid: "u1",
+        updatedAt: staleTs,
+        payload: { tournamentIds: ["t-stale-1", "t-stale-2"] },
+      },
+    });
+    const app = createApp(makeDeps(db));
+
+    const res = await request(app)
+      .get("/tournaments/my-registrations")
+      .set("x-user-uid", "u1");
+
+    expect(res.status).toBe(200);
+    expect(res.body.tournamentIds).toEqual([]);
+    expect(res.body.materialized).toBe(true);
+    expect(res.body.stale).toBe(true);
+    expect(res.body.cached).toBe(false);
   });
 
   it("my-registrations does not fallback to registrations collectionGroup scan", async () => {
@@ -179,5 +223,65 @@ describe("tournament read routes", () => {
     const res = await request(app).get("/tournaments/context/my");
     expect(res.status).toBe(401);
     expect(res.body.error).toBe("Unauthorized");
+  });
+
+  it("context/my degrades instead of 500 when profile query fails", async () => {
+    const db = createFakeFirestore({});
+    const baseCollection = db.collection.bind(db);
+    db.collection = (name) => {
+      if (String(name) === "leaderboard_users") {
+        return {
+          doc: () => ({
+            get: () => Promise.reject(new Error("profile query failed")),
+          }),
+        };
+      }
+      return baseCollection(name);
+    };
+    const app = createApp(makeDeps(db));
+
+    const res = await request(app)
+      .get("/tournaments/context/my")
+      .set("x-user-uid", "u1");
+
+    expect(res.status).toBe(200);
+    expect(res.body.degraded).toBe(true);
+    expect(res.body.stale).toBe(true);
+    expect(res.body.selfStats).toEqual({ elo: 500, matches: 0, fragpunkId: "" });
+    expect(res.body.teams).toEqual([]);
+    expect(res.body.tournamentIds).toEqual([]);
+  });
+
+  it("context/my falls back to teams activeTournamentIds when registrations query is unavailable", async () => {
+    const db = createFakeFirestore({
+      "leaderboard_users/u1": {
+        name: "User One",
+        hiddenElo: 650,
+        matches: 7,
+        settings: { fragpunkId: "UserOne#EU1" },
+      },
+      "teams/team1": {
+        name: "Alpha",
+        captainUid: "u1",
+        memberUids: ["u1"],
+        maxMembers: 5,
+        activeTournamentIds: ["t-lock-1", "t-lock-2"],
+      },
+    });
+    db.collectionGroup = () => ({
+      where: () => ({
+        limit: () => ({
+          get: () => Promise.reject(new Error("registrations unavailable")),
+        }),
+      }),
+    });
+    const app = createApp(makeDeps(db));
+
+    const res = await request(app)
+      .get("/tournaments/context/my")
+      .set("x-user-uid", "u1");
+
+    expect(res.status).toBe(200);
+    expect(res.body.tournamentIds).toEqual(["t-lock-1", "t-lock-2"]);
   });
 });

@@ -42,7 +42,7 @@ export default function MyTeamsTable({ tm, teams, onLeaveTeam, navigate }) {
                 </div>
               </td>
               <td>{team.memberCount}/{team.maxMembers}</td>
-              <td>{teamFormatByMembers(team.maxMembers)}</td>
+              <td>{team.teamFormat || teamFormatByMembers(team.maxMembers)}</td>
               <td><TeamCountryBadge country={team.country} /></td>
               <td>{team.isCaptain ? tm.captainRole || "Captain" : tm.playerRole || "Player"}</td>
               <td>

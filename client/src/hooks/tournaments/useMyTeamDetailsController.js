@@ -287,6 +287,30 @@ export default function useMyTeamDetailsController({
     }
   };
 
+  const onSetMemberRole = async (targetUid, role) => {
+    if (!user || !row?.id || !targetUid) return;
+    const safeRole = String(role || "").trim().toLowerCase();
+    if (!["captain", "reserve", "player"].includes(safeRole)) return;
+    setNotice("");
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch(`${backendUrl}/teams/${row.id}/set-role`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ uid: targetUid, role: safeRole }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.error || tm.roleChangeFailed || "Failed to change role");
+      setNotice(tm.roleChangeSuccess || "Role updated");
+      await onLoadTeam();
+    } catch (err) {
+      setNotice(err?.message || tm.roleChangeFailed || "Failed to change role");
+    }
+  };
+
   return {
     loading,
     notice,
@@ -320,6 +344,7 @@ export default function useMyTeamDetailsController({
     onLeaveTeam,
     onKickMember,
     onTransferCaptain,
+    onSetMemberRole,
   };
 }
 

@@ -1,4 +1,4 @@
-import { toInt } from "./helpers.js";
+import { toInt, getTeamFormatForTeamDoc } from "./helpers.js";
 import { registerTournamentReadRoutes } from "./tournamentReadRoutes.js";
 import { registerTeamRoutes } from "./teamRoutes.js";
 import { registerTournamentManageRoutes } from "./tournamentManageRoutes.js";
@@ -159,19 +159,20 @@ export function registerTournamentRoutes(app, deps) {
   };
   const findUserTeamInFormat = async ({
     uid,
-    maxMembers,
+    teamFormat = "",
     excludeTeamId = "",
     tx = null,
   }) => {
     if (!uid) return null;
+    const safeTeamFormat = String(teamFormat || "").trim().toLowerCase();
+    if (!safeTeamFormat) return null;
     const teamsQuery = db.collection("teams").where("memberUids", "array-contains", uid).limit(50);
     const snap = tx ? await tx.get(teamsQuery) : await teamsQuery.get();
     return (
       snap.docs.find((doc) => {
         if (doc.id === excludeTeamId) return false;
         const team = doc.data() || {};
-        const teamMaxMembers = Math.min(Math.max(toInt(team.maxMembers, 5), 1), 5);
-        return teamMaxMembers === maxMembers;
+        return getTeamFormatForTeamDoc(team) === safeTeamFormat;
       }) || null
     );
   };

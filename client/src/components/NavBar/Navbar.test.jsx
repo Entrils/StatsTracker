@@ -27,7 +27,9 @@ vi.mock("@/i18n/LanguageContext", () => ({
       nav: {
         upload: "Upload",
         players: "Players",
+        tournaments: "Tournaments",
         help: "Help",
+        admin: "Admin",
         myProfile: "My profile",
         friends: "Friends",
         achievements: "Achievements",
@@ -108,5 +110,23 @@ describe("Navbar", () => {
       expect(signOutMock).toHaveBeenCalledTimes(1);
     });
     expect(sessionStorage.getItem("discord_oauth_code")).toBeNull();
+  });
+
+  it("shows tournaments link for admin", async () => {
+    authState.user = {
+      uid: "discord:999",
+      getIdToken: vi.fn().mockResolvedValue("token-1"),
+    };
+    authState.claims = {
+      provider: "discord",
+      username: "Admin",
+      admin: true,
+    };
+    dedupedJsonRequestMock.mockResolvedValue({ rows: [] });
+
+    renderNavbar();
+
+    const links = await screen.findAllByRole("link", { name: "Tournaments" });
+    expect(links.length).toBeGreaterThan(0);
   });
 });

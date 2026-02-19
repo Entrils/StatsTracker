@@ -3,6 +3,7 @@ import {
   teamSizeByFormat,
   normalizeUidList,
   normalizeTeamCountry,
+  getTeamRosterConfig,
   resolveProfileAvatarUrl,
   getProfileFragpunkId,
   getTournamentStatus,
@@ -106,13 +107,20 @@ export function registerTournamentRegistrationRoutes(app, ctx) {
 
         const team = teamSnap.data() || {};
         if (team.captainUid !== uid) return { status: 403, error: "Only captain can register team" };
+        const roster = getTeamRosterConfig(team);
+        if (roster.teamFormat !== String(tournament.teamFormat || "").toLowerCase()) {
+          return {
+            status: 409,
+            error: `Team format ${roster.teamFormat} does not match tournament format ${tournament.teamFormat}`,
+          };
+        }
 
         const memberUids = normalizeUidList(team.memberUids || []);
         const needSize = teamSizeByFormat(tournament.teamFormat);
-        if (memberUids.length !== needSize) {
+        if (memberUids.length < needSize || memberUids.length > needSize + 1) {
           return {
             status: 409,
-            error: `Team must have exactly ${needSize} players for ${tournament.teamFormat}`,
+            error: `Team must have ${needSize} main players (+ optional 1 reserve) for ${tournament.teamFormat}`,
           };
         }
 

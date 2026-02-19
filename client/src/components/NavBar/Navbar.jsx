@@ -167,16 +167,27 @@ export default function Navbar() {
           >
             {t.nav.players}
           </NavLink>
-          <span
-            className={`${styles.link} ${styles.linkLocked}`}
-            aria-disabled="true"
-            title="Locked"
-          >
-            <span className={styles.linkStack}>
-              <span>{tournamentsLabel}</span>
-              <span className={styles.linkSoon}>soon</span>
+          {isAdmin ? (
+            <NavLink
+              to="/tournaments"
+              className={({ isActive }) =>
+                `${styles.link} ${isActive ? styles.active : ""}`
+              }
+            >
+              {tournamentsLabel}
+            </NavLink>
+          ) : (
+            <span
+              className={`${styles.link} ${styles.linkLocked}`}
+              aria-disabled="true"
+              title="Locked"
+            >
+              <span className={styles.linkStack}>
+                <span>{tournamentsLabel}</span>
+                <span className={styles.linkSoon}>soon</span>
+              </span>
             </span>
-          </span>
+          )}
           <NavLink
             to="/help"
             className={({ isActive }) =>
@@ -401,16 +412,28 @@ export default function Navbar() {
           >
             {t.nav.players}
           </NavLink>
-          <span
-            className={`${styles.offcanvasLink} ${styles.linkLocked} ${styles.offcanvasLocked}`}
-            aria-disabled="true"
-            title="Locked"
-          >
-            <span className={styles.linkStack}>
-              <span>{tournamentsLabel}</span>
-              <span className={styles.linkSoon}>soon</span>
+          {isAdmin ? (
+            <NavLink
+              to="/tournaments"
+              onClick={closeMobile}
+              className={({ isActive }) =>
+                `${styles.offcanvasLink} ${isActive ? styles.active : ""}`
+              }
+            >
+              {tournamentsLabel}
+            </NavLink>
+          ) : (
+            <span
+              className={`${styles.offcanvasLink} ${styles.linkLocked} ${styles.offcanvasLocked}`}
+              aria-disabled="true"
+              title="Locked"
+            >
+              <span className={styles.linkStack}>
+                <span>{tournamentsLabel}</span>
+                <span className={styles.linkSoon}>soon</span>
+              </span>
             </span>
-          </span>
+          )}
           <NavLink
             to="/help"
             onClick={closeMobile}

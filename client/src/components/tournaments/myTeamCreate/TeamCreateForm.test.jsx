@@ -8,7 +8,7 @@ describe("TeamCreateForm", () => {
     const user = userEvent.setup();
     const onCreateTeam = vi.fn((e) => e.preventDefault());
     const setTeamName = vi.fn();
-    const setTeamMaxMembers = vi.fn();
+    const setTeamFormat = vi.fn();
     const setTeamCountry = vi.fn();
     const onAvatarChange = vi.fn();
 
@@ -20,8 +20,8 @@ describe("TeamCreateForm", () => {
         }}
         teamName=""
         setTeamName={setTeamName}
-        teamMaxMembers={2}
-        setTeamMaxMembers={setTeamMaxMembers}
+        teamFormat="2x2"
+        setTeamFormat={setTeamFormat}
         teamCountry=""
         setTeamCountry={setTeamCountry}
         teamCountries={[{ code: "US", label: "United States" }]}
@@ -48,8 +48,8 @@ describe("TeamCreateForm", () => {
         tm={{}}
         teamName="X"
         setTeamName={vi.fn()}
-        teamMaxMembers={5}
-        setTeamMaxMembers={vi.fn()}
+        teamFormat="5x5"
+        setTeamFormat={vi.fn()}
         teamCountry=""
         setTeamCountry={vi.fn()}
         teamCountries={[]}

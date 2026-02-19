@@ -1,13 +1,13 @@
 import Button from "@/components/ui/Button";
 import styles from "@/pages/MyTeamCreate/MyTeamCreate.module.css";
-import { TEAM_CREATION_FORMATS, teamSizeByFormat } from "@/shared/tournaments/teamUtils";
+import { TEAM_CREATION_FORMATS, teamMaxMembersByFormat } from "@/shared/tournaments/teamUtils";
 
 export default function TeamCreateForm({
   tm,
   teamName,
   setTeamName,
-  teamMaxMembers,
-  setTeamMaxMembers,
+  teamFormat,
+  setTeamFormat,
   teamCountry,
   setTeamCountry,
   teamCountries,
@@ -28,12 +28,12 @@ export default function TeamCreateForm({
         <input type="file" accept="image/*" className={styles.input} onChange={onAvatarChange} />
         <select
           className={styles.select}
-          value={teamMaxMembers}
-          onChange={(e) => setTeamMaxMembers(Number(e.target.value))}
+          value={teamFormat}
+          onChange={(e) => setTeamFormat(String(e.target.value || "5x5"))}
         >
           {TEAM_CREATION_FORMATS.map((f) => (
-            <option key={f} value={teamSizeByFormat(f)}>
-              {f}
+            <option key={f} value={f}>
+              {f} ({teamMaxMembersByFormat(f)})
             </option>
           ))}
         </select>

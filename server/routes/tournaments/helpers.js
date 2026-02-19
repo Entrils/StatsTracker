@@ -1,4 +1,5 @@
 const ALLOWED_TEAM_FORMATS = new Set(["1x1", "2x2", "3x3", "5x5"]);
+const TEAM_ROSTER_FORMATS = new Set(["2x2", "3x3", "5x5"]);
 const ALLOWED_BRACKET_TYPES = new Set([
   "single_elimination",
   "double_elimination",
@@ -65,6 +66,42 @@ function teamSizeByFormat(format) {
   const left = String(format || "5x5").split("x")[0];
   const n = toInt(left, 5);
   return Math.min(Math.max(n, 1), 5);
+}
+
+function normalizeTeamFormat(format, fallback = "5x5") {
+  const raw = String(format || "").trim().toLowerCase();
+  if (TEAM_ROSTER_FORMATS.has(raw)) return raw;
+  return TEAM_ROSTER_FORMATS.has(String(fallback || "").toLowerCase()) ? String(fallback || "").toLowerCase() : "5x5";
+}
+
+function inferTeamFormatFromMaxMembers(maxMembers, fallback = "5x5") {
+  const n = toInt(maxMembers, 0);
+  if (n === 2) return "2x2"; // legacy exact roster size
+  if (n === 3) return "3x3"; // legacy exact roster size
+  if (n === 4) return "3x3"; // 3x3 + 1 reserve
+  if (n === 5) return "5x5"; // legacy exact roster size
+  if (n >= 6) return "5x5"; // 5x5 + 1 reserve
+  return normalizeTeamFormat(fallback, "5x5");
+}
+
+function getTeamFormatForTeamDoc(team = {}) {
+  const explicit = String(team?.teamFormat || "").trim().toLowerCase();
+  if (TEAM_ROSTER_FORMATS.has(explicit)) return explicit;
+  return inferTeamFormatFromMaxMembers(team?.maxMembers, "5x5");
+}
+
+function getTeamMaxMembersForFormat(teamFormat = "5x5") {
+  return teamSizeByFormat(teamFormat) + 1;
+}
+
+function getTeamRosterConfig(team = {}) {
+  const teamFormat = getTeamFormatForTeamDoc(team);
+  const maxMembers = getTeamMaxMembersForFormat(teamFormat);
+  return {
+    teamFormat,
+    maxMembers,
+    starterCount: teamSizeByFormat(teamFormat),
+  };
 }
 
 function normalizeUidList(input = []) {
@@ -269,14 +306,17 @@ function serializeTournament(doc, now = Date.now()) {
 
 function serializeTeam(doc, uid) {
   const data = doc.data() || {};
+  const roster = getTeamRosterConfig(data);
   const memberUids = normalizeUidList(data.memberUids || []);
   return {
     id: doc.id,
     name: data.name || "Unnamed team",
+    teamFormat: roster.teamFormat,
     captainUid: data.captainUid || "",
+    reserveUid: String(data.reserveUid || ""),
     memberUids,
     memberCount: memberUids.length,
-    maxMembers: toInt(data.maxMembers, 5),
+    maxMembers: roster.maxMembers,
     avatarUrl: data.avatarUrl || "",
     country: normalizeTeamCountry(data.country),
     isCaptain: uid ? data.captainUid === uid : false,
@@ -749,6 +789,7 @@ function applyManualVetoMove(match = {}, mapPoolInput = DEFAULT_MAP_POOL, payloa
 
 export {
   ALLOWED_TEAM_FORMATS,
+  TEAM_ROSTER_FORMATS,
   ALLOWED_BRACKET_TYPES,
   ALLOWED_MAX_TEAMS,
   MAX_TEAM_AVATAR_URL_LENGTH,
@@ -760,6 +801,11 @@ export {
   toAnyMillis,
   isAdminUser,
   teamSizeByFormat,
+  normalizeTeamFormat,
+  inferTeamFormatFromMaxMembers,
+  getTeamFormatForTeamDoc,
+  getTeamMaxMembersForFormat,
+  getTeamRosterConfig,
   normalizeUidList,
   normalizeTeamCountry,
   normalizeFragpunkId,

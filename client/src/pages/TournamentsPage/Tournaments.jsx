@@ -28,7 +28,6 @@ export default function TournamentsPage() {
     error,
     notice,
     registeringId,
-    generatingId,
     teamSelectByTournament,
     participatingByTournament,
     nowMs,
@@ -36,10 +35,8 @@ export default function TournamentsPage() {
     requirementState,
     setTeamSelectByTournament,
     onRegisterTeam,
-    onGenerateBracket,
   } = useTournamentsController({
     user,
-    isAdmin,
     tt,
     backendUrl: BACKEND_URL,
   });
@@ -101,9 +98,7 @@ export default function TournamentsPage() {
                 tt={tt}
                 lang={lang}
                 user={user}
-                isAdmin={isAdmin}
                 registeringId={registeringId}
-                generatingId={generatingId}
                 selectedTeamId={teamSelectByTournament[row.id] || ""}
                 countdownText={formatCountdown(Number(row.startsAt || 0) - nowMs)}
                 participating={Boolean(participatingByTournament[row.id])}
@@ -111,7 +106,6 @@ export default function TournamentsPage() {
                 reqState={requirementState(row)}
                 onTeamSelect={onTeamSelect}
                 onRegister={onRegisterTeam}
-                onGenerateBracket={onGenerateBracket}
               />
             ))}
           </div>
