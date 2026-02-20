@@ -15,6 +15,8 @@ export default function TeamInvitePanel({
   setSelectedFriendUid,
   filteredInviteableFriends,
   onInviteFriend,
+  pendingInvites,
+  onCancelInvite,
 }) {
   return (
     <div className={`${styles.teamInviteShell} ${styles.teamDetailsInviteShell}`}>
@@ -82,6 +84,26 @@ export default function TeamInvitePanel({
               </button>
             ))}
           </div>
+        )}
+      </div>
+
+      <div className={styles.invites}>
+        <p className={styles.invitesTitle}>{tm.invitedPlayers || "Invited players"}</p>
+        {Array.isArray(pendingInvites) && pendingInvites.length ? (
+          pendingInvites.map((invite) => (
+            <div className={styles.inviteItem} key={invite.uid}>
+              <span>{invite.name || invite.uid}</span>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => onCancelInvite(invite.uid)}
+              >
+                {tm.cancelInvite || tm.cancel || "Cancel"}
+              </Button>
+            </div>
+          ))
+        ) : (
+          <p className={styles.metaLabel}>{tm.noInvites || "No pending invites"}</p>
         )}
       </div>
     </div>

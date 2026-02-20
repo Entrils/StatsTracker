@@ -38,6 +38,7 @@ export default function MyTeamDetailsPage() {
     setSelectedFriendUid,
     friendSearch,
     setFriendSearch,
+    pendingInvites,
     inviteableFriends,
     filteredInviteableFriends,
     isEditing,
@@ -47,6 +48,7 @@ export default function MyTeamDetailsPage() {
     savingEdit,
     onInvite,
     onInviteFriend,
+    onCancelInvite,
     onDeleteTeam,
     onStartEdit,
     onCancelEdit,
@@ -155,6 +157,8 @@ export default function MyTeamDetailsPage() {
             setSelectedFriendUid={setSelectedFriendUid}
             filteredInviteableFriends={filteredInviteableFriends}
             onInviteFriend={onInviteFriend}
+            pendingInvites={pendingInvites}
+            onCancelInvite={onCancelInvite}
           />
         ) : null}
 

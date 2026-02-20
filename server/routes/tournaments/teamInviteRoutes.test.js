@@ -79,6 +79,267 @@ function baseDeps(overrides = {}) {
 }
 
 describe("team invite routes", () => {
+  it("invite endpoint resolves nickname to uid", async () => {
+    const db = createFakeFirestore({
+      "teams/team1": {
+        name: "Alpha",
+        captainUid: "u1",
+        memberUids: ["u1", "u2"],
+        teamFormat: "2x2",
+        maxMembers: 3,
+      },
+      "leaderboard_users/discord:777": {
+        name: "CoolNick",
+      },
+    });
+    const app = createApp(
+      baseDeps({
+        db,
+        requireAuth: (req, _res, next) => {
+          req.user = { uid: "u1" };
+          next();
+        },
+        findUserTeamInFormat: vi.fn().mockResolvedValue(null),
+      })
+    );
+
+    const res = await request(app)
+      .post("/teams/team1/invite")
+      .send({ uid: "CoolNick" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+    expect(db._store.get("teams/team1/invites/discord:777")).toBeTruthy();
+    expect(db._store.get("users/discord:777/team_invites/team1")).toBeTruthy();
+  });
+
+  it("invite endpoint returns 404 for ambiguous nickname", async () => {
+    const db = createFakeFirestore({
+      "teams/team1": {
+        name: "Alpha",
+        captainUid: "u1",
+        memberUids: ["u1", "u2"],
+        teamFormat: "2x2",
+        maxMembers: 3,
+      },
+      "leaderboard_users/u10": {
+        name: "SameNick",
+      },
+      "leaderboard_users/u11": {
+        name: "SameNick",
+      },
+    });
+    const app = createApp(
+      baseDeps({
+        db,
+        requireAuth: (req, _res, next) => {
+          req.user = { uid: "u1" };
+          next();
+        },
+      })
+    );
+
+    const res = await request(app)
+      .post("/teams/team1/invite")
+      .send({ uid: "SameNick" });
+
+    expect(res.status).toBe(404);
+    expect(String(res.body.error || "")).toContain("Multiple players found");
+  });
+
+  it("lists pending invites for captain by team", async () => {
+    const db = createFakeFirestore({
+      "teams/team1": {
+        name: "Alpha",
+        captainUid: "u1",
+        memberUids: ["u1", "u2"],
+      },
+      "leaderboard_users/u3": {
+        name: "Player Three",
+      },
+      "teams/team1/invites/u3": {
+        uid: "u3",
+        status: "pending",
+        teamId: "team1",
+        teamName: "Alpha",
+        captainUid: "u1",
+      },
+      "teams/team1/invites/u4": {
+        uid: "u4",
+        status: "accepted",
+        teamId: "team1",
+        teamName: "Alpha",
+        captainUid: "u1",
+      },
+    });
+    const app = createApp(
+      baseDeps({
+        db,
+        requireAuth: (req, _res, next) => {
+          req.user = { uid: "u1" };
+          next();
+        },
+      })
+    );
+
+    const res = await request(app).get("/teams/team1/invites");
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body.rows)).toBe(true);
+    expect(res.body.rows).toHaveLength(1);
+    expect(res.body.rows[0].uid).toBe("u3");
+    expect(res.body.rows[0].name).toBe("Player Three");
+  });
+
+  it("blocks listing team invites for non-captain", async () => {
+    const db = createFakeFirestore({
+      "teams/team1": {
+        name: "Alpha",
+        captainUid: "u1",
+        memberUids: ["u1", "u2"],
+      },
+    });
+    const app = createApp(
+      baseDeps({
+        db,
+        requireAuth: (req, _res, next) => {
+          req.user = { uid: "u2" };
+          next();
+        },
+      })
+    );
+
+    const res = await request(app).get("/teams/team1/invites");
+    expect(res.status).toBe(403);
+    expect(String(res.body.error || "")).toContain("Only captain can view invites");
+  });
+
+  it("cancels pending invite for captain", async () => {
+    const db = createFakeFirestore({
+      "teams/team1": {
+        name: "Alpha",
+        captainUid: "u1",
+        memberUids: ["u1", "u2"],
+      },
+      "teams/team1/invites/u3": {
+        uid: "u3",
+        status: "pending",
+        teamId: "team1",
+      },
+    });
+    const app = createApp(
+      baseDeps({
+        db,
+        requireAuth: (req, _res, next) => {
+          req.user = { uid: "u1" };
+          next();
+        },
+      })
+    );
+
+    const res = await request(app).post("/teams/team1/invites/u3/cancel").send({});
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+    expect((db._store.get("teams/team1/invites/u3") || {}).status).toBe("cancelled");
+  });
+
+  it("blocks cancel invite for non-captain", async () => {
+    const db = createFakeFirestore({
+      "teams/team1": {
+        name: "Alpha",
+        captainUid: "u1",
+        memberUids: ["u1", "u2"],
+      },
+      "teams/team1/invites/u3": {
+        uid: "u3",
+        status: "pending",
+        teamId: "team1",
+      },
+    });
+    const app = createApp(
+      baseDeps({
+        db,
+        requireAuth: (req, _res, next) => {
+          req.user = { uid: "u2" };
+          next();
+        },
+      })
+    );
+
+    const res = await request(app).post("/teams/team1/invites/u3/cancel").send({});
+    expect(res.status).toBe(403);
+    expect(String(res.body.error || "")).toContain("Only captain can cancel invites");
+  });
+
+  it("invite endpoint works even if active-registration group lookup is unavailable", async () => {
+    const db = createFakeFirestore({
+      "teams/team1": {
+        name: "Alpha",
+        captainUid: "u1",
+        memberUids: ["u1", "u2"],
+        teamFormat: "2x2",
+        maxMembers: 3,
+      },
+    });
+    db.collectionGroup = () => ({
+      where: () => ({
+        orderBy: () => ({
+          limit: () => ({
+            get: async () => {
+              throw new Error("missing-index");
+            },
+          }),
+        }),
+      }),
+    });
+    const app = createApp(
+      baseDeps({
+        db,
+        requireAuth: (req, _res, next) => {
+          req.user = { uid: "u1" };
+          next();
+        },
+        findUserTeamInFormat: vi.fn().mockResolvedValue(null),
+      })
+    );
+
+    const res = await request(app)
+      .post("/teams/team1/invite")
+      .send({ uid: "u3" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+    const invite = db._store.get("teams/team1/invites/u3") || {};
+    expect(String(invite.status || "")).toBe("pending");
+  });
+
+  it("invite endpoint blocks non-captain", async () => {
+    const db = createFakeFirestore({
+      "teams/team1": {
+        name: "Alpha",
+        captainUid: "captain-1",
+        memberUids: ["captain-1", "u2"],
+        teamFormat: "2x2",
+        maxMembers: 3,
+      },
+    });
+    const app = createApp(
+      baseDeps({
+        db,
+        requireAuth: (req, _res, next) => {
+          req.user = { uid: "u2" };
+          next();
+        },
+      })
+    );
+
+    const res = await request(app)
+      .post("/teams/team1/invite")
+      .send({ uid: "u3" });
+
+    expect(res.status).toBe(403);
+    expect(String(res.body.error || "")).toContain("Only captain can invite");
+  });
+
   it("returns only pending invites from primary query", async () => {
     const docs = [
       makeInviteDoc({ teamId: "t1", uid: "u1", status: "pending", teamName: "Alpha" }),
@@ -115,6 +376,106 @@ describe("team invite routes", () => {
     const res = await request(app).get("/teams/invites/my");
     expect(res.status).toBe(200);
     expect(res.body.rows.map((r) => r.teamId).sort()).toEqual(["t2", "t4"]);
+  });
+
+  it("returns empty rows when both primary and fallback queries fail", async () => {
+    const brokenDb = {
+      collectionGroup: () => ({
+        where: () => ({
+          where: () => ({
+            limit: () => ({
+              get: async () => {
+                throw new Error("primary-failed");
+              },
+            }),
+          }),
+          limit: () => ({
+            get: async () => {
+              throw new Error("fallback-failed");
+            },
+          }),
+        }),
+      }),
+    };
+    const app = createApp(
+      baseDeps({
+        db: brokenDb,
+      })
+    );
+
+    const res = await request(app).get("/teams/invites/my");
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ rows: [] });
+  });
+
+  it("my invites matches legacy uid format for discord users", async () => {
+    const db = createFakeFirestore({
+      "teams/team1/invites/12345": {
+        uid: "12345",
+        teamId: "team1",
+        teamName: "Alpha",
+        captainUid: "u1",
+        status: "pending",
+      },
+    });
+    const app = createApp(
+      baseDeps({
+        db,
+        requireAuth: (req, _res, next) => {
+          req.user = { uid: "discord:12345" };
+          next();
+        },
+      })
+    );
+
+    const res = await request(app).get("/teams/invites/my");
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body.rows)).toBe(true);
+    expect(res.body.rows).toHaveLength(1);
+    expect(res.body.rows[0].teamId).toBe("team1");
+  });
+
+  it("my invites reads materialized user inbox when collectionGroup is unavailable", async () => {
+    const db = createFakeFirestore({
+      "users/discord:777/team_invites/team1": {
+        uid: "discord:777",
+        teamId: "team1",
+        teamName: "Alpha",
+        captainUid: "u1",
+        status: "pending",
+      },
+    });
+    db.collectionGroup = () => ({
+      where: () => ({
+        where: () => ({
+          limit: () => ({
+            get: async () => {
+              throw new Error("collectionGroup unavailable");
+            },
+          }),
+        }),
+        limit: () => ({
+          get: async () => {
+            throw new Error("collectionGroup unavailable");
+          },
+        }),
+      }),
+    });
+    const app = createApp(
+      baseDeps({
+        db,
+        requireAuth: (req, _res, next) => {
+          req.user = { uid: "discord:777" };
+          next();
+        },
+      })
+    );
+
+    const res = await request(app).get("/teams/invites/my");
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body.rows)).toBe(true);
+    expect(res.body.rows).toHaveLength(1);
+    expect(res.body.rows[0].teamId).toBe("team1");
   });
 
   it("returns 401 when auth user is missing", async () => {

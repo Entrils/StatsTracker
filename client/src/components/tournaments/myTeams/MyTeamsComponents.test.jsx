@@ -6,11 +6,12 @@ import MyTeamInvitesSection from "@/components/tournaments/myTeams/MyTeamInvites
 import MyTeamsTable from "@/components/tournaments/myTeams/MyTeamsTable";
 
 describe("myTeams components", () => {
-  it("MyTeamInvitesSection returns null on empty list", () => {
-    const { container } = render(
+  it("MyTeamInvitesSection renders empty state on empty list", () => {
+    render(
       <MyTeamInvitesSection tm={{}} invites={[]} onInviteDecision={vi.fn()} />
     );
-    expect(container).toBeEmptyDOMElement();
+    expect(screen.getByText(/Incoming invites/i)).toBeInTheDocument();
+    expect(screen.getByText(/No incoming invites yet/i)).toBeInTheDocument();
   });
 
   it("MyTeamInvitesSection handles accept/reject", async () => {
@@ -20,11 +21,22 @@ describe("myTeams components", () => {
     render(
       <MyTeamInvitesSection
         tm={{ accept: "Accept", reject: "Reject" }}
-        invites={[{ id: "1", teamId: "team-1", teamName: "Alpha", captainUid: "cap1" }]}
+        invites={[
+          {
+            id: "1",
+            teamId: "team-1",
+            teamName: "Alpha",
+            teamAvatarUrl: "",
+            captainUid: "cap1",
+            captainName: "Captain Alpha",
+          },
+        ]}
         onInviteDecision={onInviteDecision}
       />
     );
 
+    expect(screen.getByRole("link", { name: "Alpha" })).toHaveAttribute("href", "/teams/team-1");
+    expect(screen.getByText(/Captain: Captain Alpha/i)).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Accept" }));
     await user.click(screen.getByRole("button", { name: "Reject" }));
 

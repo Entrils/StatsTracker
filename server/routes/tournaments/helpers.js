@@ -186,6 +186,7 @@ async function findActiveTeamTournamentRegistration({
   team = null,
   tx = null,
   now = Date.now(),
+  logger = null,
 } = {}) {
   const safeTeamId = String(teamId || "").trim();
   if (!db || !safeTeamId) return null;
@@ -215,36 +216,43 @@ async function findActiveTeamTournamentRegistration({
       return String(data.tournamentId || "").trim();
     };
 
-    const baseRegsQuery = db.collectionGroup("registrations").where("teamId", "==", safeTeamId);
-    const canPaginateRegs = typeof baseRegsQuery.orderBy === "function";
+    try {
+      const baseRegsQuery = db.collectionGroup("registrations").where("teamId", "==", safeTeamId);
+      const canPaginateRegs = typeof baseRegsQuery.orderBy === "function";
 
-    if (canPaginateRegs) {
-      let lastDoc = null;
-      while (true) {
-        let regsQuery = baseRegsQuery
-          // Use document name directly to avoid requiring admin.FieldPath in helper scope.
-          .orderBy("__name__")
-          .limit(200);
-        if (lastDoc && typeof regsQuery.startAfter === "function") {
-          regsQuery = regsQuery.startAfter(lastDoc);
+      if (canPaginateRegs) {
+        let lastDoc = null;
+        while (true) {
+          let regsQuery = baseRegsQuery
+            // Use document name directly to avoid requiring admin.FieldPath in helper scope.
+            .orderBy("__name__")
+            .limit(200);
+          if (lastDoc && typeof regsQuery.startAfter === "function") {
+            regsQuery = regsQuery.startAfter(lastDoc);
+          }
+          const regsSnap = tx ? await tx.get(regsQuery) : await regsQuery.get();
+          const docs = Array.isArray(regsSnap?.docs) ? regsSnap.docs : [];
+          if (!docs.length) break;
+          docs.forEach((doc) => {
+            const tournamentId = extractTournamentIdFromRegistrationDoc(doc);
+            if (tournamentId) tournamentIdsSet.add(tournamentId);
+          });
+          if (docs.length < 200) break;
+          lastDoc = docs[docs.length - 1];
         }
-        const regsSnap = tx ? await tx.get(regsQuery) : await regsQuery.get();
+      } else {
+        const regsSnap = tx ? await tx.get(baseRegsQuery) : await baseRegsQuery.get();
         const docs = Array.isArray(regsSnap?.docs) ? regsSnap.docs : [];
-        if (!docs.length) break;
         docs.forEach((doc) => {
           const tournamentId = extractTournamentIdFromRegistrationDoc(doc);
           if (tournamentId) tournamentIdsSet.add(tournamentId);
         });
-        if (docs.length < 200) break;
-        lastDoc = docs[docs.length - 1];
       }
-    } else {
-      const regsSnap = tx ? await tx.get(baseRegsQuery) : await baseRegsQuery.get();
-      const docs = Array.isArray(regsSnap?.docs) ? regsSnap.docs : [];
-      docs.forEach((doc) => {
-        const tournamentId = extractTournamentIdFromRegistrationDoc(doc);
-        if (tournamentId) tournamentIdsSet.add(tournamentId);
-      });
+    } catch (err) {
+      logger?.warn?.(
+        "TEAM ACTIVE REGISTRATION LOOKUP ERROR:",
+        err?.message || err
+      );
     }
   }
 

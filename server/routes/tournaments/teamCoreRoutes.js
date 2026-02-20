@@ -606,6 +606,7 @@ export function registerTeamCoreRoutes(app, ctx) {
           team,
           teamRef,
           tx,
+          logger,
         });
         if (activeRegistrationInTx) {
           return {
@@ -671,6 +672,7 @@ export function registerTeamCoreRoutes(app, ctx) {
           team,
           teamRef,
           tx,
+          logger,
         });
         if (activeRegistrationInTx) {
           return {
@@ -739,6 +741,7 @@ export function registerTeamCoreRoutes(app, ctx) {
           team,
           teamRef,
           tx,
+          logger,
         });
         if (activeRegistrationInTx) {
           return {
@@ -816,6 +819,7 @@ export function registerTeamCoreRoutes(app, ctx) {
           admin,
           teamId,
           team,
+          logger,
         });
         hasTournamentRegistration = Boolean(activeRegistration);
       } else {
@@ -826,6 +830,7 @@ export function registerTeamCoreRoutes(app, ctx) {
             admin,
             teamId,
             team,
+            logger,
           });
           hasTournamentRegistration = Boolean(activeRegistration);
         } else {
@@ -920,6 +925,7 @@ export function registerTeamCoreRoutes(app, ctx) {
           team,
           teamRef,
           tx,
+          logger,
         });
         if (activeRegistrationInTx) {
           return {

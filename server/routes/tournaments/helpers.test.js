@@ -283,5 +283,36 @@ describe("tournament helpers", () => {
     expect(active?.id).toBe("t12");
     expect(active?.status).toBe("upcoming");
   });
-});
 
+  it("findActiveTeamTournamentRegistration degrades to null when registrations query fails", async () => {
+    const db = {
+      collectionGroup: () => ({
+        where: () => ({
+          orderBy: () => ({
+            limit: () => ({
+              get: async () => {
+                throw new Error("missing-index");
+              },
+            }),
+          }),
+        }),
+      }),
+      collection: () => ({
+        doc: () => ({
+          get: async () => ({ exists: false, data: () => ({}) }),
+        }),
+      }),
+    };
+    const logger = { warn: vi.fn() };
+    const active = await findActiveTeamTournamentRegistration({
+      db,
+      teamId: "team-1",
+      team: {},
+      logger,
+      now: Date.now(),
+    });
+
+    expect(active).toBeNull();
+    expect(logger.warn).toHaveBeenCalled();
+  });
+});

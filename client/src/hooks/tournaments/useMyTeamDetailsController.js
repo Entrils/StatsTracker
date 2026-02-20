@@ -16,6 +16,7 @@ export default function useMyTeamDetailsController({
   const [friendsLoading, setFriendsLoading] = useState(false);
   const [selectedFriendUid, setSelectedFriendUid] = useState("");
   const [friendSearch, setFriendSearch] = useState("");
+  const [pendingInvites, setPendingInvites] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState("");
   const [editAvatarUrl, setEditAvatarUrl] = useState("");
@@ -102,6 +103,28 @@ export default function useMyTeamDetailsController({
     onLoadFriends();
   }, [user, backendUrl]);
 
+  const onLoadPendingInvites = useCallback(async () => {
+    if (!user || !row?.id || !row?.isCaptain) {
+      setPendingInvites([]);
+      return;
+    }
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch(`${backendUrl}/teams/${row.id}/invites`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.error || tm.loadTeamFailed || "Failed to load team");
+      setPendingInvites(Array.isArray(data?.rows) ? data.rows : []);
+    } catch {
+      setPendingInvites([]);
+    }
+  }, [backendUrl, row?.id, row?.isCaptain, tm.loadTeamFailed, user]);
+
+  useEffect(() => {
+    onLoadPendingInvites();
+  }, [onLoadPendingInvites]);
+
   const onInviteByUid = async (targetUid) => {
     if (!user || !row?.id) return;
     setNotice("");
@@ -121,8 +144,27 @@ export default function useMyTeamDetailsController({
       setInviteUid("");
       setSelectedFriendUid("");
       onLoadTeam();
+      onLoadPendingInvites();
     } catch (err) {
       setNotice(err?.message || tm.inviteFailed || "Failed to invite player");
+    }
+  };
+
+  const onCancelInvite = async (targetUid) => {
+    if (!user || !row?.id || !targetUid) return;
+    setNotice("");
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch(`${backendUrl}/teams/${row.id}/invites/${targetUid}/cancel`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.error || tm.inviteCancelFailed || "Failed to cancel invite");
+      setNotice(tm.inviteCancelled || "Invite cancelled");
+      await onLoadPendingInvites();
+    } catch (err) {
+      setNotice(err?.message || tm.inviteCancelFailed || "Failed to cancel invite");
     }
   };
 
@@ -327,6 +369,7 @@ export default function useMyTeamDetailsController({
     setSelectedFriendUid,
     friendSearch,
     setFriendSearch,
+    pendingInvites,
     inviteableFriends,
     filteredInviteableFriends,
     isEditing,
@@ -336,6 +379,7 @@ export default function useMyTeamDetailsController({
     savingEdit,
     onInvite,
     onInviteFriend,
+    onCancelInvite,
     onDeleteTeam,
     onStartEdit,
     onCancelEdit,

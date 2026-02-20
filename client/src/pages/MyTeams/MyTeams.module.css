@@ -444,6 +444,48 @@
   justify-content: space-between;
   align-items: center;
   gap: var(--space-2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+  background: rgba(5, 8, 15, 0.45);
+}
+
+.inviteMain {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.inviteTeamAvatar {
+  width: 42px;
+  height: 42px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.inviteMeta {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.inviteTeamLink {
+  color: #f4f8ff;
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.inviteTeamLink:hover {
+  color: #9fffea;
+  text-decoration: underline;
+}
+
+.inviteCaptain {
+  margin: 0;
+  color: #b9c7e8;
+  font-size: var(--text-sm);
 }
 
 .tabs {
