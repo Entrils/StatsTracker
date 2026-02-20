@@ -10,6 +10,19 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes("node_modules")) return undefined;
+          if (id.includes("tesseract.js")) return "vendor-tesseract";
+          if (id.includes("firebase")) return "vendor-firebase";
+          if (id.includes("recharts")) return "vendor-recharts";
+          return "vendor";
+        },
+      },
+    },
+  },
   test: {
     environment: 'jsdom',
     setupFiles: './src/test/setup.js',
