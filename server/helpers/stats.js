@@ -16,6 +16,21 @@ export function createStatsHelpers({
     updatedAt: 0,
     bySort: new Map(),
   };
+  const normalizeSettingsPayload = (value) => {
+    const candidates = [value, value?.settings, value?.socials];
+    for (const candidate of candidates) {
+      if (!candidate || typeof candidate !== "object") continue;
+      const out = {};
+      const fields = ["twitch", "youtube", "tiktok", "fragpunkId"];
+      fields.forEach((key) => {
+        const raw = typeof candidate[key] === "string" ? candidate[key].trim() : "";
+        if (!raw) return;
+        out[key] = raw;
+      });
+      if (Object.keys(out).length) return out;
+    }
+    return null;
+  };
 
   async function readCacheDoc(id, ttlMs) {
     try {
@@ -310,7 +325,10 @@ export function createStatsHelpers({
           uid,
           name: p.name || "Unknown",
           elo: Number.isFinite(Number(p.hiddenElo)) ? Number(p.hiddenElo) : 500,
-          settings: p.settings || null,
+          settings:
+            normalizeSettingsPayload(p.settings) ||
+            normalizeSettingsPayload(p.socials) ||
+            null,
           score: p.score || 0,
           kills: p.kills || 0,
           deaths: p.deaths || 0,
@@ -362,6 +380,49 @@ export function createStatsHelpers({
     const source = leaderboardCache.bySort.get(sortKey) || [];
     const total = source.length;
     const pageRows = source.slice(offset, offset + limit);
+    const rowsWithoutSettings = pageRows.filter((row) => !normalizeSettingsPayload(row?.settings));
+    if (rowsWithoutSettings.length) {
+      const uidList = [...new Set(rowsWithoutSettings.map((row) => String(row?.uid || "")).filter(Boolean))];
+      const userRefs = uidList.map((uid) => db.collection("users").doc(uid));
+      const userSnaps =
+        userRefs.length === 0
+          ? []
+          : typeof db.getAll === "function"
+            ? await db.getAll(...userRefs)
+            : await Promise.all(userRefs.map((ref) => ref.get()));
+      const settingsByUid = new Map();
+      userSnaps.forEach((snap, idx) => {
+        const uid = uidList[idx];
+        const userData = snap?.exists ? snap.data() || {} : {};
+        const settings =
+          normalizeSettingsPayload(userData?.settings) ||
+          normalizeSettingsPayload(userData?.socials);
+        if (settings) settingsByUid.set(uid, settings);
+      });
+
+      const missingProfileSettingsUids = uidList.filter((uid) => !settingsByUid.has(uid));
+      if (missingProfileSettingsUids.length) {
+        const profileSettingsRefs = missingProfileSettingsUids.map((uid) =>
+          db.collection("users").doc(uid).collection("profile").doc("settings")
+        );
+        const profileSettingsSnaps =
+          typeof db.getAll === "function"
+            ? await db.getAll(...profileSettingsRefs)
+            : await Promise.all(profileSettingsRefs.map((ref) => ref.get()));
+        profileSettingsSnaps.forEach((snap, idx) => {
+          const uid = missingProfileSettingsUids[idx];
+          const data = snap?.exists ? snap.data() || {} : {};
+          const settings = normalizeSettingsPayload(data);
+          if (settings) settingsByUid.set(uid, settings);
+        });
+      }
+
+      pageRows.forEach((row) => {
+        if (normalizeSettingsPayload(row?.settings)) return;
+        const fallbackSettings = settingsByUid.get(String(row?.uid || ""));
+        if (fallbackSettings) row.settings = fallbackSettings;
+      });
+    }
 
     const batch = db.batch();
     let hasUpdates = false;

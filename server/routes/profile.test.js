@@ -193,4 +193,146 @@ describe("profile routes", () => {
     expect(typeof res.body.recomputedHiddenElo).toBe("number");
     expect(res.body.ranks.s4.rank).toBe("master");
   });
+
+  it("returns socials in /player from users doc fallback when leaderboard settings are empty", async () => {
+    const deps = {
+      ...baseDeps,
+      db: {
+        collection: (name) => {
+          if (name === "bans") {
+            return {
+              doc: () => ({
+                get: async () => ({ exists: false }),
+              }),
+            };
+          }
+          if (name === "leaderboard_users") {
+            return {
+              doc: () => ({
+                get: async () => ({
+                  exists: true,
+                  data: () => ({
+                    name: "Player One",
+                    hiddenElo: 1337,
+                    settings: {},
+                  }),
+                }),
+              }),
+            };
+          }
+          if (name === "users") {
+            return {
+              doc: () => ({
+                get: async () => ({
+                  exists: true,
+                  data: () => ({
+                    socials: {
+                      twitch: "streamer",
+                    },
+                  }),
+                }),
+                collection: (sub) => {
+                  if (sub === "matches") {
+                    return {
+                      orderBy: () => ({
+                        limit: () => ({
+                          get: async () => ({ docs: [] }),
+                        }),
+                      }),
+                    };
+                  }
+                  if (sub === "friends") {
+                    return {
+                      orderBy: () => ({
+                        limit: () => ({
+                          get: async () => ({ docs: [], size: 0 }),
+                        }),
+                      }),
+                    };
+                  }
+                  if (sub === "profile") {
+                    return {
+                      doc: (docId) => ({
+                        get: async () => {
+                          if (docId === "ranks") return { exists: false };
+                          if (docId === "settings") return { exists: false };
+                          return { exists: false };
+                        },
+                      }),
+                    };
+                  }
+                  return {
+                    doc: () => ({ get: async () => ({ exists: false }) }),
+                  };
+                },
+              }),
+            };
+          }
+          return {
+            doc: () => ({
+              get: async () => ({ exists: false }),
+            }),
+          };
+        },
+      },
+    };
+    const app = createApp(deps);
+    const res = await request(app).get("/player/u1?limit=20");
+    expect(res.status).toBe(200);
+    expect(res.body.settings).toEqual({ twitch: "streamer" });
+  });
+
+  it("returns socials in /profile from legacy leaderboard socials", async () => {
+    const deps = {
+      ...baseDeps,
+      db: {
+        collection: (name) => {
+          if (name === "bans") {
+            return {
+              doc: () => ({
+                get: async () => ({ exists: false }),
+              }),
+            };
+          }
+          if (name === "leaderboard_users") {
+            return {
+              doc: () => ({
+                get: async () => ({
+                  exists: true,
+                  data: () => ({
+                    name: "Legacy User",
+                    hiddenElo: 777,
+                    socials: {
+                      youtube: "@legacy",
+                    },
+                  }),
+                }),
+              }),
+            };
+          }
+          if (name === "users") {
+            return {
+              doc: () => ({
+                get: async () => ({ exists: false }),
+                collection: () => ({
+                  doc: () => ({
+                    get: async () => ({ exists: false }),
+                  }),
+                }),
+              }),
+            };
+          }
+          return {
+            doc: () => ({
+              get: async () => ({ exists: false }),
+            }),
+          };
+        },
+      },
+    };
+    const app = createApp(deps);
+    const res = await request(app).get("/profile/u1");
+    expect(res.status).toBe(200);
+    expect(res.body.settings).toEqual({ youtube: "@legacy" });
+  });
 });

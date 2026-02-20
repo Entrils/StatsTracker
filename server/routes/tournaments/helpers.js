@@ -338,12 +338,52 @@ function parseRoundAndIndex(matchId, fallbackRound = 1) {
 }
 
 function normalizeTeamFromRegistration(row) {
+  const captainUid = String(row?.captainUid || "");
+  const memberUids = normalizeUidList(row?.memberUids || []);
+  const snapshotByUid = new Map(
+    (Array.isArray(row?.membersSnapshot) ? row.membersSnapshot : [])
+      .map((m) => {
+        const uid = String(m?.uid || "").trim();
+        if (!uid) return null;
+        return [
+          uid,
+          {
+            uid,
+            name: String(m?.name || uid),
+            avatarUrl: String(m?.avatarUrl || ""),
+            elo: toInt(m?.elo, 500),
+            fragpunkId: String(m?.fragpunkId || ""),
+          },
+        ];
+      })
+      .filter(Boolean)
+  );
+  const members = memberUids.map((uid) => {
+    const snapped = snapshotByUid.get(uid);
+    if (snapped) {
+      return {
+        ...snapped,
+        role: uid === captainUid ? "captain" : "player",
+      };
+    }
+    return {
+      uid,
+      name: uid,
+      avatarUrl: "",
+      elo: 500,
+      fragpunkId: "",
+      role: uid === captainUid ? "captain" : "player",
+    };
+  });
   return {
     registrationId: row.id || row.registrationId || row.teamId || "",
     teamId: row.teamId || row.id || "",
     teamName: row.teamName || "Team",
     avatarUrl: row.avatarUrl || "",
     avgElo: toInt(row.avgEloSnapshot, 0),
+    captainUid,
+    memberUids,
+    members,
   };
 }
 

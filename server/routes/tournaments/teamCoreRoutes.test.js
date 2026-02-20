@@ -206,4 +206,225 @@ describe("team core routes", () => {
     expect(res.body.ok).toBe(true);
     expect((db._store.get("teams/team5") || {}).reserveUid).toBe("u3");
   });
+
+  it("blocks setting captain role to reserve", async () => {
+    const db = createFakeFirestore({
+      "teams/team5": {
+        captainUid: "u1",
+        memberUids: ["u1", "u2", "u3"],
+        reserveUid: "",
+      },
+    });
+    const app = createApp(makeDeps(db));
+
+    const res = await request(app)
+      .post("/teams/team5/set-role")
+      .set("x-user-uid", "u1")
+      .send({ uid: "u1", role: "reserve" });
+
+    expect(res.status).toBe(409);
+    expect(String(res.body.error || "")).toContain("Captain cannot be reserve");
+  });
+
+  it("blocks deleting team with active ongoing registration", async () => {
+    const now = Date.now();
+    const db = createFakeFirestore({
+      "teams/team7": {
+        captainUid: "u1",
+        memberUids: ["u1", "u2"],
+      },
+      "tournaments/t-active": {
+        title: "Live cup",
+        startsAt: now - 60_000,
+      },
+      "tournaments/t-active/registrations/team7": {
+        teamId: "team7",
+      },
+    });
+    const app = createApp(makeDeps(db));
+
+    const res = await request(app)
+      .delete("/teams/team7")
+      .set("x-user-uid", "u1");
+
+    expect(res.status).toBe(409);
+    expect(String(res.body.error || "")).toContain("cannot be deleted");
+    expect(db._store.get("teams/team7")).toBeTruthy();
+  });
+
+  it("marks placement=1 in recent tournaments when team is champion object", async () => {
+    const now = Date.now();
+    const db = createFakeFirestore({
+      "teams/team6": {
+        name: "Winners",
+        captainUid: "u1",
+        memberUids: ["u1", "u2"],
+      },
+      "leaderboard_users/u1": {
+        name: "Captain",
+        hiddenElo: 1200,
+        matches: 20,
+      },
+      "leaderboard_users/u2": {
+        name: "Mate",
+        hiddenElo: 1150,
+        matches: 19,
+      },
+      "tournaments/t-win": {
+        title: "Championship",
+        startsAt: now - 86_400_000,
+        champion: { teamId: "team6", teamName: "Winners" },
+      },
+      "tournaments/t-win/registrations/team6": {
+        teamId: "team6",
+      },
+    });
+    const app = createApp(makeDeps(db));
+
+    const res = await request(app).get("/teams/team6/public");
+
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body.recentTournaments)).toBe(true);
+    expect(res.body.recentTournaments[0].id).toBe("t-win");
+    expect(res.body.recentTournaments[0].placement).toBe(1);
+  });
+
+  it("uses materialized team_public_stats for public details without analytics scans", async () => {
+    const db = createFakeFirestore({
+      "teams/team8": {
+        name: "Alpha",
+        captainUid: "u1",
+        memberUids: ["u1", "u2"],
+      },
+      "leaderboard_users/u1": {
+        name: "Cap",
+        hiddenElo: 1200,
+        matches: 20,
+      },
+      "leaderboard_users/u2": {
+        name: "Mate",
+        hiddenElo: 1100,
+        matches: 18,
+      },
+      "team_public_stats/team8": {
+        teamId: "team8",
+        stale: false,
+        stats: { wins: 11, losses: 4, matchesPlayed: 15, winRate: 73 },
+        recentTournaments: [{ id: "t1", title: "Cup #1" }],
+        matchHistory: [{ id: "m1", tournamentId: "t1", result: "win" }],
+      },
+    });
+    db.collectionGroup = () => {
+      throw new Error("collectionGroup should not be used when materialized stats exist");
+    };
+    const app = createApp(makeDeps(db));
+
+    const res = await request(app).get("/teams/team8/public");
+    expect(res.status).toBe(200);
+    expect(res.body.stats).toEqual({
+      wins: 11,
+      losses: 4,
+      matchesPlayed: 15,
+      winRate: 73,
+    });
+    expect(res.body.recentTournaments).toEqual([{ id: "t1", title: "Cup #1" }]);
+    expect(res.body.matchHistory).toEqual([{ id: "m1", tournamentId: "t1", result: "win" }]);
+  });
+
+  it("returns 304 for /teams/:id/public when ETag matches", async () => {
+    const db = createFakeFirestore({
+      "teams/team9": {
+        name: "Echo",
+        captainUid: "u1",
+        memberUids: ["u1", "u2"],
+      },
+      "leaderboard_users/u1": {
+        name: "Cap",
+        hiddenElo: 1200,
+        matches: 20,
+      },
+      "leaderboard_users/u2": {
+        name: "Mate",
+        hiddenElo: 1100,
+        matches: 18,
+      },
+      "team_public_stats/team9": {
+        teamId: "team9",
+        stale: false,
+        stats: { wins: 2, losses: 1, matchesPlayed: 3, winRate: 67 },
+        recentTournaments: [],
+        matchHistory: [],
+      },
+    });
+    const app = createApp(makeDeps(db));
+
+    const first = await request(app).get("/teams/team9/public");
+    expect(first.status).toBe(200);
+    const etag = String(first.headers.etag || "");
+    expect(etag).toBeTruthy();
+
+    const second = await request(app)
+      .get("/teams/team9/public")
+      .set("If-None-Match", etag);
+    expect(second.status).toBe(304);
+  });
+
+  it("recomputes and refreshes team_public_stats when materialized doc is stale", async () => {
+    const now = Date.now();
+    const db = createFakeFirestore({
+      "teams/team10": {
+        name: "Recalc",
+        captainUid: "u1",
+        memberUids: ["u1", "u2"],
+      },
+      "leaderboard_users/u1": {
+        name: "Cap",
+        hiddenElo: 1200,
+        matches: 20,
+      },
+      "leaderboard_users/u2": {
+        name: "Mate",
+        hiddenElo: 1100,
+        matches: 18,
+      },
+      "team_public_stats/team10": {
+        teamId: "team10",
+        stale: true,
+        stats: { wins: 99, losses: 0, matchesPlayed: 99, winRate: 100 },
+      },
+      "tournaments/t10": {
+        title: "Cup 10",
+        startsAt: now - 10_000,
+      },
+      "tournaments/t10/registrations/team10": {
+        teamId: "team10",
+      },
+      "tournaments/t10/matches/m1": {
+        teamA: { teamId: "team10", teamName: "Recalc" },
+        teamB: { teamId: "teamX", teamName: "Opp" },
+        status: "completed",
+        winnerTeamId: "team10",
+        round: 1,
+        stage: "single",
+        updatedAt: now - 5_000,
+      },
+    });
+    let collectionGroupCalls = 0;
+    const baseCollectionGroup = db.collectionGroup.bind(db);
+    db.collectionGroup = (...args) => {
+      collectionGroupCalls += 1;
+      return baseCollectionGroup(...args);
+    };
+    const app = createApp(makeDeps(db));
+
+    const res = await request(app).get("/teams/team10/public");
+    expect(res.status).toBe(200);
+    expect(collectionGroupCalls).toBeGreaterThan(0);
+    expect(res.body.stats.wins).toBe(1);
+    expect(res.body.stats.losses).toBe(0);
+
+    const refreshedStats = db._store.get("team_public_stats/team10") || {};
+    expect(refreshedStats.stale).toBe(false);
+    expect((refreshedStats.stats || {}).wins).toBe(1);
+  });
 });

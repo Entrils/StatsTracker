@@ -530,6 +530,35 @@
   justify-content: flex-end;
 }
 
+.mapScoresBlock {
+  display: grid;
+  gap: 8px;
+}
+
+.mapScoreRow {
+  display: grid;
+  grid-template-columns: 84px minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
+  align-items: end;
+}
+
+.mapScoreTitle {
+  color: #8da6cf;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.mapScoreField {
+  display: grid;
+  gap: 4px;
+}
+
+.mapScoreActions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .logoPreviewWrap {
   display: flex;
   align-items: center;

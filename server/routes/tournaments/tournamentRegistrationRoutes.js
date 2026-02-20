@@ -18,6 +18,7 @@ export function registerTournamentRegistrationRoutes(app, ctx) {
     requireAuth,
     findUserTeamInFormat,
     invalidateTournamentCaches,
+    invalidateTeamsCaches,
     userTournamentContextRef,
     clearTournamentPublicView,
   } = ctx;
@@ -200,11 +201,27 @@ export function registerTournamentRegistrationRoutes(app, ctx) {
           registeredTeams: registeredTeams + 1,
           updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         });
-        return { ok: true, alreadyRegistered: false, memberUids };
+        return { ok: true, alreadyRegistered: false, memberUids, teamId };
       });
 
       if (outcome?.ok && typeof invalidateTournamentCaches === "function") {
         invalidateTournamentCaches({ tournamentId });
+      }
+      if (outcome?.ok && String(outcome?.teamId || "").trim() && typeof invalidateTeamsCaches === "function") {
+        invalidateTeamsCaches({ teamId: String(outcome.teamId) });
+      }
+      if (outcome?.ok && String(outcome?.teamId || "").trim()) {
+        db.collection("team_public_stats")
+          .doc(String(outcome.teamId))
+          .set(
+            {
+              teamId: String(outcome.teamId),
+              stale: true,
+              updatedAt: 0,
+            },
+            { merge: true }
+          )
+          .catch((err) => logger.warn("TEAM PUBLIC STATS STALE MARK ERROR:", err?.message || err));
       }
       const memberUids = Array.isArray(outcome?.memberUids)
         ? normalizeUidList(outcome.memberUids)

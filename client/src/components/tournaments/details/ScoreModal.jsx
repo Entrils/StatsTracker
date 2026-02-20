@@ -16,30 +16,85 @@ export default function ScoreModal({
     <div className={styles.modalBackdrop} role="dialog" aria-modal="true">
       <form className={styles.modalCard} onSubmit={onSubmitScore}>
         <h3 className={styles.formTitle}>{td?.modal?.editScore || "Edit match score"}</h3>
-        <label className={styles.label}>
-          <span>{scoreModal.teamAName}</span>
-          <input
-            type="number"
-            min="0"
-            className={styles.input}
-            value={scoreModal.teamAScore}
-            onChange={(e) =>
-              setScoreModal((prev) => ({ ...prev, teamAScore: e.target.value, error: "" }))
-            }
-          />
-        </label>
-        <label className={styles.label}>
-          <span>{scoreModal.teamBName}</span>
-          <input
-            type="number"
-            min="0"
-            className={styles.input}
-            value={scoreModal.teamBScore}
-            onChange={(e) =>
-              setScoreModal((prev) => ({ ...prev, teamBScore: e.target.value, error: "" }))
-            }
-          />
-        </label>
+        <div className={styles.mapScoresBlock}>
+          <span className={styles.label}>{td?.modal?.mapScores || "Map scores"}</span>
+          {(Array.isArray(scoreModal.mapScores) ? scoreModal.mapScores : []).map((row, idx) => (
+            <div key={`map-${idx}`} className={styles.mapScoreRow}>
+              <span className={styles.mapScoreTitle}>{`Map ${idx + 1}`}</span>
+              <label className={styles.mapScoreField}>
+                <span>{scoreModal.teamAName}</span>
+                <input
+                  type="number"
+                  min="0"
+                  className={styles.input}
+                  value={row?.teamAScore ?? 0}
+                  onChange={(e) =>
+                    setScoreModal((prev) => {
+                      const next = Array.isArray(prev.mapScores) ? [...prev.mapScores] : [];
+                      next[idx] = {
+                        ...(next[idx] || {}),
+                        teamAScore: e.target.value,
+                      };
+                      return { ...prev, mapScores: next, error: "" };
+                    })
+                  }
+                />
+              </label>
+              <label className={styles.mapScoreField}>
+                <span>{scoreModal.teamBName}</span>
+                <input
+                  type="number"
+                  min="0"
+                  className={styles.input}
+                  value={row?.teamBScore ?? 0}
+                  onChange={(e) =>
+                    setScoreModal((prev) => {
+                      const next = Array.isArray(prev.mapScores) ? [...prev.mapScores] : [];
+                      next[idx] = {
+                        ...(next[idx] || {}),
+                        teamBScore: e.target.value,
+                      };
+                      return { ...prev, mapScores: next, error: "" };
+                    })
+                  }
+                />
+              </label>
+            </div>
+          ))}
+          <div className={styles.mapScoreActions}>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() =>
+                setScoreModal((prev) => {
+                  const limit = [1, 3, 5].includes(Number(prev.bestOf)) ? Number(prev.bestOf) : 1;
+                  const next = Array.isArray(prev.mapScores) ? [...prev.mapScores] : [];
+                  if (next.length >= limit) return prev;
+                  next.push({ teamAScore: 0, teamBScore: 0 });
+                  return { ...prev, mapScores: next, error: "" };
+                })
+              }
+            >
+              {td?.modal?.addMap || "Add map"}
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() =>
+                setScoreModal((prev) => {
+                  const next = Array.isArray(prev.mapScores) ? [...prev.mapScores] : [];
+                  if (next.length <= 1) return prev;
+                  next.pop();
+                  return { ...prev, mapScores: next, error: "" };
+                })
+              }
+            >
+              {td?.modal?.removeMap || "Remove map"}
+            </Button>
+          </div>
+        </div>
         <div className={styles.modalWinnerPick}>
           <span className={styles.label}>{td?.modal?.winner || "Winner"}</span>
           <label className={styles.modalWinnerOption}>
@@ -90,7 +145,13 @@ export default function ScoreModal({
             className={styles.select}
             value={String(scoreModal.bestOf || 1)}
             onChange={(e) =>
-              setScoreModal((prev) => ({ ...prev, bestOf: Number(e.target.value || 1), error: "" }))
+              setScoreModal((prev) => {
+                const nextBestOf = Number(e.target.value || 1);
+                const nextMaps = Array.isArray(prev.mapScores) ? [...prev.mapScores] : [];
+                while (nextMaps.length > nextBestOf) nextMaps.pop();
+                while (nextMaps.length < 1) nextMaps.push({ teamAScore: 0, teamBScore: 0 });
+                return { ...prev, bestOf: nextBestOf, mapScores: nextMaps, error: "" };
+              })
             }
           >
             <option value="1">BO1</option>

@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import express from "express";
 import request from "supertest";
 import { registerTeamInviteRoutes } from "./teamInviteRoutes.js";
+import { createFakeFirestore, createAdminMock } from "./testFirestore.js";
 
 function createApp(deps) {
   const app = express();
@@ -60,7 +61,7 @@ function createCollectionGroupDb({ docs = [], throwOnStatusQuery = false } = {})
 
 function baseDeps(overrides = {}) {
   return {
-    admin: { firestore: { FieldValue: { serverTimestamp: () => 123 } } },
+    admin: createAdminMock(),
     db: createCollectionGroupDb(),
     logger: { warn: vi.fn(), error: vi.fn() },
     authLimiter: (_req, _res, next) => next(),
@@ -125,5 +126,98 @@ describe("team invite routes", () => {
     const res = await request(app).get("/teams/invites/my");
     expect(res.status).toBe(401);
     expect(res.body.error).toBe("Unauthorized");
+  });
+
+  it("accept invite adds member and marks invite as accepted", async () => {
+    const db = createFakeFirestore({
+      "teams/team1": {
+        name: "Alpha",
+        captainUid: "captain-1",
+        memberUids: ["captain-1"],
+        maxMembers: 3,
+        teamFormat: "2x2",
+      },
+      "teams/team1/invites/u2": {
+        uid: "u2",
+        status: "pending",
+        teamId: "team1",
+      },
+    });
+    const app = createApp(
+      baseDeps({
+        db,
+        requireAuth: (req, _res, next) => {
+          req.user = { uid: "u2" };
+          next();
+        },
+      })
+    );
+
+    const res = await request(app).post("/teams/team1/invites/u2/accept").send({});
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+    expect((db._store.get("teams/team1") || {}).memberUids).toContain("u2");
+    expect((db._store.get("teams/team1/invites/u2") || {}).status).toBe("accepted");
+  });
+
+  it("accept invite rejects when team is already full", async () => {
+    const db = createFakeFirestore({
+      "teams/team1": {
+        name: "Alpha",
+        captainUid: "captain-1",
+        memberUids: ["captain-1", "u3", "u4"],
+        maxMembers: 3,
+        teamFormat: "2x2",
+      },
+      "teams/team1/invites/u2": {
+        uid: "u2",
+        status: "pending",
+        teamId: "team1",
+      },
+    });
+    const app = createApp(
+      baseDeps({
+        db,
+        requireAuth: (req, _res, next) => {
+          req.user = { uid: "u2" };
+          next();
+        },
+      })
+    );
+
+    const res = await request(app).post("/teams/team1/invites/u2/accept").send({});
+    expect(res.status).toBe(409);
+    expect(String(res.body.error || "")).toContain("Team is full");
+  });
+
+  it("accept invite rejects when user already has same-format team", async () => {
+    const db = createFakeFirestore({
+      "teams/team1": {
+        name: "Alpha",
+        captainUid: "captain-1",
+        memberUids: ["captain-1"],
+        maxMembers: 3,
+        teamFormat: "2x2",
+      },
+      "teams/team1/invites/u2": {
+        uid: "u2",
+        status: "pending",
+        teamId: "team1",
+      },
+    });
+    const app = createApp(
+      baseDeps({
+        db,
+        requireAuth: (req, _res, next) => {
+          req.user = { uid: "u2" };
+          next();
+        },
+        findUserTeamInFormat: vi.fn().mockResolvedValue({ id: "team-other" }),
+      })
+    );
+
+    const res = await request(app).post("/teams/team1/invites/u2/accept").send({});
+    expect(res.status).toBe(409);
+    expect(String(res.body.error || "")).toContain("another team of this format");
   });
 });

@@ -42,6 +42,28 @@ function makeDeps(db) {
 }
 
 describe("tournament read routes", () => {
+  it("treats champion tournament as past regardless of startsAt", async () => {
+    const now = Date.now();
+    const db = createFakeFirestore({
+      "tournaments/t-finished": {
+        title: "Finished Cup",
+        startsAt: now + 24 * 60 * 60 * 1000,
+        champion: { teamId: "team1", teamName: "Team 1" },
+      },
+    });
+    const app = createApp(makeDeps(db));
+
+    const pastRes = await request(app).get("/tournaments?status=past&limit=30");
+    expect(pastRes.status).toBe(200);
+    expect(Array.isArray(pastRes.body.rows)).toBe(true);
+    expect(pastRes.body.rows.some((row) => row.id === "t-finished")).toBe(true);
+
+    const ongoingRes = await request(app).get("/tournaments?status=ongoing&limit=30");
+    expect(ongoingRes.status).toBe(200);
+    expect(Array.isArray(ongoingRes.body.rows)).toBe(true);
+    expect(ongoingRes.body.rows.some((row) => row.id === "t-finished")).toBe(false);
+  });
+
   it("returns empty list for status with no matching tournaments", async () => {
     const now = Date.now();
     const db = createFakeFirestore({
@@ -283,5 +305,141 @@ describe("tournament read routes", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.tournamentIds).toEqual(["t-lock-1", "t-lock-2"]);
+  });
+
+  it("context/my does not use registrations collectionGroup when fallback flag is disabled", async () => {
+    const db = createFakeFirestore({
+      "leaderboard_users/u1": {
+        name: "User One",
+        hiddenElo: 650,
+        matches: 7,
+        settings: { fragpunkId: "UserOne#EU1" },
+      },
+      "teams/team1": {
+        name: "Alpha",
+        captainUid: "u1",
+        memberUids: ["u1"],
+        maxMembers: 5,
+        activeTournamentIds: ["t-lock-1"],
+      },
+    });
+    db.collectionGroup = () => {
+      throw new Error("collectionGroup should be disabled by default");
+    };
+    const app = createApp(makeDeps(db));
+
+    const res = await request(app)
+      .get("/tournaments/context/my")
+      .set("x-user-uid", "u1");
+
+    expect(res.status).toBe(200);
+    expect(res.body.tournamentIds).toEqual(["t-lock-1"]);
+  });
+
+  it("match details uses embedded match members without profile reads", async () => {
+    const db = createFakeFirestore({
+      "tournaments/t1": {
+        title: "Cup",
+        teamFormat: "2x2",
+        bracketType: "single_elimination",
+      },
+      "tournaments/t1/matches/m1": {
+        id: "m1",
+        stage: "single",
+        round: 1,
+        status: "pending",
+        bestOf: 1,
+        teamA: {
+          teamId: "teamA",
+          teamName: "Alpha",
+          captainUid: "u1",
+          members: [
+            { uid: "u1", name: "Captain A", role: "captain", elo: 1200, fragpunkId: "A#1" },
+            { uid: "u2", name: "Player A", role: "player", elo: 1180, fragpunkId: "A#2" },
+          ],
+        },
+        teamB: {
+          teamId: "teamB",
+          teamName: "Beta",
+          captainUid: "u3",
+          members: [
+            { uid: "u3", name: "Captain B", role: "captain", elo: 1210, fragpunkId: "B#1" },
+            { uid: "u4", name: "Player B", role: "player", elo: 1170, fragpunkId: "B#2" },
+          ],
+        },
+      },
+    });
+    const baseCollection = db.collection.bind(db);
+    db.collection = (name) => {
+      if (String(name) === "leaderboard_users") {
+        return {
+          doc: () => ({
+            get: () => Promise.reject(new Error("profile read should not happen")),
+          }),
+        };
+      }
+      return baseCollection(name);
+    };
+    const app = createApp(makeDeps(db));
+
+    const res = await request(app).get("/tournaments/t1/matches/m1");
+    expect(res.status).toBe(200);
+    expect(String(res.body?.match?.teamA?.members?.[0]?.name || "")).toBe("Captain A");
+    expect(String(res.body?.match?.teamB?.members?.[0]?.name || "")).toBe("Captain B");
+  });
+
+  it("match details supports mixed sources: embedded side + registrations side", async () => {
+    const db = createFakeFirestore({
+      "tournaments/t1": {
+        title: "Cup",
+        teamFormat: "2x2",
+        bracketType: "single_elimination",
+      },
+      "tournaments/t1/matches/m1": {
+        id: "m1",
+        stage: "single",
+        round: 1,
+        status: "pending",
+        bestOf: 1,
+        teamA: {
+          teamId: "teamA",
+          teamName: "Alpha",
+          captainUid: "u1",
+          members: [
+            { uid: "u1", name: "Captain A", role: "captain", elo: 1200, fragpunkId: "A#1" },
+            { uid: "u2", name: "Player A", role: "player", elo: 1180, fragpunkId: "A#2" },
+          ],
+        },
+        teamB: {
+          teamId: "teamB",
+          teamName: "Beta",
+        },
+      },
+      "tournaments/t1/registrations/teamB": {
+        teamId: "teamB",
+        teamName: "Beta",
+        captainUid: "u3",
+        memberUids: ["u3", "u4"],
+      },
+      "leaderboard_users/u3": {
+        name: "Captain B",
+        hiddenElo: 1210,
+        matches: 30,
+        settings: { fragpunkId: "B#1" },
+      },
+      "leaderboard_users/u4": {
+        name: "Player B",
+        hiddenElo: 1170,
+        matches: 25,
+        settings: { fragpunkId: "B#2" },
+      },
+    });
+    const app = createApp(makeDeps(db));
+
+    const res = await request(app).get("/tournaments/t1/matches/m1");
+    expect(res.status).toBe(200);
+    expect(String(res.body?.match?.teamA?.members?.[0]?.name || "")).toBe("Captain A");
+    expect(String(res.body?.match?.teamB?.members?.[0]?.name || "")).toBe("Captain B");
+    expect(String(res.body?.match?.teamB?.captainUid || "")).toBe("u3");
   });
 });

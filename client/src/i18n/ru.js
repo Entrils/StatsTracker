@@ -582,6 +582,7 @@
         rules: "Правила",
         participants: "Участники",
         bracket: "Сетка",
+        champion: "Чемпион",
       },
       backToList: "Назад к списку",
       loading: "Загрузка турнира...",
@@ -628,6 +629,12 @@
         round: "Раунд {n}",
         tbd: "TBD",
         notScheduled: "Не запланирован",
+      },
+      champion: {
+        title: "Чемпион",
+        teamLabel: "Команда-победитель",
+        playerLabel: "Игрок-победитель",
+        empty: "Победитель еще не определен.",
       },
       match: {
         open: "Открыть матч",

@@ -1,6 +1,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { isSoloFormat, teamSizeByFormat } from "@/shared/tournaments/teamUtils";
 
+function deriveTournamentStatus(row, now = Date.now()) {
+  const startsAt = Number(row?.startsAt || 0);
+  const endsAt = Number(row?.endsAt || 0);
+  const champion = row?.champion ?? null;
+  if (champion) return "past";
+  if (Number.isFinite(endsAt) && endsAt > 0 && now >= endsAt) return "past";
+  if (Number.isFinite(startsAt) && startsAt > 0 && now < startsAt) return "upcoming";
+  if (Number.isFinite(startsAt) && startsAt > 0 && now >= startsAt) return "ongoing";
+  return "upcoming";
+}
+
 export default function useTournamentsController({
   user,
   tt,
@@ -48,6 +59,7 @@ export default function useTournamentsController({
       try {
         const res = await fetch(`${backendUrl}/tournaments?status=${status}&limit=30`, {
           signal: controller.signal,
+          cache: "no-store",
         });
         if (res.status === 304) {
           let cachedRows = [];
@@ -58,7 +70,10 @@ export default function useTournamentsController({
             cachedRows = [];
           }
           if (tournamentsRequestRef.current.id !== requestId) return;
-          setRows(Array.isArray(cachedRows) ? cachedRows : []);
+          const safeRows = (Array.isArray(cachedRows) ? cachedRows : []).filter(
+            (row) => deriveTournamentStatus(row) === status
+          );
+          setRows(safeRows);
           return;
         }
         if (!res.ok) {
@@ -70,7 +85,9 @@ export default function useTournamentsController({
         }
         const data = await res.json();
         if (tournamentsRequestRef.current.id !== requestId) return;
-        const safeRows = Array.isArray(data?.rows) ? data.rows : [];
+        const safeRows = (Array.isArray(data?.rows) ? data.rows : []).filter(
+          (row) => deriveTournamentStatus(row) === status
+        );
         setRows(safeRows);
         try {
           localStorage.setItem(cacheKeyForStatus(status), JSON.stringify(safeRows));
@@ -87,7 +104,10 @@ export default function useTournamentsController({
         } catch {
           cachedRows = [];
         }
-        setRows(Array.isArray(cachedRows) ? cachedRows : []);
+        const safeRows = (Array.isArray(cachedRows) ? cachedRows : []).filter(
+          (row) => deriveTournamentStatus(row) === status
+        );
+        setRows(safeRows);
         setError(err?.message || "Failed to load tournaments");
       } finally {
         if (tournamentsRequestRef.current.id !== requestId) return;

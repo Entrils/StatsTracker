@@ -22,6 +22,50 @@ import {
 import { respondServerError, respondWithOutcome } from "./routeHelpers.js";
 
 const READY_CONFIRM_WINDOW_MS = 5 * 60 * 1000;
+const normalizeMapScores = (input = [], maxLen = 5) => {
+  if (!Array.isArray(input)) return [];
+  return input
+    .slice(0, Math.max(1, toInt(maxLen, 5)))
+    .map((row) => ({
+      teamAScore: Math.max(0, toInt(row?.teamAScore, 0)),
+      teamBScore: Math.max(0, toInt(row?.teamBScore, 0)),
+    }))
+    .filter((row) => row.teamAScore !== row.teamBScore);
+};
+
+const buildSeriesOutcome = ({ mapScores = [], bestOf = 1, winnerTeamId = "", teamAId = "", teamBId = "" } = {}) => {
+  const effectiveBestOf = [1, 3, 5].includes(toInt(bestOf, 1)) ? toInt(bestOf, 1) : 1;
+  const requiredWins = Math.floor(effectiveBestOf / 2) + 1;
+  const safeMaps = normalizeMapScores(mapScores, effectiveBestOf);
+  if (!safeMaps.length) return { ok: false, error: "Map scores are required" };
+  if (safeMaps.length > effectiveBestOf) return { ok: false, error: "Too many maps for selected bestOf" };
+
+  let teamAScore = 0;
+  let teamBScore = 0;
+  safeMaps.forEach((row) => {
+    if (row.teamAScore > row.teamBScore) teamAScore += 1;
+    else if (row.teamBScore > row.teamAScore) teamBScore += 1;
+  });
+
+  if (teamAScore < requiredWins && teamBScore < requiredWins) {
+    return { ok: false, error: "Series winner is not determined by map scores" };
+  }
+  if (teamAScore >= requiredWins && teamBScore >= requiredWins) {
+    return { ok: false, error: "Invalid series score" };
+  }
+
+  const expectedWinnerId = teamAScore > teamBScore ? teamAId : teamBId;
+  if (!expectedWinnerId || String(expectedWinnerId) !== String(winnerTeamId || "")) {
+    return { ok: false, error: "Winner does not match map scores" };
+  }
+
+  return {
+    ok: true,
+    teamAScore,
+    teamBScore,
+    mapScores: safeMaps,
+  };
+};
 
 function buildReadyTimeoutOutcome(match = {}, ready = {}, now = Date.now()) {
   const teamAReady = ready.teamAReady === true;
@@ -85,6 +129,7 @@ export function registerTournamentAdminRoutes(app, ctx) {
     authLimiter,
     requireAuth,
     invalidateTournamentCaches,
+    invalidateTeamsCaches,
     clearTournamentPublicView,
     userTournamentContextRef,
   } = ctx;
@@ -168,6 +213,79 @@ export function registerTournamentAdminRoutes(app, ctx) {
       }
     } catch (err) {
       logger?.warn?.("TOURNAMENT TEAM LOCK SYNC ERROR:", err?.message || err);
+    }
+  };
+  const markTeamPublicStatsStale = async (teamIds = []) => {
+    const safeTeamIds = [...new Set((teamIds || []).map((v) => String(v || "").trim()).filter(Boolean))];
+    if (!safeTeamIds.length) return;
+    for (let i = 0; i < safeTeamIds.length; i += 400) {
+      const chunk = safeTeamIds.slice(i, i + 400);
+      const batch = db.batch();
+      chunk.forEach((teamId) => {
+        batch.set(
+          db.collection("team_public_stats").doc(teamId),
+          {
+            teamId,
+            stale: true,
+            updatedAt: 0,
+          },
+          { merge: true }
+        );
+      });
+      await batch.commit();
+    }
+  };
+  const reconcileTournamentCompletion = async (tournamentId = "") => {
+    const safeTournamentId = String(tournamentId || "").trim();
+    if (!safeTournamentId) return;
+    try {
+      const tournamentRef = db.collection("tournaments").doc(safeTournamentId);
+      const [tournamentSnap, matchesSnap] = await Promise.all([
+        tournamentRef.get().catch(() => null),
+        tournamentRef.collection("matches").get().catch(() => ({ docs: [] })),
+      ]);
+      if (!tournamentSnap?.exists) return;
+      const tournament = tournamentSnap.data() || {};
+      if (tournament?.champion) return;
+
+      const bracketType = String(tournament?.bracketType || "");
+      const allMatches = Array.isArray(matchesSnap?.docs)
+        ? matchesSnap.docs.map((doc) => ({ id: doc.id, ...(doc.data() || {}) }))
+        : [];
+      if (!allMatches.length) return;
+
+      let stageMatches = [];
+      if (bracketType === "group_playoff") {
+        stageMatches = allMatches.filter((m) => String(m?.stage || "") === "playoff");
+      } else if (bracketType === "single_elimination") {
+        stageMatches = allMatches.filter((m) => String(m?.stage || "single") === "single");
+      } else if (bracketType === "double_elimination") {
+        stageMatches = allMatches.filter((m) => String(m?.stage || "") === "grand_final");
+      }
+      if (!stageMatches.length) return;
+
+      const allCompleted = stageMatches.every((m) => String(m?.status || "") === "completed");
+      if (!allCompleted) return;
+
+      const maxRound = stageMatches.reduce((acc, m) => Math.max(acc, toInt(m?.round, 0)), 0);
+      const finalCandidates = stageMatches.filter((m) => toInt(m?.round, 0) === maxRound);
+      if (finalCandidates.length !== 1) return;
+
+      const finalMatch = finalCandidates[0] || {};
+      const champion = finalMatch?.winner || null;
+      const championTeamId = String(finalMatch?.winnerTeamId || champion?.teamId || "").trim();
+      if (!championTeamId) return;
+
+      await tournamentRef.set(
+        {
+          champion: champion || { teamId: championTeamId },
+          endsAt: Date.now(),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        },
+        { merge: true }
+      );
+    } catch (err) {
+      logger?.warn?.("TOURNAMENT COMPLETION RECONCILE ERROR:", err?.message || err);
     }
   };
   const deleteCollectionInChunks = async (
@@ -699,6 +817,17 @@ export function registerTournamentAdminRoutes(app, ctx) {
         }
       } catch (err) {
         logger.warn("TOURNAMENT DELETE TEAM LOCK CLEANUP ERROR:", err);
+      }
+      try {
+        const teamIds = [...affectedTeamIds];
+        if (teamIds.length) {
+          await markTeamPublicStatsStale(teamIds);
+          if (typeof invalidateTeamsCaches === "function") {
+            teamIds.forEach((teamId) => invalidateTeamsCaches({ teamId }));
+          }
+        }
+      } catch (err) {
+        logger.warn("TOURNAMENT DELETE TEAM PUBLIC STATS STALE ERROR:", err);
       }
       invalidateForTournament(tournamentId);
       await clearPublicViewForTournament(tournamentId);
@@ -1301,8 +1430,10 @@ export function registerTournamentAdminRoutes(app, ctx) {
         const reset = req.body?.reset === true;
         const hasScheduledAtField = Object.prototype.hasOwnProperty.call(req.body || {}, "scheduledAt");
         const hasBestOfField = Object.prototype.hasOwnProperty.call(req.body || {}, "bestOf");
+        const hasMapScoresField = Object.prototype.hasOwnProperty.call(req.body || {}, "mapScores");
         const scheduledAtRaw = req.body?.scheduledAt;
         const bestOfRaw = req.body?.bestOf;
+        const mapScoresRaw = req.body?.mapScores;
         let scheduledAt = null;
         let bestOf = null;
         if (hasScheduledAtField) {
@@ -1420,6 +1551,7 @@ export function registerTournamentAdminRoutes(app, ctx) {
                 winnerTeamId: null,
                 teamAScore: 0,
                 teamBScore: 0,
+                mapScores: [],
                 winner: null,
                 loser: null,
                 finishedAt: null,
@@ -1446,6 +1578,7 @@ export function registerTournamentAdminRoutes(app, ctx) {
                   winnerTeamId: null,
                   teamAScore: 0,
                   teamBScore: 0,
+                  mapScores: [],
                   winner: null,
                   loser: null,
                   finishedAt: null,
@@ -1469,7 +1602,7 @@ export function registerTournamentAdminRoutes(app, ctx) {
               },
               { merge: true }
             );
-            return { ok: true, nextMatchId: null };
+            return { ok: true, nextMatchId: null, affectedTeamIds: [...seenTeamIds] };
           }
 
           if (!hasWinner && (hasScheduledAtField || hasBestOfField)) {
@@ -1483,6 +1616,7 @@ export function registerTournamentAdminRoutes(app, ctx) {
             if (hasScheduledAtField) updatePayload.readyCheck = null;
             if (hasScheduledAtField) updatePayload.veto = null;
             if (hasBestOfField) updatePayload.bestOf = bestOf;
+            if (hasBestOfField || hasScheduledAtField) updatePayload.mapScores = [];
             tx.set(
               matchRef,
               updatePayload,
@@ -1491,12 +1625,20 @@ export function registerTournamentAdminRoutes(app, ctx) {
             return { ok: true, nextMatchId: null };
           }
 
-          if (match.status === "completed") {
-            return { status: 409, error: "Match result already set" };
-          }
-
           const teamA = match.teamA || null;
           const teamB = match.teamB || null;
+          if (match.status === "completed") {
+            const existingWinnerTeamId = String(match?.winnerTeamId || "").trim();
+            if (hasWinner && existingWinnerTeamId && existingWinnerTeamId === winnerTeamId) {
+              return {
+                ok: true,
+                alreadyCompleted: true,
+                nextMatchId: null,
+                affectedTeamIds: normalizeUidList([teamA?.teamId, teamB?.teamId]),
+              };
+            }
+            return { status: 409, error: "Match result already set" };
+          }
           const winnerSide =
             teamA?.teamId === winnerTeamId
               ? "A"
@@ -1509,8 +1651,38 @@ export function registerTournamentAdminRoutes(app, ctx) {
 
           const winner = winnerSide === "A" ? teamA : teamB;
           const loser = winnerSide === "A" ? teamB : teamA;
-          const teamAScore = toInt(teamAScoreRaw, 0);
-          const teamBScore = toInt(teamBScoreRaw, 0);
+          const effectiveBestOf = hasBestOfField
+            ? bestOf
+            : ([1, 3, 5].includes(toInt(match?.bestOf, 1)) ? toInt(match?.bestOf, 1) : 1);
+          const hasIncomingMapScores = hasMapScoresField && Array.isArray(mapScoresRaw) && mapScoresRaw.length > 0;
+          let teamAScore = toInt(teamAScoreRaw, 0);
+          let teamBScore = toInt(teamBScoreRaw, 0);
+          let mapScores = [];
+          if (hasIncomingMapScores) {
+            const outcomeFromMaps = buildSeriesOutcome({
+              mapScores: mapScoresRaw,
+              bestOf: effectiveBestOf,
+              winnerTeamId,
+              teamAId: teamA?.teamId || "",
+              teamBId: teamB?.teamId || "",
+            });
+            if (!outcomeFromMaps.ok) {
+              return { status: 400, error: outcomeFromMaps.error || "Invalid map scores" };
+            }
+            teamAScore = outcomeFromMaps.teamAScore;
+            teamBScore = outcomeFromMaps.teamBScore;
+            mapScores = outcomeFromMaps.mapScores;
+          } else if (effectiveBestOf > 1) {
+            const requiredWins = Math.floor(effectiveBestOf / 2) + 1;
+            const expectedWinner = winnerSide === "A" ? "A" : "B";
+            const hasSeriesWinner =
+              teamAScore >= requiredWins || teamBScore >= requiredWins;
+            const winnerMatchesScore =
+              expectedWinner === "A" ? teamAScore > teamBScore : teamBScore > teamAScore;
+            if (!hasSeriesWinner || !winnerMatchesScore) {
+              return { status: 400, error: "Invalid series score for selected bestOf" };
+            }
+          }
 
           tx.set(
             matchRef,
@@ -1519,6 +1691,7 @@ export function registerTournamentAdminRoutes(app, ctx) {
               winnerTeamId: winner.teamId || winnerTeamId,
               teamAScore,
               teamBScore,
+              mapScores,
               scheduledAt: hasScheduledAtField ? scheduledAt : match?.scheduledAt ?? null,
               bestOf: hasBestOfField ? bestOf : toInt(match?.bestOf, 1) || 1,
               winner: winner || null,
@@ -1529,38 +1702,101 @@ export function registerTournamentAdminRoutes(app, ctx) {
             { merge: true }
           );
 
-          const progressed = await progressCompletedMatch({
-            tx,
-            matchesRef,
-            tournamentRef,
-            tournament,
-            matchId,
-            match: {
-              ...match,
+          let progressed = null;
+          try {
+            progressed = await progressCompletedMatch({
+              tx,
+              matchesRef,
+              tournamentRef,
+              tournament,
+              matchId,
+              match: {
+                ...match,
+                winner,
+                loser,
+              },
               winner,
-              loser,
-            },
-            winner,
-          });
+            });
+          } catch (progressErr) {
+            logger?.warn?.(
+              "TOURNAMENT MATCH RESULT PROGRESSION ERROR:",
+              progressErr?.message || progressErr
+            );
+            progressed = null;
+          }
 
-          return { ok: true, nextMatchId: progressed?.nextMatchId || null };
+          return {
+            ok: true,
+            nextMatchId: progressed?.nextMatchId || null,
+            affectedTeamIds: normalizeUidList([teamA?.teamId, teamB?.teamId]),
+          };
         });
 
-        if (outcome?.ok) await syncTournamentTeamActiveLocks(tournamentId, { force: reset === true });
-        if (outcome?.ok) invalidateForTournament(tournamentId);
-        if (outcome?.ok) await clearPublicViewForTournament(tournamentId);
+        if (outcome?.ok) {
+          try {
+            await syncTournamentTeamActiveLocks(tournamentId, { force: reset === true });
+          } catch (postErr) {
+            logger?.warn?.("TOURNAMENT MATCH RESULT POST-SYNC ERROR:", postErr?.message || postErr);
+          }
+          try {
+            invalidateForTournament(tournamentId);
+          } catch (postErr) {
+            logger?.warn?.("TOURNAMENT MATCH RESULT POST-INVALIDATE ERROR:", postErr?.message || postErr);
+          }
+          try {
+            await clearPublicViewForTournament(tournamentId);
+          } catch (postErr) {
+            logger?.warn?.("TOURNAMENT MATCH RESULT POST-PUBLIC-VIEW ERROR:", postErr?.message || postErr);
+          }
+        }
+        if (outcome?.ok && (reset === true || hasWinner)) {
+          try {
+            const chatCollectionRef = db
+              .collection("tournaments")
+              .doc(tournamentId)
+              .collection("matches")
+              .doc(matchId)
+              .collection("chat");
+            await deleteCollectionInChunks(chatCollectionRef, 200, "match chat");
+          } catch (postErr) {
+            logger?.warn?.("TOURNAMENT MATCH RESULT POST-CHAT-CLEANUP ERROR:", postErr?.message || postErr);
+          }
+        }
+        if (outcome?.ok && hasWinner) {
+          try {
+            await reconcileTournamentCompletion(tournamentId);
+          } catch (postErr) {
+            logger?.warn?.("TOURNAMENT MATCH RESULT POST-RECONCILE ERROR:", postErr?.message || postErr);
+          }
+        }
+        if (outcome?.ok) {
+          try {
+            await markTeamPublicStatsStale(outcome?.affectedTeamIds || []);
+          } catch (postErr) {
+            logger?.warn?.("TOURNAMENT MATCH RESULT TEAM PUBLIC STATS STALE ERROR:", postErr?.message || postErr);
+          }
+        }
+        if (outcome?.ok && typeof invalidateTeamsCaches === "function") {
+          try {
+            normalizeUidList(outcome?.affectedTeamIds || []).forEach((teamId) => {
+              invalidateTeamsCaches({ teamId });
+            });
+          } catch (postErr) {
+            logger?.warn?.("TOURNAMENT MATCH RESULT TEAM CACHE INVALIDATE ERROR:", postErr?.message || postErr);
+          }
+        }
         return respondWithOutcome(res, outcome, {
           ok: true,
+          alreadyCompleted: Boolean(outcome?.alreadyCompleted),
           nextMatchId: outcome?.nextMatchId || null,
         });
       } catch (err) {
-        return respondServerError(
-          res,
-          logger,
-          "TOURNAMENT MATCH RESULT ERROR",
-          "Failed to set match result",
-          err
-        );
+        const isProd = String(process.env.NODE_ENV || "").toLowerCase() === "production";
+        logger?.error?.("TOURNAMENT MATCH RESULT ERROR:", err);
+        return res.status(500).json({
+          error: "Failed to set match result",
+          ...(isProd ? {} : { details: String(err?.message || err) }),
+        });
       }
     }
   );

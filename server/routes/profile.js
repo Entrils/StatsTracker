@@ -102,6 +102,49 @@ export function registerProfileRoutes(app, deps) {
     res.set("Cache-Control", `public, max-age=${Math.max(0, maxAge)}, stale-while-revalidate=${Math.max(0, swr)}`);
     if (etag) res.set("ETag", etag);
   };
+  const normalizeSettingsPayload = (value) => {
+    if (!value || typeof value !== "object") return null;
+    const out = {};
+    const fields = ["twitch", "youtube", "tiktok", "fragpunkId"];
+    fields.forEach((key) => {
+      const raw = typeof value[key] === "string" ? value[key].trim() : "";
+      if (!raw) return;
+      out[key] = raw;
+    });
+    return Object.keys(out).length ? out : null;
+  };
+  const resolveSettingsWithFallback = async (uid, profileData = null) => {
+    const fromLeaderboard =
+      normalizeSettingsPayload(profileData?.settings) ||
+      normalizeSettingsPayload(profileData?.socials);
+    if (fromLeaderboard) return fromLeaderboard;
+    try {
+      const userSnap = await db.collection("users").doc(uid).get();
+      const userData = userSnap.exists ? userSnap.data() || {} : {};
+      const fromUserDoc =
+        normalizeSettingsPayload(userData?.settings) ||
+        normalizeSettingsPayload(userData?.socials);
+      if (fromUserDoc) return fromUserDoc;
+    } catch {
+      // ignore fallback read errors
+    }
+    try {
+      const userProfileSettingsSnap = await db
+        .collection("users")
+        .doc(uid)
+        .collection("profile")
+        .doc("settings")
+        .get();
+      const profileSettings = userProfileSettingsSnap.exists ? userProfileSettingsSnap.data() || {} : {};
+      return (
+        normalizeSettingsPayload(profileSettings?.settings) ||
+        normalizeSettingsPayload(profileSettings?.socials) ||
+        normalizeSettingsPayload(profileSettings)
+      );
+    } catch {
+      return null;
+    }
+  };
 
   const buildShareData = async (uid, lang) => {
     const cached = getCachedShareData(uid);
@@ -707,10 +750,7 @@ export function registerProfileRoutes(app, deps) {
       const matchesRef = db.collection("users").doc(uid).collection("matches");
       const profileSnap = await db.collection("leaderboard_users").doc(uid).get();
       const profileData = profileSnap.exists ? profileSnap.data() : null;
-      let settings = profileData?.settings || null;
-      if (settings && typeof settings === "object" && !Object.keys(settings).length) {
-        settings = null;
-      }
+      const settings = await resolveSettingsWithFallback(uid, profileData);
       const ranksSnap = await db
         .collection("users")
         .doc(uid)
@@ -783,10 +823,7 @@ export function registerProfileRoutes(app, deps) {
       const snap = await db.collection("leaderboard_users").doc(uid).get();
       const data = snap.exists ? snap.data() || {} : {};
 
-      let settings = data.settings || null;
-      if (settings && typeof settings === "object" && !Object.keys(settings).length) {
-        settings = null;
-      }
+      const settings = await resolveSettingsWithFallback(uid, data);
       const ranksSnap = await db
         .collection("users")
         .doc(uid)

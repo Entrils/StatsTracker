@@ -38,6 +38,10 @@ class FakeDocRef {
   collection(name) {
     return new FakeCollectionRef(this.store, `${this.path}/${name}`);
   }
+
+  async delete() {
+    this.store.delete(this.path);
+  }
 }
 
 class FakeQueryRef {
@@ -365,5 +369,152 @@ describe("tournament routes", () => {
     } finally {
       process.env.NODE_ENV = prevNodeEnv;
     }
+  });
+
+  it("keeps /result successful when chat cleanup fails", async () => {
+    const db = createFirestoreDb({
+      "tournaments/t1": {
+        id: "t1",
+        title: "Playoff Cup",
+        bracketType: "single_elimination",
+      },
+      "tournaments/t1/matches/r1_m1": {
+        id: "r1_m1",
+        stage: "single",
+        round: 1,
+        status: "pending",
+        teamA: { teamId: "team-a", teamName: "A" },
+        teamB: { teamId: "team-b", teamName: "B" },
+      },
+      "tournaments/t1/matches/r2_m1": {
+        id: "r2_m1",
+        stage: "single",
+        round: 2,
+        status: "waiting",
+        teamA: null,
+        teamB: null,
+      },
+    });
+
+    const originalCollection = db.collection.bind(db);
+    db.collection = (name) => {
+      const ref = originalCollection(name);
+      if (String(name || "") !== "tournaments") return ref;
+      const origDoc = ref.doc.bind(ref);
+      ref.doc = (id) => {
+        const tournamentDocRef = origDoc(id);
+        const origSubCollection = tournamentDocRef.collection.bind(tournamentDocRef);
+        tournamentDocRef.collection = (subName) => {
+          const subRef = origSubCollection(subName);
+          if (String(subName || "") !== "matches") return subRef;
+          const origMatchDoc = subRef.doc.bind(subRef);
+          subRef.doc = (matchId) => {
+            const matchDocRef = origMatchDoc(matchId);
+            const origMatchCollection = matchDocRef.collection.bind(matchDocRef);
+            matchDocRef.collection = (leafName) => {
+              const leafRef = origMatchCollection(leafName);
+              if (String(leafName || "") !== "chat") return leafRef;
+              return {
+                ...leafRef,
+                limit: () => ({
+                  get: async () => {
+                    throw new Error("chat cleanup failed");
+                  },
+                }),
+              };
+            };
+            return matchDocRef;
+          };
+          return subRef;
+        };
+        return tournamentDocRef;
+      };
+      return ref;
+    };
+
+    const app = createApp({
+      admin: { firestore: { FieldValue: { serverTimestamp: () => 123456 } } },
+      db,
+      logger: { error: vi.fn(), warn: vi.fn() },
+      statsLimiter: (_req, _res, next) => next(),
+      authLimiter: (_req, _res, next) => next(),
+      requireAuth: (req, _res, next) => {
+        req.user = { uid: "admin-1", admin: true };
+        next();
+      },
+      parseIntParam: (v, fallback) => {
+        if (v === undefined) return fallback;
+        const n = Number.parseInt(v, 10);
+        return Number.isFinite(n) ? n : null;
+      },
+      isValidUid: (uid) => typeof uid === "string" && uid.length > 0,
+    });
+
+    const res = await request(app).post("/tournaments/t1/matches/r1_m1/result").send({
+      winnerTeamId: "team-a",
+      teamAScore: 2,
+      teamBScore: 0,
+    });
+
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+  });
+
+  it("stores BO3 map scores and computes series score for bracket", async () => {
+    const db = createFirestoreDb({
+      "tournaments/t1": {
+        id: "t1",
+        title: "Bo3 Cup",
+        bracketType: "single_elimination",
+      },
+      "tournaments/t1/matches/r1_m1": {
+        id: "r1_m1",
+        stage: "single",
+        round: 1,
+        status: "pending",
+        bestOf: 3,
+        teamA: { teamId: "team-a", teamName: "A" },
+        teamB: { teamId: "team-b", teamName: "B" },
+      },
+    });
+
+    const app = createApp({
+      admin: { firestore: { FieldValue: { serverTimestamp: () => 123456 } } },
+      db,
+      logger: { error: vi.fn(), warn: vi.fn() },
+      statsLimiter: (_req, _res, next) => next(),
+      authLimiter: (_req, _res, next) => next(),
+      requireAuth: (req, _res, next) => {
+        req.user = { uid: "admin-1", admin: true };
+        next();
+      },
+      parseIntParam: (v, fallback) => {
+        if (v === undefined) return fallback;
+        const n = Number.parseInt(v, 10);
+        return Number.isFinite(n) ? n : null;
+      },
+      isValidUid: (uid) => typeof uid === "string" && uid.length > 0,
+    });
+
+    const res = await request(app).post("/tournaments/t1/matches/r1_m1/result").send({
+      winnerTeamId: "team-a",
+      bestOf: 3,
+      mapScores: [
+        { teamAScore: 6, teamBScore: 3 },
+        { teamAScore: 5, teamBScore: 6 },
+        { teamAScore: 6, teamBScore: 0 },
+      ],
+    });
+
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+    const stored = db._store.get("tournaments/t1/matches/r1_m1");
+    expect(stored.teamAScore).toBe(2);
+    expect(stored.teamBScore).toBe(1);
+    expect(stored.mapScores).toEqual([
+      { teamAScore: 6, teamBScore: 3 },
+      { teamAScore: 5, teamBScore: 6 },
+      { teamAScore: 6, teamBScore: 0 },
+    ]);
   });
 });

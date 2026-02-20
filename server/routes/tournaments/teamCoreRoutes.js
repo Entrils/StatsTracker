@@ -43,6 +43,7 @@ export function registerTeamCoreRoutes(app, ctx) {
   };
   const teamsMyCache = teamsCache?.my || new Map();
   const teamsPublicDetailsCache = teamsCache?.publicDetails || new Map();
+  const teamPublicStatsRef = (teamId = "") => db.collection("team_public_stats").doc(String(teamId || ""));
   const normalizeTeamNameLower = (value = "") => String(value || "").trim().toLowerCase();
   const makeRandomId = (prefix = "id") => {
     if (typeof crypto.randomUUID === "function") return `${prefix}_${crypto.randomUUID()}`;
@@ -225,14 +226,43 @@ export function registerTeamCoreRoutes(app, ctx) {
       };
     });
 
-    let recentTournaments = [];
-    let matchHistory = [];
-    let wins = 0;
-    let losses = 0;
-    let matchesPlayed = 0;
-    let winRate = 0;
-
-    try {
+    const readMaterializedTeamStats = async () => {
+      try {
+        const statsSnap = await teamPublicStatsRef(safeTeamId).get();
+        if (!statsSnap?.exists) return null;
+        const statsData = statsSnap.data() || {};
+        if (statsData?.stale === true) return null;
+        const wins = toInt(statsData?.stats?.wins, 0);
+        const losses = toInt(statsData?.stats?.losses, 0);
+        const matchesPlayed = toInt(statsData?.stats?.matchesPlayed, wins + losses);
+        const winRate = toInt(
+          statsData?.stats?.winRate,
+          matchesPlayed > 0 ? Math.round((wins / Math.max(1, matchesPlayed)) * 100) : 0
+        );
+        const recentTournaments = Array.isArray(statsData?.recentTournaments)
+          ? statsData.recentTournaments.slice(0, 8)
+          : [];
+        const matchHistory = Array.isArray(statsData?.matchHistory)
+          ? statsData.matchHistory.slice(0, 40)
+          : [];
+        return {
+          stats: { wins, losses, matchesPlayed, winRate },
+          recentTournaments,
+          matchHistory,
+        };
+      } catch (err) {
+        logger.warn("TEAM PUBLIC STATS READ ERROR:", err?.message || err);
+        return null;
+      }
+    };
+    const recomputeTeamPublicStats = async () => {
+      let recentTournaments = [];
+      let matchHistory = [];
+      let wins = 0;
+      let losses = 0;
+      let matchesPlayed = 0;
+      let winRate = 0;
+      try {
       const regsSnap = await db
         .collectionGroup("registrations")
         .where("teamId", "==", safeTeamId)
@@ -318,30 +348,58 @@ export function registerTeamCoreRoutes(app, ctx) {
       matchesPlayed = wins + losses;
       winRate = matchesPlayed > 0 ? Math.round((wins / matchesPlayed) * 100) : 0;
 
-      recentTournaments = tournamentIds
+        recentTournaments = tournamentIds
         .map((tId) => tournamentMap.get(tId))
         .filter(Boolean)
         .sort((a, b) => Number(b.startsAt || 0) - Number(a.startsAt || 0))
         .slice(0, 8)
         .map((t) => ({
           ...t,
-          placement: t.champion === safeTeamId ? 1 : null,
+          placement:
+            String(
+              (t?.champion && typeof t.champion === "object" ? t.champion.teamId : t?.champion) || ""
+            ) === safeTeamId
+              ? 1
+              : null,
         }));
-    } catch (analyticsErr) {
-      logger.warn("TEAM DETAILS ANALYTICS ERROR:", analyticsErr);
+      } catch (analyticsErr) {
+        logger.warn("TEAM DETAILS ANALYTICS ERROR:", analyticsErr);
+      }
+      return {
+        stats: {
+          wins,
+          losses,
+          matchesPlayed,
+          winRate,
+        },
+        recentTournaments,
+        matchHistory,
+      };
+    };
+    let computed = await readMaterializedTeamStats();
+    if (!computed) {
+      computed = await recomputeTeamPublicStats();
+      teamPublicStatsRef(safeTeamId)
+        .set(
+          {
+            teamId: safeTeamId,
+            stale: false,
+            stats: computed.stats,
+            recentTournaments: computed.recentTournaments,
+            matchHistory: computed.matchHistory,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          },
+          { merge: true }
+        )
+        .catch((err) => logger.warn("TEAM PUBLIC STATS WRITE ERROR:", err?.message || err));
     }
 
     const payload = {
       row,
       roster,
-      stats: {
-        wins,
-        losses,
-        matchesPlayed,
-        winRate,
-      },
-      recentTournaments,
-      matchHistory,
+      stats: computed?.stats || { wins: 0, losses: 0, matchesPlayed: 0, winRate: 0 },
+      recentTournaments: computed?.recentTournaments || [],
+      matchHistory: computed?.matchHistory || [],
     };
     if (!requireMembership) {
       const etag = buildEtag(payload);

@@ -60,6 +60,51 @@ function bestOfLabel(match) {
   return `BO${[1, 3, 5].includes(value) ? value : 1}`;
 }
 
+function normalizeMapScores(rows = [], maxLen = 5) {
+  if (!Array.isArray(rows)) return [];
+  return rows
+    .slice(0, Math.max(1, Number(maxLen) || 5))
+    .map((row) => ({
+      teamAScore: Math.max(0, Number(row?.teamAScore || 0)),
+      teamBScore: Math.max(0, Number(row?.teamBScore || 0)),
+    }))
+    .filter((row) => row.teamAScore !== row.teamBScore);
+}
+
+function computeSeriesFromMaps({ mapScores = [], bestOf = 1 } = {}) {
+  const safeBestOf = [1, 3, 5].includes(Number(bestOf)) ? Number(bestOf) : 1;
+  const requiredWins = Math.floor(safeBestOf / 2) + 1;
+  if (!Array.isArray(mapScores) || !mapScores.length) {
+    return { ok: false, error: "Map scores are required" };
+  }
+  let teamAScore = 0;
+  let teamBScore = 0;
+  mapScores.forEach((row) => {
+    if (Number(row?.teamAScore || 0) > Number(row?.teamBScore || 0)) teamAScore += 1;
+    else if (Number(row?.teamBScore || 0) > Number(row?.teamAScore || 0)) teamBScore += 1;
+  });
+  if (teamAScore < requiredWins && teamBScore < requiredWins) {
+    return { ok: false, error: "Series winner is not determined by map scores" };
+  }
+  if (teamAScore >= requiredWins && teamBScore >= requiredWins) {
+    return { ok: false, error: "Invalid series score" };
+  }
+  return { ok: true, teamAScore, teamBScore };
+}
+
+function buildInitialMapScores(match = {}, bestOf = 1) {
+  const safeBestOf = [1, 3, 5].includes(Number(bestOf)) ? Number(bestOf) : 1;
+  const fromMatch = normalizeMapScores(match?.mapScores, safeBestOf);
+  if (fromMatch.length) return fromMatch;
+  const existingTotalMaps = Math.max(
+    0,
+    Number(match?.teamAScore || 0) + Number(match?.teamBScore || 0)
+  );
+  const minMaps = Math.floor(safeBestOf / 2) + 1;
+  const count = Math.min(safeBestOf, Math.max(1, existingTotalMaps || minMaps));
+  return Array.from({ length: count }, () => ({ teamAScore: 0, teamBScore: 0 }));
+}
+
 function entityHrefFromSide(side, isSolo) {
   const id = String(side?.teamId || "").trim();
   if (!id) return "";
@@ -102,6 +147,7 @@ export default function TournamentDetailsPage() {
     winnerTeamId: "",
     scheduledAt: "",
     bestOf: 1,
+    mapScores: [{ teamAScore: 0, teamBScore: 0 }],
     error: "",
   });
 
@@ -149,6 +195,27 @@ export default function TournamentDetailsPage() {
       })),
     [td?.tabs]
   );
+  const isTournamentCompleted = Boolean(tournament?.champion) || (
+    Number.isFinite(Number(tournament?.endsAt || 0)) && Number(tournament?.endsAt || 0) > 0
+  );
+  const championTabs = useMemo(() => {
+    if (!isTournamentCompleted) return tabs;
+    return [...tabs, { key: "champion", label: td?.tabs?.champion || "Champion" }];
+  }, [isTournamentCompleted, tabs, td?.tabs?.champion]);
+  const champion = tournament?.champion || null;
+  const championId = String(champion?.teamId || "").trim();
+  const championName = String(champion?.teamName || "").trim() || (isSolo ? "Player" : "Team");
+  const championAvatarUrl = String(champion?.avatarUrl || "").trim();
+  const championHref = championId
+    ? isSolo
+      ? `/player/${encodeURIComponent(championId)}`
+      : `/teams/${encodeURIComponent(championId)}`
+    : "";
+
+  useEffect(() => {
+    if (championTabs.some((item) => item.key === tab)) return;
+    setTab("overview");
+  }, [championTabs, tab]);
 
   const matchesSource = matches || EMPTY_MATCHES;
   const stageTabs = useMemo(() => buildStageTabs(matchesSource), [matchesSource]);
@@ -365,6 +432,7 @@ export default function TournamentDetailsPage() {
   );
 
   const onOpenScoreModal = (match) => {
+    const safeBestOf = [1, 3, 5].includes(Number(match?.bestOf)) ? Number(match.bestOf) : 1;
     setScoreModal({
       open: true,
       matchId: String(match?.id || ""),
@@ -376,7 +444,8 @@ export default function TournamentDetailsPage() {
       teamBScore: Number(match?.teamBScore || 0),
       winnerTeamId: String(match?.winnerTeamId || ""),
       scheduledAt: toDateTimeLocalValue(match?.scheduledAt),
-      bestOf: [1, 3, 5].includes(Number(match?.bestOf)) ? Number(match.bestOf) : 1,
+      bestOf: safeBestOf,
+      mapScores: buildInitialMapScores(match, safeBestOf),
       error: "",
     });
   };
@@ -397,8 +466,27 @@ export default function TournamentDetailsPage() {
       return;
     }
 
-    const teamAScore = Math.max(0, Number(scoreModal.teamAScore || 0));
-    const teamBScore = Math.max(0, Number(scoreModal.teamBScore || 0));
+    const normalizedMapScores = normalizeMapScores(scoreModal.mapScores, bestOfValue);
+    let teamAScore = Math.max(0, Number(scoreModal.teamAScore || 0));
+    let teamBScore = Math.max(0, Number(scoreModal.teamBScore || 0));
+    if (hasWinner) {
+      const series = computeSeriesFromMaps({
+        mapScores: normalizedMapScores,
+        bestOf: bestOfValue,
+      });
+      if (!series.ok) {
+        setScoreModal((prev) => ({ ...prev, error: series.error || td?.modal?.save || "Save result" }));
+        return;
+      }
+      teamAScore = series.teamAScore;
+      teamBScore = series.teamBScore;
+      const winnerByMaps =
+        teamAScore > teamBScore ? scoreModal.teamAId : scoreModal.teamBId;
+      if (String(winnerByMaps || "") !== winnerTeamId) {
+        setScoreModal((prev) => ({ ...prev, error: td?.modal?.winner || "Winner" }));
+        return;
+      }
+    }
 
     if (scheduledAtValue && !Number.isFinite(Date.parse(scheduledAtValue))) {
       setScoreModal((prev) => ({ ...prev, error: td?.modal?.scheduledAt || "Match date and time" }));
@@ -423,6 +511,7 @@ export default function TournamentDetailsPage() {
                 winnerTeamId,
                 teamAScore,
                 teamBScore,
+                mapScores: normalizedMapScores,
                 scheduledAt: scheduledAtValue || null,
                 bestOf: bestOfValue,
               }
@@ -430,7 +519,11 @@ export default function TournamentDetailsPage() {
         ),
       });
       const data = await res.json().catch(() => null);
-      if (!res.ok) throw new Error(data?.error || td?.modal?.save || "Save result");
+      if (!res.ok) {
+        const details = String(data?.details || "").trim();
+        const base = data?.error || td?.modal?.save || "Save result";
+        throw new Error(details ? `${base}: ${details}` : base);
+      }
       onCloseScoreModal();
       await loadTournament();
     } catch (err) {
@@ -578,7 +671,7 @@ export default function TournamentDetailsPage() {
       {notice ? <StateMessage text={notice} tone="neutral" /> : null}
 
       <div className={styles.tabs}>
-        {tabs.map((item) => (
+        {championTabs.map((item) => (
           <button
             key={item.key}
             type="button"
@@ -648,6 +741,39 @@ export default function TournamentDetailsPage() {
           getMatchScoreText={getMatchScoreText}
           buildMatchHref={buildMatchHref}
         />
+      ) : null}
+
+      {tab === "champion" ? (
+        <section className={styles.teamsSection}>
+          <h3 className={styles.formTitle}>{td?.champion?.title || "Champion"}</h3>
+          {championId ? (
+            <div className={styles.teamCard}>
+              <div className={styles.teamCardHead}>
+                <img
+                  src={championAvatarUrl || "/nologoteam.png"}
+                  alt={`${championName} avatar`}
+                  className={styles.teamAvatar}
+                />
+                <div>
+                  {championHref ? (
+                    <Link className={styles.teamTitleLink} to={championHref}>
+                      <strong>{championName}</strong>
+                    </Link>
+                  ) : (
+                    <strong>{championName}</strong>
+                  )}
+                  <p className={styles.subtitle}>
+                    {isSolo
+                      ? td?.champion?.playerLabel || "Winning player"
+                      : td?.champion?.teamLabel || "Winning team"}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <p className={styles.hint}>{td?.champion?.empty || "Champion is not determined yet."}</p>
+          )}
+        </section>
       ) : null}
 
       {confirmGenerateOpen ? (

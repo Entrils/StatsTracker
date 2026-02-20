@@ -85,6 +85,8 @@ export function registerTournamentReadRoutes(app, ctx) {
   const TOURNAMENT_PUBLIC_VIEW_TTL_MS = 60 * 1000;
   const USER_TOURNAMENT_CONTEXT_TTL_MS = 5 * 60 * 1000;
   const USER_TOURNAMENT_CONTEXT_MAX_BYTES = 900 * 1024;
+  const TOURNAMENTS_CONTEXT_REGS_FALLBACK_ENABLED =
+    String(process.env.TOURNAMENTS_CONTEXT_REGS_FALLBACK || "0") === "1";
   const READ_BUDGET_GUARD_ENABLED = String(process.env.TOURNAMENTS_READ_BUDGET_GUARD || "1") === "1";
   const READ_BUDGET_WINDOW_MS = 60 * 1000;
   const READ_BUDGET_PER_WINDOW = Math.max(500, toInt(process.env.TOURNAMENTS_READ_BUDGET_PER_MIN, 6000));
@@ -255,7 +257,7 @@ export function registerTournamentReadRoutes(app, ctx) {
     const profilePromise = db.collection("leaderboard_users").doc(uid).get();
     const teamsPromise = db.collection("teams").where("memberUids", "array-contains", uid).limit(50).get();
     const regsPromise =
-      typeof db.collectionGroup === "function"
+      TOURNAMENTS_CONTEXT_REGS_FALLBACK_ENABLED && typeof db.collectionGroup === "function"
         ? db
             .collectionGroup("registrations")
             .where("memberUids", "array-contains", uid)
@@ -824,6 +826,14 @@ export function registerTournamentReadRoutes(app, ctx) {
             winnerTeamId: d.winnerTeamId || null,
             teamAScore: toInt(d.teamAScore, 0),
             teamBScore: toInt(d.teamBScore, 0),
+            mapScores: Array.isArray(d.mapScores)
+              ? d.mapScores
+                  .map((row) => ({
+                    teamAScore: toInt(row?.teamAScore, 0),
+                    teamBScore: toInt(row?.teamBScore, 0),
+                  }))
+                  .filter((row) => row.teamAScore !== row.teamBScore)
+              : [],
             bestOf: [1, 3, 5].includes(toInt(d.bestOf, 1)) ? toInt(d.bestOf, 1) : 1,
             scheduledAt: toInt(d.scheduledAt, null),
             readyCheck: buildReadyCheck(d, now),
@@ -915,7 +925,14 @@ export function registerTournamentReadRoutes(app, ctx) {
       const matchData = matchSnap.data() || {};
       const teamA = matchData.teamA || null;
       const teamB = matchData.teamB || null;
-      const teamIds = normalizeUidList([teamA?.teamId, teamB?.teamId]);
+      const hasEmbeddedMembers = (side = {}) =>
+        Array.isArray(side?.members) &&
+        side.members.some((m) => String(m?.uid || "").trim());
+      const teamIds = normalizeUidList(
+        [teamA, teamB]
+          .filter((side) => !hasEmbeddedMembers(side))
+          .map((side) => side?.teamId)
+      );
       const regRefs = teamIds.map((teamId) => tournamentRef.collection("registrations").doc(teamId));
       const regSnaps =
         regRefs.length === 0
@@ -959,8 +976,55 @@ export function registerTournamentReadRoutes(app, ctx) {
 
       const buildSide = (seed) => {
         const teamId = String(seed?.teamId || "");
-        const reg = regByTeamId.get(teamId) || {};
         const isSolo = String(tournamentData.teamFormat || "") === "1x1";
+        const embeddedMembers = Array.isArray(seed?.members)
+          ? seed.members
+              .map((m) => {
+                const uid = String(m?.uid || "").trim();
+                if (!uid) return null;
+                return {
+                  uid,
+                  name: String(m?.name || uid),
+                  avatarUrl: String(m?.avatarUrl || ""),
+                  elo: toInt(m?.elo, 500),
+                  fragpunkId: String(m?.fragpunkId || ""),
+                  role: String(m?.role || "").trim().toLowerCase(),
+                };
+              })
+              .filter(Boolean)
+          : [];
+        if (embeddedMembers.length) {
+          const captainUidFromSeed =
+            String(seed?.captainUid || "").trim() ||
+            String(embeddedMembers.find((m) => m.role === "captain")?.uid || "").trim();
+          const members = embeddedMembers.map((m) => ({
+            ...m,
+            role:
+              m.uid === captainUidFromSeed
+                ? "captain"
+                : m.role === "reserve"
+                ? "reserve"
+                : "player",
+          }));
+          const fallbackSoloName = String(
+            members.find((m) => m.uid === captainUidFromSeed)?.name ||
+            members[0]?.name ||
+            teamId ||
+            "Player"
+          );
+          const currentName = String(seed?.teamName || "").trim();
+          return {
+            teamId,
+            teamName:
+              isSolo && (!currentName || currentName.toLowerCase() === "team")
+                ? fallbackSoloName
+                : (seed?.teamName || "Team"),
+            avatarUrl: seed?.avatarUrl || members[0]?.avatarUrl || "",
+            captainUid: captainUidFromSeed,
+            members,
+          };
+        }
+        const reg = regByTeamId.get(teamId) || {};
         const captainUid = String(reg.captainUid || "");
         const regMembers = normalizeUidList(reg.memberUids || []);
         const snapshotByUid = new Map(
@@ -1034,6 +1098,14 @@ export function registerTournamentReadRoutes(app, ctx) {
           winnerTeamId: matchData.winnerTeamId || null,
           teamAScore: toInt(matchData.teamAScore, 0),
           teamBScore: toInt(matchData.teamBScore, 0),
+          mapScores: Array.isArray(matchData.mapScores)
+            ? matchData.mapScores
+                .map((row) => ({
+                  teamAScore: toInt(row?.teamAScore, 0),
+                  teamBScore: toInt(row?.teamBScore, 0),
+                }))
+                .filter((row) => row.teamAScore !== row.teamBScore)
+            : [],
           bestOf: [1, 3, 5].includes(toInt(matchData.bestOf, 1)) ? toInt(matchData.bestOf, 1) : 1,
           veto: matchData.veto || null,
           readyCheck: buildReadyCheck(matchData, now),

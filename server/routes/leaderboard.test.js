@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import express from "express";
 import request from "supertest";
 import { registerLeaderboardRoutes } from "./leaderboard.js";
+import { createStatsHelpers } from "../helpers/stats.js";
 
 function createApp(deps) {
   const app = express();
@@ -279,5 +280,153 @@ describe("leaderboard routes", () => {
     expect(res.body.patched).toBe(0);
     expect(res.body.hasMore).toBe(true);
     expect(res.body.nextCursor).toBe("u1");
+  });
+
+  it("returns socials in /leaderboard rows via fallback sources", async () => {
+    const leaderboardDocs = [
+      {
+        id: "u1",
+        data: () => ({
+          name: "U1",
+          matches: 10,
+          wins: 6,
+          losses: 4,
+          score: 1000,
+          kills: 50,
+          deaths: 20,
+          assists: 10,
+          settings: null,
+          hiddenElo: 1200,
+        }),
+      },
+      {
+        id: "u2",
+        data: () => ({
+          name: "U2",
+          matches: 8,
+          wins: 4,
+          losses: 4,
+          score: 800,
+          kills: 30,
+          deaths: 18,
+          assists: 12,
+          settings: null,
+          hiddenElo: 1100,
+        }),
+      },
+    ];
+
+    const lbChain = {
+      orderBy: () => lbChain,
+      limit: () => lbChain,
+      startAfter: () => ({
+        get: async () => ({ empty: true, docs: [] }),
+      }),
+      get: async () => ({ empty: false, docs: leaderboardDocs }),
+    };
+
+    const batchSet = vi.fn();
+    const batchCommit = vi.fn().mockResolvedValue();
+    const db = {
+      collection: (name) => {
+        if (name === "leaderboard_users") {
+          return {
+            orderBy: () => lbChain,
+            doc: (uid) => ({ id: uid, path: `leaderboard_users/${uid}` }),
+          };
+        }
+        if (name === "users") {
+          return {
+            doc: (uid) => ({
+              id: uid,
+              path: `users/${uid}`,
+              collection: (sub) => ({
+                doc: (docId) => ({
+                  id: docId,
+                  path: `users/${uid}/${sub}/${docId}`,
+                }),
+              }),
+            }),
+          };
+        }
+        return {
+          doc: () => ({ get: async () => ({ exists: false }) }),
+        };
+      },
+      batch: () => ({
+        set: batchSet,
+        commit: batchCommit,
+      }),
+      getAll: vi.fn(async (...refs) =>
+        refs.map((ref) => {
+          const path = String(ref?.path || "");
+          if (path === "users/u1") {
+            return {
+              exists: true,
+              data: () => ({ socials: { twitch: "u1_stream" } }),
+            };
+          }
+          if (path === "users/u2") {
+            return {
+              exists: true,
+              data: () => ({}),
+            };
+          }
+          if (path === "users/u2/profile/settings") {
+            return {
+              exists: true,
+              data: () => ({ settings: { youtube: "@u2_channel" } }),
+            };
+          }
+          return {
+            exists: false,
+            data: () => ({}),
+          };
+        })
+      ),
+    };
+
+    const { getLeaderboardPage } = createStatsHelpers({
+      admin: {
+        firestore: {
+          FieldPath: { documentId: () => "__name__" },
+        },
+      },
+      db,
+      logger: { warn: vi.fn() },
+      CACHE_COLLECTION: "stats_cache",
+      GLOBAL_CACHE_TTL_MS: 1000,
+      getActiveBansSet: null,
+      LEADERBOARD_CACHE_TTL_MS: 1000,
+    });
+
+    const app = createApp({
+      admin: {
+        firestore: {
+          FieldPath: { documentId: () => "__name__" },
+        },
+      },
+      db,
+      logger: { error: vi.fn() },
+      authLimiter: (_req, _res, next) => next(),
+      requireAuth: (_req, _res, next) => next(),
+      statsLimiter: (_req, _res, next) => next(),
+      getLeaderboardPage,
+      parseIntParam: (v, fallback) => {
+        if (v === undefined) return fallback;
+        const n = Number.parseInt(v, 10);
+        return Number.isFinite(n) ? n : null;
+      },
+      getActiveBansSet: vi.fn(),
+    });
+
+    const res = await request(app).get("/leaderboard?limit=2&offset=0&sort=matches");
+    expect(res.status).toBe(200);
+    const u1 = res.body.rows.find((row) => row.uid === "u1");
+    const u2 = res.body.rows.find((row) => row.uid === "u2");
+    expect(u1.settings).toEqual({ twitch: "u1_stream" });
+    expect(u2.settings).toEqual({ youtube: "@u2_channel" });
+    expect(batchSet).toHaveBeenCalled();
+    expect(batchCommit).toHaveBeenCalled();
   });
 });

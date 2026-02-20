@@ -165,6 +165,33 @@
   text-align: center;
 }
 
+.chatToggle {
+  justify-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(159, 255, 234, 0.35);
+  background: rgba(20, 84, 68, 0.35);
+  color: #dffef7;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.chatUnread {
+  min-width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: #ff5b79;
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 0 5px;
+}
+
 .vetoCard {
   background: rgba(8, 12, 22, 0.55);
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -328,6 +355,12 @@
   font-size: 1.02rem;
 }
 
+.finalMapScore {
+  text-align: center;
+  color: #9fffea;
+  font-weight: 700;
+}
+
 .seriesGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -416,6 +449,149 @@
   text-align: center;
 }
 
+.chatCard {
+  background: rgba(8, 12, 22, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-md);
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(6px);
+}
+
+.chatSection {
+  position: fixed;
+  right: 16px;
+  bottom: 18px;
+  z-index: 45;
+  width: min(420px, calc(100vw - 24px));
+}
+
+.chatSectionHidden {
+  display: none;
+}
+
+.chatHeaderRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.chatClose {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(5, 8, 15, 0.55);
+  color: #c9d8f6;
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.chatFeed {
+  display: grid;
+  gap: 8px;
+  max-height: 320px;
+  overflow: auto;
+}
+
+.chatHint {
+  margin: 0;
+  color: #9aa4c1;
+  text-align: center;
+}
+
+.chatError {
+  margin: 0;
+  color: #ff8f9f;
+  text-align: center;
+}
+
+.chatRow {
+  background: rgba(5, 8, 15, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 8px;
+  display: grid;
+  gap: 4px;
+}
+
+.chatRowMine {
+  border-color: rgba(159, 255, 234, 0.35);
+}
+
+.chatMeta {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  color: #9aa4c1;
+  font-size: 0.74rem;
+}
+
+.chatText {
+  color: #e4edff;
+  font-size: 0.9rem;
+  line-height: 1.35;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.chatComposer {
+  display: grid;
+  gap: 8px;
+}
+
+.chatInput {
+  width: 100%;
+  min-height: 64px;
+  resize: vertical;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(5, 8, 15, 0.75);
+  color: #e4edff;
+  padding: 10px;
+  font-family: inherit;
+}
+
+.chatInput:focus {
+  outline: none;
+  border-color: rgba(159, 255, 234, 0.45);
+}
+
+.chatSend {
+  justify-self: end;
+  border: 1px solid rgba(180, 241, 223, 0.45);
+  background: rgba(80, 190, 150, 0.18);
+  color: #e8fff9;
+  border-radius: 8px;
+  padding: 8px 14px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.chatSend:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.chatFab {
+  position: fixed;
+  right: 16px;
+  bottom: 18px;
+  z-index: 46;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(159, 255, 234, 0.45);
+  background: rgba(12, 54, 44, 0.95);
+  color: #e8fff9;
+  border-radius: 999px;
+  padding: 10px 14px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+
 @media (max-width: 1180px) {
   .mainCard {
     grid-template-columns: 1fr;
@@ -438,5 +614,21 @@
 
   .mapGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .chatSection {
+    right: 8px;
+    left: 8px;
+    bottom: 8px;
+    width: auto;
+  }
+
+  .chatFeed {
+    max-height: 42vh;
+  }
+
+  .chatFab {
+    right: 12px;
+    bottom: 12px;
   }
 }

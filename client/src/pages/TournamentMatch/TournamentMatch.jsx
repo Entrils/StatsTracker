@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import styles from "./TournamentMatch.module.css";
 import { useAuth } from "@/auth/AuthContext";
@@ -28,6 +28,17 @@ function formatMatchDate(ms, lang = "en") {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function formatChatTime(ms, lang = "en") {
+  const value = Number(ms);
+  if (!Number.isFinite(value) || value <= 0) return "--:--";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "--:--";
+  return d.toLocaleTimeString(lang, {
     hour: "2-digit",
     minute: "2-digit",
   });
@@ -148,6 +159,15 @@ export default function TournamentMatchPage() {
   const [isPageVisible, setIsPageVisible] = useState(
     () => typeof document === "undefined" || document.visibilityState === "visible"
   );
+  const [chatRows, setChatRows] = useState([]);
+  const [chatLoading, setChatLoading] = useState(false);
+  const [chatError, setChatError] = useState("");
+  const [chatInput, setChatInput] = useState("");
+  const [chatSending, setChatSending] = useState(false);
+  const [chatAccessDenied, setChatAccessDenied] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatUnread, setChatUnread] = useState(0);
+  const lastChatCountRef = useRef(0);
 
   const load = useCallback(async ({ silent = false } = {}) => {
     if (!id || !matchId) return;
@@ -175,6 +195,73 @@ export default function TournamentMatchPage() {
     load();
   }, [load]);
 
+  const loadChat = useCallback(async ({ silent = false } = {}) => {
+    if (!id || !matchId || !user) return;
+    if (!silent) {
+      setChatLoading(true);
+      setChatError("");
+    }
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch(`${BACKEND_URL}/tournaments/${id}/matches/${matchId}/chat?limit=60`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        if (res.status === 403) {
+          setChatAccessDenied(true);
+          setChatRows([]);
+          return;
+        }
+        throw new Error(data?.error || "Failed to load chat");
+      }
+      setChatAccessDenied(false);
+      setChatRows(Array.isArray(data?.rows) ? data.rows : []);
+    } catch (err) {
+      if (!silent) {
+        setChatError(err?.message || "Failed to load chat");
+      }
+    } finally {
+      if (!silent) setChatLoading(false);
+    }
+  }, [id, matchId, user]);
+
+  useEffect(() => {
+    if (!user) {
+      setChatRows([]);
+      setChatError("");
+      setChatAccessDenied(false);
+      setChatOpen(false);
+      setChatUnread(0);
+      lastChatCountRef.current = 0;
+      return;
+    }
+    loadChat();
+  }, [user, loadChat]);
+
+  useEffect(() => {
+    if (!user || !chatOpen || chatAccessDenied) return;
+    loadChat();
+  }, [user, chatOpen, chatAccessDenied, loadChat]);
+
+  useEffect(() => {
+    const count = Array.isArray(chatRows) ? chatRows.length : 0;
+    const prev = Number(lastChatCountRef.current || 0);
+    if (count > prev && !chatOpen) {
+      setChatUnread((v) => v + (count - prev));
+    }
+    if (chatOpen) setChatUnread(0);
+    lastChatCountRef.current = count;
+  }, [chatRows, chatOpen]);
+
+  const isMatchCompleted = String(payload?.match?.status || "") === "completed";
+
+  useEffect(() => {
+    if (!isMatchCompleted) return;
+    setChatOpen(false);
+    setChatUnread(0);
+  }, [isMatchCompleted]);
+
   useEffect(() => {
     if (typeof document === "undefined") return undefined;
     const onVisibilityChange = () => {
@@ -186,7 +273,6 @@ export default function TournamentMatchPage() {
     };
   }, []);
 
-  const isMatchCompleted = String(payload?.match?.status || "") === "completed";
   const shouldPollMatch = (() => {
     if (!isPageVisible || isMatchCompleted) return false;
     const m = payload?.match || null;
@@ -207,6 +293,14 @@ export default function TournamentMatchPage() {
   }, [load, shouldPollMatch]);
 
   useEffect(() => {
+    if (!user || !chatOpen || !isPageVisible || chatAccessDenied) return undefined;
+    const timer = window.setInterval(() => {
+      loadChat({ silent: true });
+    }, 8000);
+    return () => window.clearInterval(timer);
+  }, [user, chatOpen, isPageVisible, chatAccessDenied, loadChat]);
+
+  useEffect(() => {
     const timer = window.setInterval(() => setNowMs(Date.now()), 1000);
     return () => window.clearInterval(timer);
   }, []);
@@ -220,6 +314,20 @@ export default function TournamentMatchPage() {
   const soloB = resolveSoloPlayer(teamB, tm.playerB || "Player B");
   const sideAHref = entityHrefFromSide(teamA, isSolo);
   const sideBHref = entityHrefFromSide(teamB, isSolo);
+  const chatAuthorNames = useMemo(() => {
+    const out = new Map();
+    const addMember = (member) => {
+      const uid = String(member?.uid || "").trim();
+      const name = String(member?.name || "").trim();
+      if (!uid || !name) return;
+      out.set(uid, name);
+    };
+    (Array.isArray(teamA?.members) ? teamA.members : []).forEach(addMember);
+    (Array.isArray(teamB?.members) ? teamB.members : []).forEach(addMember);
+    addMember(soloA);
+    addMember(soloB);
+    return out;
+  }, [teamA, teamB, soloA, soloB]);
   const scheduledAt = Number(match?.scheduledAt || 0);
   const hasSchedule = Number.isFinite(scheduledAt) && scheduledAt > 0;
   const startsIn = hasSchedule ? scheduledAt - nowMs : 0;
@@ -246,6 +354,16 @@ export default function TournamentMatchPage() {
     if (!decider) return picks;
     return picks.includes(decider) ? picks : [...picks, decider];
   }, [veto]);
+  const mapScores = useMemo(
+    () =>
+      Array.isArray(match?.mapScores)
+        ? match.mapScores.map((row) => ({
+            teamAScore: Number(row?.teamAScore || 0),
+            teamBScore: Number(row?.teamBScore || 0),
+          }))
+        : [],
+    [match?.mapScores]
+  );
   const nextVetoAction = String(veto?.nextAction || "ban").toLowerCase();
   const bannedMaps = useMemo(() => {
     const out = new Set();
@@ -362,6 +480,44 @@ export default function TournamentMatchPage() {
     }
   };
 
+  const onSendChat = async () => {
+    const text = String(chatInput || "").trim();
+    if (!user || !id || !matchId || !text || chatSending) return;
+    setChatSending(true);
+    setChatError("");
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch(`${BACKEND_URL}/tournaments/${id}/matches/${matchId}/chat`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ text }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.error || "Failed to send message");
+      setChatOpen(true);
+      setChatUnread(0);
+      setChatInput("");
+      const nextMessage = data?.message || null;
+      if (nextMessage?.id) {
+        setChatRows((prev) => {
+          const merged = [...prev, nextMessage];
+          if (merged.length <= 60) return merged;
+          return merged.slice(merged.length - 60);
+        });
+      } else {
+        await loadChat({ silent: true });
+      }
+    } catch (err) {
+      setChatError(err?.message || "Failed to send message");
+    } finally {
+      setChatSending(false);
+    }
+  };
+  const canShowChat = Boolean(user) && !chatAccessDenied && !isMatchCompleted;
+
   const statusText = useMemo(() => {
     if (!match) return "-";
     if (String(match.status || "") === "completed") {
@@ -453,7 +609,19 @@ export default function TournamentMatchPage() {
           ) : null}
           <p className={styles.status}>{statusText}</p>
           {hasSchedule ? <p className={styles.schedule}>{formatMatchDate(scheduledAt, lang)}</p> : null}
-
+          {canShowChat ? (
+            <button
+              type="button"
+              className={styles.chatToggle}
+              onClick={() => {
+                setChatOpen((v) => !v);
+                setChatUnread(0);
+              }}
+            >
+              {chatOpen ? (tm.chatHide || "Hide chat") : (tm.chatOpen || "Open chat")}
+              {chatUnread > 0 ? <span className={styles.chatUnread}>{chatUnread}</span> : null}
+            </button>
+          ) : null}
           {!vetoUnlocked ? (
             <div className={styles.readyCard}>
               <h3 className={styles.blockTitle}>{tm.readyCheck || "Ready check"}</h3>
@@ -605,6 +773,9 @@ export default function TournamentMatchPage() {
                         </div>
                         <div className={styles.seriesLabel}>
                           {isDecider ? "Decider" : `Map ${idx + 1}`}: {mapName}
+                          {mapScores[idx]
+                            ? ` (${mapScores[idx].teamAScore}-${mapScores[idx].teamBScore})`
+                            : ""}
                         </div>
                       </div>
                     );
@@ -634,6 +805,11 @@ export default function TournamentMatchPage() {
                     <span className={styles.mapPickedTag}>PICKED</span>
                   </div>
                   <div className={styles.finalMapLabel}>{veto.pick || "-"}</div>
+                  {mapScores[0] ? (
+                    <div className={styles.finalMapScore}>
+                      {mapScores[0].teamAScore}-{mapScores[0].teamBScore}
+                    </div>
+                  ) : null}
                 </div>
               )}
             </div>
@@ -684,6 +860,85 @@ export default function TournamentMatchPage() {
           />
         )}
       </section>
+
+      {canShowChat ? (
+        <section className={`${styles.chatSection} ${chatOpen ? "" : styles.chatSectionHidden}`}>
+          <div className={styles.chatCard}>
+            <div className={styles.chatHeaderRow}>
+              <h3 className={styles.blockTitle}>{tm.chatTitle || "Match chat"}</h3>
+              <button
+                type="button"
+                className={styles.chatClose}
+                onClick={() => setChatOpen(false)}
+              >
+                {tm.chatHide || "Hide chat"}
+              </button>
+            </div>
+            <div className={styles.chatFeed}>
+              {chatLoading ? (
+                <p className={styles.chatHint}>{tm.chatLoading || "Loading chat..."}</p>
+              ) : null}
+              {!chatLoading && chatRows.length === 0 ? (
+                <p className={styles.chatHint}>{tm.chatEmpty || "No messages yet"}</p>
+              ) : null}
+              {chatRows.map((row) => {
+                const mine = String(row?.uid || "") === String(user?.uid || "");
+                const authorUid = String(row?.uid || "");
+                const authorName = chatAuthorNames.get(authorUid)
+                  || (mine ? (tm.chatYou || "You") : authorUid.slice(0, 8));
+                return (
+                  <div key={row.id} className={`${styles.chatRow} ${mine ? styles.chatRowMine : ""}`}>
+                    <div className={styles.chatMeta}>
+                      <span>{authorName}</span>
+                      <span>{formatChatTime(row?.createdAt, lang)}</span>
+                    </div>
+                    <div className={styles.chatText}>{String(row?.text || "")}</div>
+                  </div>
+                );
+              })}
+            </div>
+            {chatError ? <p className={styles.chatError}>{chatError}</p> : null}
+            <div className={styles.chatComposer}>
+              <textarea
+                className={styles.chatInput}
+                value={chatInput}
+                maxLength={500}
+                onChange={(e) => setChatInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    onSendChat();
+                  }
+                }}
+                placeholder={tm.chatPlaceholder || "Type a message..."}
+                disabled={chatSending}
+              />
+              <button
+                type="button"
+                className={styles.chatSend}
+                disabled={chatSending || !String(chatInput || "").trim()}
+                onClick={onSendChat}
+              >
+                {chatSending ? (tm.chatSending || "Sending...") : (tm.chatSend || "Send")}
+              </button>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {canShowChat && !chatOpen ? (
+        <button
+          type="button"
+          className={styles.chatFab}
+          onClick={() => {
+            setChatOpen(true);
+            setChatUnread(0);
+          }}
+        >
+          {tm.chatOpen || "Open chat"}
+          {chatUnread > 0 ? <span className={styles.chatUnread}>{chatUnread}</span> : null}
+        </button>
+      ) : null}
     </div>
   );
 }

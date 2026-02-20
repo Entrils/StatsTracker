@@ -591,6 +591,7 @@
         rules: "Rules",
         participants: "Participants",
         bracket: "Bracket",
+        champion: "Champion",
       },
       backToList: "Back to list",
       loading: "Loading tournament...",
@@ -637,6 +638,12 @@
         round: "Round {n}",
         tbd: "TBD",
         notScheduled: "Not scheduled",
+      },
+      champion: {
+        title: "Champion",
+        teamLabel: "Winning team",
+        playerLabel: "Winning player",
+        empty: "Champion is not determined yet.",
       },
       match: {
         open: "Open match",

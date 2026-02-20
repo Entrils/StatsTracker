@@ -133,4 +133,124 @@ describe("stats helpers", () => {
     expect(batchSet).toHaveBeenCalled();
     expect(commit).toHaveBeenCalled();
   });
+
+  it("fills leaderboard socials from users fallback sources", async () => {
+    const docs = [
+      {
+        id: "u1",
+        data: () => ({
+          name: "A",
+          matches: 10,
+          wins: 6,
+          losses: 4,
+          score: 1000,
+          kills: 50,
+          deaths: 20,
+          assists: 10,
+          settings: null,
+        }),
+      },
+      {
+        id: "u2",
+        data: () => ({
+          name: "B",
+          matches: 5,
+          wins: 3,
+          losses: 2,
+          score: 400,
+          kills: 20,
+          deaths: 10,
+          assists: 5,
+          settings: null,
+        }),
+      },
+    ];
+
+    const chain = {
+      orderBy: () => chain,
+      limit: () => chain,
+      startAfter: () => ({
+        get: async () => ({ empty: true, docs: [] }),
+      }),
+      get: async () => ({ empty: false, docs }),
+    };
+
+    const batchSet = vi.fn();
+    const commit = vi.fn().mockResolvedValue();
+    const getAll = vi.fn(async (...refs) => {
+      return refs.map((ref) => {
+        const path = String(ref?.path || "");
+        if (path === "users/u1") {
+          return {
+            exists: true,
+            data: () => ({ socials: { twitch: "u1_stream" } }),
+          };
+        }
+        if (path === "users/u2") {
+          return {
+            exists: true,
+            data: () => ({}),
+          };
+        }
+        if (path === "users/u2/profile/settings") {
+          return {
+            exists: true,
+            data: () => ({ settings: { youtube: "@u2" } }),
+          };
+        }
+        return { exists: false, data: () => ({}) };
+      });
+    });
+
+    const db = {
+      collection: (name) => {
+        if (name === "leaderboard_users") {
+          return {
+            orderBy: () => chain,
+            doc: (uid) => ({ id: uid, path: `leaderboard_users/${uid}` }),
+          };
+        }
+        if (name === "users") {
+          return {
+            doc: (uid) => ({
+              id: uid,
+              path: `users/${uid}`,
+              collection: (sub) => ({
+                doc: (docId) => ({
+                  id: docId,
+                  path: `users/${uid}/${sub}/${docId}`,
+                }),
+              }),
+            }),
+          };
+        }
+        return {
+          doc: () => ({ path: `${name}/x` }),
+        };
+      },
+      batch: () => ({
+        set: batchSet,
+        commit,
+      }),
+      getAll,
+    };
+
+    const { getLeaderboardPage } = createStatsHelpers({
+      admin,
+      db,
+      logger: { warn: vi.fn() },
+      CACHE_COLLECTION: "stats_cache",
+      GLOBAL_CACHE_TTL_MS: 1000,
+      getActiveBansSet: null,
+      LEADERBOARD_CACHE_TTL_MS: 1000,
+    });
+
+    const page = await getLeaderboardPage(2, 0, "matches");
+    const row1 = page.rows.find((r) => r.uid === "u1");
+    const row2 = page.rows.find((r) => r.uid === "u2");
+
+    expect(row1.settings).toEqual({ twitch: "u1_stream" });
+    expect(row2.settings).toEqual({ youtube: "@u2" });
+    expect(getAll).toHaveBeenCalled();
+  });
 });
