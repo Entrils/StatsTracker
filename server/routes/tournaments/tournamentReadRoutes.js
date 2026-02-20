@@ -150,7 +150,9 @@ export function registerTournamentReadRoutes(app, ctx) {
     return true;
   };
   const isProduction = String(process.env.NODE_ENV || "").toLowerCase() === "production";
-  const allowBroadFallbackScan = !isProduction;
+  const allowBroadFallbackScanInProd =
+    String(process.env.TOURNAMENTS_ALLOW_BROAD_FALLBACK_SCAN || "1") === "1";
+  const allowBroadFallbackScan = !isProduction || allowBroadFallbackScanInProd;
   const loadBroadTournamentRows = async (tournamentsRef, now, limit, status = "") => {
     let query = null;
     if (typeof tournamentsRef?.limit === "function") {
@@ -404,6 +406,21 @@ export function registerTournamentReadRoutes(app, ctx) {
       const limit = Math.min(Math.max(limitRaw, 1), TOURNAMENTS_LIST_MAX_LIMIT);
       const now = Date.now();
       const cacheKey = `${status}:${limit}`;
+      const sendListDegraded = (warning, extra = {}, reads = readEstimate) =>
+        sendJsonWithReads(
+          res,
+          "/tournaments",
+          {
+            status,
+            rows: Array.isArray(cached?.rows) ? cached.rows : [],
+            updatedAt: cached?.updatedAt || now,
+            cached: Boolean(cached?.rows?.length),
+            stale: true,
+            warning,
+            ...extra,
+          },
+          reads
+        );
       const cached = tournamentsListCache.get(cacheKey);
       if (cached && now - cached.ts < TOURNAMENTS_LIST_CACHE_TTL_MS) {
         const cachedPayload = {
@@ -488,39 +505,18 @@ export function registerTournamentReadRoutes(app, ctx) {
       } catch (queryErr) {
         if (isQuotaExceededError(queryErr)) {
           if (cached?.rows?.length) {
-            return res.json({
-              status,
-              rows: cached.rows,
-              updatedAt: cached.updatedAt,
-              cached: true,
-              stale: true,
-              warning: "Firestore quota exceeded. Showing cached data.",
-            });
+            return sendListDegraded("Firestore quota exceeded. Showing cached data.");
           }
-          return res
-            .status(503)
-            .json({ error: "Firestore quota exceeded. Try again later." });
+          return sendListDegraded("Firestore quota exceeded. Returning temporary empty list.");
         }
         logger.warn("TOURNAMENTS LIST FALLBACK:", queryErr?.message || queryErr);
         if (!allowBroadFallbackScan) {
           if (cached?.rows?.length) {
-            return sendJsonWithReads(
-              res,
-              "/tournaments",
-              {
-                status,
-                rows: cached.rows,
-                updatedAt: cached.updatedAt,
-                cached: true,
-                stale: true,
-                warning: "Tournament list is temporarily unavailable. Showing cached data.",
-              },
-              readEstimate
+            return sendListDegraded(
+              "Tournament list is temporarily unavailable. Showing cached data."
             );
           }
-          return res
-            .status(503)
-            .json({ error: "Tournament list is temporarily unavailable. Please retry." });
+          return sendListDegraded("Tournament list is temporarily unavailable. Returning temporary empty list.");
         }
         const fallbackRows = await loadBroadTournamentRows(tournamentsRef, now, limit, status);
         readEstimate += TOURNAMENTS_FALLBACK_SCAN_LIMIT;
@@ -537,23 +533,9 @@ export function registerTournamentReadRoutes(app, ctx) {
       if (!rows.length) {
         if (!allowBroadFallbackScan) {
           if (cached?.rows?.length) {
-            return sendJsonWithReads(
-              res,
-              "/tournaments",
-              {
-                status,
-                rows: cached.rows,
-                updatedAt: cached.updatedAt,
-                cached: true,
-                stale: true,
-                warning: "Tournament list may be incomplete. Showing cached data.",
-              },
-              readEstimate
-            );
+            return sendListDegraded("Tournament list may be incomplete. Showing cached data.");
           }
-          return res
-            .status(503)
-            .json({ error: "Tournament list is temporarily unavailable. Please retry." });
+          return sendListDegraded("Tournament list is temporarily unavailable. Returning temporary empty list.");
         }
         try {
           const broadRows = await loadBroadTournamentRows(tournamentsRef, now, limit, status);
@@ -567,20 +549,17 @@ export function registerTournamentReadRoutes(app, ctx) {
         } catch (broadErr) {
           if (isQuotaExceededError(broadErr)) {
             if (cached?.rows?.length) {
-              return sendJsonWithReads(res, "/tournaments", {
-                status,
-                rows: cached.rows,
-                updatedAt: cached.updatedAt,
-                cached: true,
-                stale: true,
-                warning: "Firestore quota exceeded. Showing cached data.",
-              }, readEstimate);
+              return sendListDegraded("Firestore quota exceeded. Showing cached data.");
             }
-            return res
-              .status(503)
-              .json({ error: "Firestore quota exceeded. Try again later." });
+            return sendListDegraded("Firestore quota exceeded. Returning temporary empty list.");
           }
           logger.warn("TOURNAMENTS LIST BROAD FALLBACK ERROR:", broadErr?.message || broadErr);
+          if (cached?.rows?.length) {
+            return sendListDegraded(
+              "Tournament list is temporarily unavailable. Showing cached data."
+            );
+          }
+          return sendListDegraded("Tournament list is temporarily unavailable. Returning temporary empty list.");
         }
       }
 
@@ -591,68 +570,55 @@ export function registerTournamentReadRoutes(app, ctx) {
       if (requestHasEtag(req, etag)) return res.status(304).end();
       return sendJsonWithReads(res, "/tournaments", payload, readEstimate);
     } catch (err) {
+      const statusRaw = String(req.query.status || "upcoming");
+      const status = ["upcoming", "ongoing", "past"].includes(statusRaw)
+        ? statusRaw
+        : "upcoming";
+      const parsedLimit = parseIntParam(req.query.limit, 50);
+      const limit = Math.min(
+        Math.max(parsedLimit === null ? 50 : parsedLimit, 1),
+        TOURNAMENTS_LIST_MAX_LIMIT
+      );
+      const cacheKey = `${status}:${limit}`;
+      const now = Date.now();
+      const cached = tournamentsListCache.get(cacheKey);
       if (isQuotaExceededError(err)) {
-        const statusRaw = String(req.query.status || "upcoming");
-        const status = ["upcoming", "ongoing", "past"].includes(statusRaw)
-          ? statusRaw
-          : "upcoming";
-        const parsedLimit = parseIntParam(req.query.limit, 50);
-        const limit = Math.min(
-          Math.max(parsedLimit === null ? 50 : parsedLimit, 1),
-          TOURNAMENTS_LIST_MAX_LIMIT
-        );
-        const cacheKey = `${status}:${limit}`;
-        const cached = tournamentsListCache.get(cacheKey);
-        if (cached?.rows?.length) {
-          return sendJsonWithReads(res, "/tournaments", {
+        return sendJsonWithReads(
+          res,
+          "/tournaments",
+          {
             status,
-            rows: cached.rows,
-            updatedAt: cached.updatedAt,
-            cached: true,
+            rows: Array.isArray(cached?.rows) ? cached.rows : [],
+            updatedAt: cached?.updatedAt || now,
+            cached: Boolean(cached?.rows?.length),
             stale: true,
-            warning: "Firestore quota exceeded. Showing cached data.",
-          }, 0);
-        }
-        return res
-          .status(503)
-          .json({ error: "Firestore quota exceeded. Try again later." });
+            warning: cached?.rows?.length
+              ? "Firestore quota exceeded. Showing cached data."
+              : "Firestore quota exceeded. Returning temporary empty list.",
+          },
+          0
+        );
       }
       logger.error("TOURNAMENTS LIST ERROR:", err);
       try {
-        const now = Date.now();
-        const status = String(req.query.status || "upcoming");
         const rows = await loadBroadTournamentRows(db.collection("tournaments"), now, 100, status);
         return sendJsonWithReads(res, "/tournaments", { status, rows, updatedAt: now }, TOURNAMENTS_FALLBACK_SCAN_LIMIT);
       } catch {
-        const statusRaw = String(req.query.status || "upcoming");
-        const status = ["upcoming", "ongoing", "past"].includes(statusRaw)
-          ? statusRaw
-          : "upcoming";
-        const parsedLimit = parseIntParam(req.query.limit, 50);
-        const limit = Math.min(
-          Math.max(parsedLimit === null ? 50 : parsedLimit, 1),
-          TOURNAMENTS_LIST_MAX_LIMIT
+        return sendJsonWithReads(
+          res,
+          "/tournaments",
+          {
+            status,
+            rows: Array.isArray(cached?.rows) ? cached.rows : [],
+            updatedAt: cached?.updatedAt || now,
+            cached: Boolean(cached?.rows?.length),
+            stale: true,
+            warning: cached?.rows?.length
+              ? "Tournament list is temporarily unavailable. Showing cached data."
+              : "Tournament list is temporarily unavailable. Returning temporary empty list.",
+          },
+          0
         );
-        const cacheKey = `${status}:${limit}`;
-        const cached = tournamentsListCache.get(cacheKey);
-        if (cached?.rows?.length) {
-          return sendJsonWithReads(
-            res,
-            "/tournaments",
-            {
-              status,
-              rows: cached.rows,
-              updatedAt: cached.updatedAt,
-              cached: true,
-              stale: true,
-              warning: "Tournament list is temporarily unavailable. Showing cached data.",
-            },
-            0
-          );
-        }
-        return res
-          .status(503)
-          .json({ error: "Tournament list is temporarily unavailable. Please retry." });
       }
     }
   });

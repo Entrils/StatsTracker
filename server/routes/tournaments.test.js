@@ -320,7 +320,7 @@ describe("tournament routes", () => {
     });
   });
 
-  it("returns 503 in production when tournaments query path fails", async () => {
+  it("returns degraded 200 in production when tournaments query path fails", async () => {
     const prevNodeEnv = process.env.NODE_ENV;
     process.env.NODE_ENV = "production";
     try {
@@ -364,8 +364,10 @@ describe("tournament routes", () => {
       });
 
       const res = await request(app).get("/tournaments?status=upcoming&limit=20");
-      expect(res.status).toBe(503);
-      expect(String(res.body.error || "")).toContain("temporarily unavailable");
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.body.rows)).toBe(true);
+      expect(res.body.stale).toBe(true);
+      expect(String(res.body.warning || "")).toContain("temporarily unavailable");
     } finally {
       process.env.NODE_ENV = prevNodeEnv;
     }
