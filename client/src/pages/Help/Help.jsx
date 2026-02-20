@@ -15,6 +15,8 @@ export default function Help() {
     { id: "profile-buttons", label: t.help?.profileTitle || "Profile buttons" },
     { id: "match-issues", label: t.help?.matchIssuesTitle || "Why match upload failed" },
     { id: "friends-compare", label: t.help?.friendsCompareTitle || "Friends and comparison" },
+    { id: "teams-guide", label: t.help?.teamsTitle || "Teams" },
+    { id: "tournaments-guide", label: t.help?.tournamentsTitle || "Tournaments" },
     { id: "elo-rating", label: t.help?.eloTitle || "ELO rating" },
     { id: "player-profile-guide", label: t.help?.playerProfileTitle || "Player profile" },
     { id: "bug-report", label: t.help?.bugReportTitle || "How to report a bug" },
@@ -131,9 +133,37 @@ export default function Help() {
             )}
         </section>
 
-        <section className={styles.section} id="elo-rating">
+        <section className={styles.section} id="teams-guide">
           <h2 className={styles.sectionTitle}>
             <span className={styles.sectionIndex}>5.</span>{" "}
+            {t.help?.teamsTitle || "Teams"}
+          </h2>
+          <p className={styles.sectionText}>
+            {t.help?.teamsBody ||
+              "How teams work: roster format, reserve slot, invites, and captain controls."}
+          </p>
+          {typeof t.help?.teamsText === "string" && t.help.teamsText.trim() && (
+            <p className={styles.sectionText}>{t.help.teamsText}</p>
+          )}
+        </section>
+
+        <section className={styles.section} id="tournaments-guide">
+          <h2 className={styles.sectionTitle}>
+            <span className={styles.sectionIndex}>6.</span>{" "}
+            {t.help?.tournamentsTitle || "Tournaments"}
+          </h2>
+          <p className={styles.sectionText}>
+            {t.help?.tournamentsBody ||
+              "How to join a tournament, check status tabs, open bracket/match room, and report results."}
+          </p>
+          {typeof t.help?.tournamentsText === "string" && t.help.tournamentsText.trim() && (
+            <p className={styles.sectionText}>{t.help.tournamentsText}</p>
+          )}
+        </section>
+
+        <section className={styles.section} id="elo-rating">
+          <h2 className={styles.sectionTitle}>
+            <span className={styles.sectionIndex}>7.</span>{" "}
             {t.help?.eloTitle || "ELO rating"}
           </h2>
           <p className={styles.sectionText}>
@@ -156,7 +186,7 @@ export default function Help() {
 
         <section className={styles.section} id="player-profile-guide">
           <h2 className={styles.sectionTitle}>
-            <span className={styles.sectionIndex}>6.</span>{" "}
+            <span className={styles.sectionIndex}>8.</span>{" "}
             {t.help?.playerProfileTitle || "Player profile"}
           </h2>
           <p className={styles.sectionText}>
@@ -189,17 +219,18 @@ export default function Help() {
 
         <section className={styles.section} id="bug-report">
           <h2 className={styles.sectionTitle}>
-            <span className={styles.sectionIndex}>7.</span>{" "}
+            <span className={styles.sectionIndex}>9.</span>{" "}
             {t.help?.bugReportTitle || "How to report a bug"}
           </h2>
           <p className={styles.sectionText}>
             {t.help?.bugReportBody ||
               "What to include in a bug report so it can be fixed faster."}
           </p>
-          {typeof t.help?.bugReportText === "string" && t.help.bugReportText.trim() && (
-            <p className={styles.sectionText}>{t.help.bugReportText}</p>
-          )}
+            {typeof t.help?.bugReportText === "string" && t.help.bugReportText.trim() && (
+              <p className={styles.sectionText}>{t.help.bugReportText}</p>
+            )}
         </section>
+
       </div>
     </div>
   );

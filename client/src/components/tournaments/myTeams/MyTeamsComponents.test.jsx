@@ -8,9 +8,13 @@ import MyTeamsTable from "@/components/tournaments/myTeams/MyTeamsTable";
 describe("myTeams components", () => {
   it("MyTeamInvitesSection renders empty state on empty list", () => {
     render(
-      <MyTeamInvitesSection tm={{}} invites={[]} onInviteDecision={vi.fn()} />
+      <MemoryRouter>
+        <MyTeamInvitesSection tm={{}} invites={[]} onInviteDecision={vi.fn()} />
+      </MemoryRouter>
     );
-    expect(screen.getByText(/Incoming invites/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /Incoming invites/i })
+    ).toBeInTheDocument();
     expect(screen.getByText(/No incoming invites yet/i)).toBeInTheDocument();
   });
 
@@ -19,20 +23,22 @@ describe("myTeams components", () => {
     const onInviteDecision = vi.fn();
 
     render(
-      <MyTeamInvitesSection
-        tm={{ accept: "Accept", reject: "Reject" }}
-        invites={[
-          {
-            id: "1",
-            teamId: "team-1",
-            teamName: "Alpha",
-            teamAvatarUrl: "",
-            captainUid: "cap1",
-            captainName: "Captain Alpha",
-          },
-        ]}
-        onInviteDecision={onInviteDecision}
-      />
+      <MemoryRouter>
+        <MyTeamInvitesSection
+          tm={{ accept: "Accept", reject: "Reject" }}
+          invites={[
+            {
+              id: "1",
+              teamId: "team-1",
+              teamName: "Alpha",
+              teamAvatarUrl: "",
+              captainUid: "cap1",
+              captainName: "Captain Alpha",
+            },
+          ]}
+          onInviteDecision={onInviteDecision}
+        />
+      </MemoryRouter>
     );
 
     expect(screen.getByRole("link", { name: "Alpha" })).toHaveAttribute("href", "/teams/team-1");

@@ -360,6 +360,16 @@
       "How friend requests work and where to compare stats.",
     friendsCompareText:
       "You can add someone from their player profile or from the Friends page. Once they accept, they appear in your friends list. Comparison is available in My Profile, where you can select a friend and see stat differences across score, KDA, damage, winrate, and other key metrics.",
+    teamsTitle: "Teams",
+    teamsBody:
+      "Core team rules: roster format, reserve slot, invites, and roles.",
+    teamsText:
+      "A team is created by the captain with a selected format (for example 2x2/3x3/5x5). The roster includes the main lineup by format plus one reserve slot. In team details, the captain can invite players, cancel invites, switch players between main and reserve, and transfer captain role.",
+    tournamentsTitle: "Tournaments",
+    tournamentsBody:
+      "How to participate and where to manage tournament matches.",
+    tournamentsText:
+      "Tournament tabs provide filters for upcoming, ongoing, and past events. To join, register a team that matches the required format. Inside a tournament you get bracket view, match rooms, match chat (until the match is completed), and result submission.",
     playerProfileTitle: "Player profile",
     playerProfileBody:
       "What to check first on a player profile.",

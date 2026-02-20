@@ -355,6 +355,16 @@
       "So funktionieren Freundesanfragen und der Stat-Vergleich.",
     friendsCompareText:
       "Du kannst Spieler im Profil oder auf der Freundeseite hinzufugen. Nach Annahme erscheint der Spieler in deiner Freundesliste. Der Vergleich ist in „Mein Profil“ verfugbar: dort wahlst du einen Freund aus und siehst die Unterschiede bei Score, KDA, Schaden, Winrate und weiteren Kennzahlen.",
+    teamsTitle: "Teams",
+    teamsBody:
+      "Grundregeln fur Teams: Roster-Format, Ersatzslot, Einladungen und Rollen.",
+    teamsText:
+      "Ein Team wird vom Kapitan erstellt und auf ein Format gesetzt (z. B. 2x2/3x3/5x5). Das Roster besteht aus der Hauptaufstellung passend zum Format plus 1 Ersatzspieler-Slot. Auf der Teamseite kann der Kapitan Spieler einladen, Einladungen zuruckziehen, zwischen Stamm/Ersatz wechseln und das Kapitansamt ubertragen.",
+    tournamentsTitle: "Turniere",
+    tournamentsBody:
+      "So nimmst du teil und verwaltest Turnier-Matches.",
+    tournamentsText:
+      "Im Turnierbereich gibt es die Filter bevorstehend/laufend/beendet. Zur Teilnahme registrierst du ein Team im passenden Format. Im Turnier findest du Bracket-Ansicht, Match-Raume, Match-Chat (bis Matchende) und Ergebnis-Eintragung.",
     playerProfileTitle: "Spielerprofil",
     playerProfileBody:
       "Was im Spielerprofil wichtig ist und wo du es findest.",

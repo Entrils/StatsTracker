@@ -357,6 +357,16 @@
       "Comment gerer les amis et comparer vos stats.",
     friendsCompareText:
       "Tu peux ajouter un joueur depuis son profil ou depuis la page Amis. Une fois la demande acceptee, il apparait dans ta liste. La comparaison est disponible dans Mon profil : tu choisis un ami et tu vois les ecarts sur le score, le KDA, les degats, le winrate et les autres metriques importantes.",
+    teamsTitle: "Equipes",
+    teamsBody:
+      "Regles essentielles des equipes : format du roster, remplacant, invitations et roles.",
+    teamsText:
+      "Le capitaine cree l’equipe et choisit un format (par exemple 2x2/3x3/5x5). Le roster contient la composition principale selon le format, plus 1 slot remplacant. Dans la page d’equipe, le capitaine peut inviter des joueurs, annuler des invitations, passer un joueur en titulaire/remplacant et transferer le role de capitaine.",
+    tournamentsTitle: "Tournois",
+    tournamentsBody:
+      "Comment participer et gerer les matchs du tournoi.",
+    tournamentsText:
+      "Dans l’onglet Tournois, tu as les filtres a venir/en cours/termines. Pour rejoindre, inscris une equipe avec le bon format. Dans le tournoi, tu peux ouvrir le bracket, entrer dans les rooms de match, utiliser le chat de match (jusqu’a la fin du match) et soumettre le resultat.",
     playerProfileTitle: "Profil du joueur",
     playerProfileBody:
       "Les elements importants a lire sur un profil joueur.",
