@@ -110,8 +110,10 @@ export default function useTournamentsController({
         setRows(safeRows);
         setError(err?.message || "Failed to load tournaments");
       } finally {
-        if (tournamentsRequestRef.current.id !== requestId) return;
-        setLoading(false);
+        const isLatestRequest = tournamentsRequestRef.current.id === requestId;
+        if (isLatestRequest) {
+          setLoading(false);
+        }
       }
     },
     [backendUrl]

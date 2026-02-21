@@ -106,6 +106,18 @@ describe("profile routes", () => {
       .send({ settings: { fragpunkId: "bad-format" } });
     expect(bad.status).toBe(400);
     expect(bad.body.error).toBe("Invalid fragpunkId");
+
+    const tooShort = await request(app)
+      .post("/profile/settings")
+      .send({ settings: { fragpunkId: "a#EU1" } });
+    expect(tooShort.status).toBe(400);
+    expect(tooShort.body.error).toBe("Invalid fragpunkId");
+
+    const validTwoChars = await request(app)
+      .post("/profile/settings")
+      .send({ settings: { fragpunkId: "ab#EU1" } });
+    expect(validTwoChars.status).toBe(200);
+    expect(validTwoChars.body.ok).toBe(true);
   });
 
   it("forbids hidden elo endpoint for non-admin", async () => {

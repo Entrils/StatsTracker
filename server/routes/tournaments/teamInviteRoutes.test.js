@@ -340,6 +340,86 @@ describe("team invite routes", () => {
     expect(String(res.body.error || "")).toContain("Only captain can invite");
   });
 
+  it("invite endpoint does not resolve target for non-captain (no enumeration leak)", async () => {
+    const db = createFakeFirestore({
+      "teams/team1": {
+        name: "Alpha",
+        captainUid: "captain-1",
+        memberUids: ["captain-1", "u2"],
+        teamFormat: "2x2",
+        maxMembers: 3,
+      },
+    });
+    const baseCollection = db.collection.bind(db);
+    db.collection = (name) => {
+      if (String(name) === "leaderboard_users") {
+        return {
+          doc: () => ({
+            get: async () => {
+              throw new Error("target-lookup-should-not-run");
+            },
+          }),
+          where: () => ({
+            limit: () => ({
+              get: async () => {
+                throw new Error("target-lookup-should-not-run");
+              },
+            }),
+          }),
+        };
+      }
+      return baseCollection(name);
+    };
+
+    const app = createApp(
+      baseDeps({
+        db,
+        requireAuth: (req, _res, next) => {
+          req.user = { uid: "u2" };
+          next();
+        },
+      })
+    );
+
+    const res = await request(app)
+      .post("/teams/team1/invite")
+      .send({ uid: "u3" });
+
+    expect(res.status).toBe(403);
+    expect(String(res.body.error || "")).toContain("Only captain can invite");
+  });
+
+  it("invite endpoint accepts direct uid even without leaderboard profile", async () => {
+    const db = createFakeFirestore({
+      "teams/team1": {
+        name: "Alpha",
+        captainUid: "u1",
+        memberUids: ["u1", "u2"],
+        teamFormat: "2x2",
+        maxMembers: 3,
+      },
+    });
+    const app = createApp(
+      baseDeps({
+        db,
+        requireAuth: (req, _res, next) => {
+          req.user = { uid: "u1" };
+          next();
+        },
+        findUserTeamInFormat: vi.fn().mockResolvedValue(null),
+      })
+    );
+
+    const res = await request(app)
+      .post("/teams/team1/invite")
+      .send({ uid: "fresh-user-uid" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+    expect(db._store.get("teams/team1/invites/fresh-user-uid")).toBeTruthy();
+    expect(db._store.get("users/fresh-user-uid/team_invites/team1")).toBeTruthy();
+  });
+
   it("returns only pending invites from primary query", async () => {
     const docs = [
       makeInviteDoc({ teamId: "t1", uid: "u1", status: "pending", teamName: "Alpha" }),

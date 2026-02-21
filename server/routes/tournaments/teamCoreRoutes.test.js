@@ -427,4 +427,68 @@ describe("team core routes", () => {
     expect(refreshedStats.stale).toBe(false);
     expect((refreshedStats.stats || {}).wins).toBe(1);
   });
+
+  it("recomputes team stats when registration doc has only tournamentId in data", async () => {
+    const now = Date.now();
+    const db = createFakeFirestore({
+      "teams/team11": {
+        name: "DataFallback",
+        captainUid: "u1",
+        memberUids: ["u1", "u2"],
+      },
+      "leaderboard_users/u1": {
+        name: "Cap",
+        hiddenElo: 1200,
+        matches: 20,
+      },
+      "leaderboard_users/u2": {
+        name: "Mate",
+        hiddenElo: 1100,
+        matches: 18,
+      },
+      "team_public_stats/team11": {
+        teamId: "team11",
+        stale: true,
+      },
+      "tournaments/t11": {
+        title: "Cup 11",
+        startsAt: now - 20_000,
+        champion: { teamId: "team11", teamName: "DataFallback" },
+      },
+      "tournaments/t11/matches/m1": {
+        teamA: { teamId: "team11", teamName: "DataFallback" },
+        teamB: { teamId: "teamX", teamName: "Opp" },
+        status: "completed",
+        winnerTeamId: "team11",
+        round: 1,
+        stage: "single",
+        updatedAt: now - 10_000,
+      },
+    });
+    const baseCollectionGroup = db.collectionGroup.bind(db);
+    db.collectionGroup = (name) => {
+      if (String(name) !== "registrations") return baseCollectionGroup(name);
+      return {
+        where: () => ({
+          limit: () => ({
+            get: async () => ({
+              docs: [
+                {
+                  data: () => ({ teamId: "team11", tournamentId: "t11" }),
+                  ref: { path: "", parent: null },
+                },
+              ],
+            }),
+          }),
+        }),
+      };
+    };
+    const app = createApp(makeDeps(db));
+
+    const res = await request(app).get("/teams/team11/public");
+    expect(res.status).toBe(200);
+    expect(res.body.stats.wins).toBe(1);
+    expect(res.body.recentTournaments[0].id).toBe("t11");
+    expect(res.body.recentTournaments[0].placement).toBe(1);
+  });
 });

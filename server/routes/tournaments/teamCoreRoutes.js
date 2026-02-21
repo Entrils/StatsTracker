@@ -262,6 +262,23 @@ export function registerTeamCoreRoutes(app, ctx) {
       let losses = 0;
       let matchesPlayed = 0;
       let winRate = 0;
+      const extractTournamentIdFromRegistrationDoc = (doc) => {
+        const directParentId = String(doc?.ref?.parent?.parent?.id || "").trim();
+        if (directParentId) return directParentId;
+
+        const rawPath = String(doc?.ref?.path || "").trim();
+        if (rawPath) {
+          const parts = rawPath.split("/").filter(Boolean);
+          const regIdx = parts.lastIndexOf("registrations");
+          if (regIdx > 0) {
+            const fromPath = String(parts[regIdx - 1] || "").trim();
+            if (fromPath) return fromPath;
+          }
+        }
+
+        const data = typeof doc?.data === "function" ? doc.data() || {} : {};
+        return String(data.tournamentId || "").trim();
+      };
       try {
       const regsSnap = await db
         .collectionGroup("registrations")
@@ -270,7 +287,7 @@ export function registerTeamCoreRoutes(app, ctx) {
         .get();
       const tournamentIds = [];
       for (const doc of regsSnap.docs) {
-        const tId = String(doc.ref.parent?.parent?.id || "");
+        const tId = extractTournamentIdFromRegistrationDoc(doc);
         if (!tId || tournamentIds.includes(tId)) continue;
         tournamentIds.push(tId);
       }

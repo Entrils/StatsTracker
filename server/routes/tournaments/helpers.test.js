@@ -66,7 +66,7 @@ describe("tournament helpers", () => {
   it("validates fragpunk id format", () => {
     expect(normalizeFragpunkId("Nick_01#EU1")).toBe("Nick_01#EU1");
     expect(normalizeFragpunkId("bad-format")).toBe("");
-    expect(normalizeFragpunkId("ab#E1")).toBe("");
+    expect(normalizeFragpunkId("ab#E1")).toBe("ab#E1");
   });
 
   it("detects past by champion regardless of dates", () => {

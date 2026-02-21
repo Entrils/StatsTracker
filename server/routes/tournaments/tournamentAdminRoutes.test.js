@@ -299,6 +299,36 @@ describe("tournament admin routes", () => {
     expect(Number.isFinite(Number(tournament.endsAt))).toBe(true);
   });
 
+  it("result response omits alreadyCompleted for fresh completion", async () => {
+    const db = createFakeFirestore({
+      "tournaments/t1": {
+        title: "Contract Cup",
+        bracketType: "single_elimination",
+        startsAt: Date.now() - 60_000,
+      },
+      "tournaments/t1/matches/r1_m1": {
+        id: "r1_m1",
+        stage: "single",
+        round: 1,
+        status: "pending",
+        teamA: { teamId: "team-a", teamName: "A" },
+        teamB: { teamId: "team-b", teamName: "B" },
+      },
+    });
+    const app = createApp(makeDeps(db));
+
+    const res = await request(app)
+      .post("/tournaments/t1/matches/r1_m1/result")
+      .set("x-user-uid", "admin-1")
+      .set("x-user-admin", "1")
+      .send({ winnerTeamId: "team-a" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+    expect(res.body.nextMatchId).toBeNull();
+    expect(res.body.alreadyCompleted).toBeUndefined();
+  });
+
   it("reconciles tournament completion on idempotent repeated final result", async () => {
     const db = createFakeFirestore({
       "tournaments/t1": {

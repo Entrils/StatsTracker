@@ -56,13 +56,14 @@ export function registerTeamInviteRoutes(app, ctx) {
       .limit(2)
       .get();
     const docs = Array.isArray(byNameSnap?.docs) ? byNameSnap.docs : [];
-    if (!docs.length) {
-      return { error: "Player not found" };
-    }
     if (docs.length > 1) {
       return { error: "Multiple players found with this nickname. Use UID." };
     }
-    return { uid: String(docs[0].id || "").trim() };
+    if (docs.length === 1) {
+      return { uid: String(docs[0].id || "").trim() };
+    }
+    // Allow explicit UID invites even when user has no leaderboard profile yet.
+    return { uid: cleanTarget };
   };
   const buildInviteUidCandidates = (uid = "") => {
     const cleanUid = String(uid || "").trim();
@@ -86,6 +87,11 @@ export function registerTeamInviteRoutes(app, ctx) {
       if (!uid || !teamId || !rawTarget || !isValidUidSafe(rawTarget)) {
         return res.status(400).json({ error: "Invalid params" });
       }
+      const teamRef = db.collection("teams").doc(teamId);
+      const teamSnap = await teamRef.get();
+      if (!teamSnap.exists) return res.status(404).json({ error: "Team not found" });
+      const team = teamSnap.data() || {};
+      if (team.captainUid !== uid) return res.status(403).json({ error: "Only captain can invite" });
       const targetResolved = await resolveInviteTargetUid(rawTarget);
       if (!targetResolved?.uid) {
         return res.status(404).json({ error: targetResolved?.error || "Player not found" });
@@ -94,13 +100,7 @@ export function registerTeamInviteRoutes(app, ctx) {
       if (uid === targetUid) {
         return res.status(400).json({ error: "Cannot invite yourself" });
       }
-
-      const teamRef = db.collection("teams").doc(teamId);
       const inviteRef = teamRef.collection("invites").doc(targetUid);
-      const teamSnap = await teamRef.get();
-      if (!teamSnap.exists) return res.status(404).json({ error: "Team not found" });
-      const team = teamSnap.data() || {};
-      if (team.captainUid !== uid) return res.status(403).json({ error: "Only captain can invite" });
       const members = normalizeUidList(team.memberUids || []);
       const roster = getTeamRosterConfig(team);
       const maxMembers = roster.maxMembers;

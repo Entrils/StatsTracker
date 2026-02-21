@@ -1787,7 +1787,7 @@ export function registerTournamentAdminRoutes(app, ctx) {
         }
         return respondWithOutcome(res, outcome, {
           ok: true,
-          alreadyCompleted: Boolean(outcome?.alreadyCompleted),
+          ...(outcome?.alreadyCompleted ? { alreadyCompleted: true } : {}),
           nextMatchId: outcome?.nextMatchId || null,
         });
       } catch (err) {

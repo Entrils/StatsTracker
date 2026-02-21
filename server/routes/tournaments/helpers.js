@@ -21,7 +21,7 @@ const DEFAULT_MAP_POOL = [
 ];
 const VETO_READY_DELAY_MS = 30 * 1000;
 const VETO_TURN_MS = 30 * 1000;
-const FRAGPUNK_ID_REGEX = /^[A-Za-z0-9._-]{3,24}#[A-Za-z0-9]{2,8}$/;
+const FRAGPUNK_ID_REGEX = /^[A-Za-z0-9._-]{2,24}#[A-Za-z0-9]{2,8}$/;
 
 function toInt(value, fallback = 0) {
   const n = Number.parseInt(value, 10);

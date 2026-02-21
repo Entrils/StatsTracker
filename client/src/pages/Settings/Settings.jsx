@@ -6,7 +6,7 @@ import { useLang } from "@/i18n/LanguageContext";
 import Button from "@/components/ui/Button";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
-const FRAGPUNK_ID_REGEX = /^[A-Za-z0-9._-]{3,24}#[A-Za-z0-9]{2,8}$/;
+const FRAGPUNK_ID_REGEX = /^[A-Za-z0-9._-]{2,24}#[A-Za-z0-9]{2,8}$/;
 
 export default function Settings() {
   const { user } = useAuth();

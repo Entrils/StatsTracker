@@ -6,7 +6,7 @@ import sharp from "sharp";
 import { fileURLToPath } from "url";
 import { computeHiddenElo } from "../helpers/elo.js";
 
-const FRAGPUNK_ID_REGEX = /^[A-Za-z0-9._-]{3,24}#[A-Za-z0-9]{2,8}$/;
+const FRAGPUNK_ID_REGEX = /^[A-Za-z0-9._-]{2,24}#[A-Za-z0-9]{2,8}$/;
 
 export function registerProfileRoutes(app, deps) {
     const {
