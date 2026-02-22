@@ -138,7 +138,7 @@ function SoloPlayerCard({ player, fallbackName = "Player", eloLabel = "ELO", ent
 
 export default function TournamentMatchPage() {
   const { id, matchId } = useParams();
-  const { user } = useAuth();
+  const { user, claims } = useAuth();
   const { t, lang } = useLang();
 
   const td = t?.tournaments?.details || EMPTY_OBJECT;
@@ -332,6 +332,8 @@ export default function TournamentMatchPage() {
   const isCaptainA = Boolean(user?.uid) && String(user.uid) === String(teamA?.captainUid || "");
   const isCaptainB = Boolean(user?.uid) && String(user.uid) === String(teamB?.captainUid || "");
   const myTeamId = isCaptainA ? teamA.teamId : isCaptainB ? teamB.teamId : "";
+  const isCaptain = isCaptainA || isCaptainB;
+  const isAdmin = claims?.admin === true || claims?.role === "admin";
 
   const veto = match?.veto || null;
   const readyCheck = match?.readyCheck || null;
@@ -548,6 +550,32 @@ export default function TournamentMatchPage() {
     nowMs,
   ]);
 
+  const matchFlowSteps = useMemo(() => {
+    const labels = {
+      ready: tm.stepReady || "Ready",
+      veto: tm.stepVeto || "Veto",
+      live: tm.stepLive || "Live",
+      result: tm.stepResult || "Result",
+    };
+    const order = ["ready", "veto", "live", "result"];
+    let currentKey = "ready";
+
+    if (isMatchCompleted) {
+      currentKey = "result";
+    } else if (vetoUnlocked && vetoDone) {
+      currentKey = "live";
+    } else if (vetoUnlocked && !vetoDone) {
+      currentKey = "veto";
+    }
+
+    const currentIdx = order.indexOf(currentKey);
+    return order.map((key, idx) => ({
+      key,
+      label: labels[key],
+      state: idx < currentIdx ? "done" : idx === currentIdx ? "current" : "upcoming",
+    }));
+  }, [tm.stepReady, tm.stepVeto, tm.stepLive, tm.stepResult, isMatchCompleted, vetoUnlocked, vetoDone]);
+
   const pageError =
     error ||
     (!loading && (!payload || !match || !tournament)
@@ -607,6 +635,30 @@ export default function TournamentMatchPage() {
             </p>
           ) : null}
           <p className={styles.status}>{statusText}</p>
+          <p className={styles.modeBadge}>
+            {isCaptain
+              ? (tm.modeCaptain || "Captain mode")
+              : isAdmin
+                ? (tm.modeAdmin || "Admin viewer mode")
+                : (tm.modeViewer || "Viewer mode")}
+          </p>
+          <div className={styles.matchFlow} aria-label={tm.flowLabel || "Match flow"}>
+            {matchFlowSteps.map((step, idx) => (
+              <div
+                key={step.key}
+                className={`${styles.matchFlowStep} ${
+                  step.state === "done"
+                    ? styles.matchFlowStepDone
+                    : step.state === "current"
+                      ? styles.matchFlowStepCurrent
+                      : styles.matchFlowStepUpcoming
+                }`}
+              >
+                <span className={styles.matchFlowDot}>{idx + 1}</span>
+                <span className={styles.matchFlowLabel}>{step.label}</span>
+              </div>
+            ))}
+          </div>
           {hasSchedule ? <p className={styles.schedule}>{formatMatchDate(scheduledAt, lang)}</p> : null}
           {canShowChat ? (
             <button
@@ -666,7 +718,10 @@ export default function TournamentMatchPage() {
                   {submittingReady ? (tm.confirming || "Confirming...") : (tm.confirmReady || "Confirm readiness")}
                 </button>
               ) : null}
-              {hasSchedule && hasStarted && !bothReady && !myTeamId ? (
+              {hasSchedule && hasStarted && !bothReady && !isCaptain ? (
+                <p className={styles.hint}>{tm.viewerHintReady || "Waiting for captains to confirm readiness"}</p>
+              ) : null}
+              {hasSchedule && hasStarted && !bothReady && isCaptain && !myTeamId ? (
                 <p className={styles.hint}>{tm.readyCaptainsOnly || "Only captains can confirm readiness"}</p>
               ) : null}
             </div>
@@ -675,7 +730,10 @@ export default function TournamentMatchPage() {
           {vetoUnlocked && !vetoDone ? (
             <div className={styles.vetoCard}>
               <h3 className={styles.blockTitle}>{tm.veto || "Ban/Pick"}</h3>
-              {hasStarted && bothReady && !canUseVeto ? (
+              {!isCaptain ? (
+                <p className={styles.hint}>{tm.viewerHintVeto || "Captains are currently running Ban/Pick"}</p>
+              ) : null}
+              {hasStarted && bothReady && isCaptain && !canUseVeto ? (
                 <p className={styles.hint}>{tm.captainsOnly || "Only captains can use veto"}</p>
               ) : null}
               {notice ? <StateMessage text={notice} tone="error" /> : null}
@@ -685,38 +743,70 @@ export default function TournamentMatchPage() {
                   const isAvailable = availableMaps.includes(mapName);
                   const isBanned = bannedMaps.has(mapName);
                   const isPicked = pickedMaps.has(mapName);
+                  const canClickMap = isCaptain && isAvailable && canUseVeto && myTurn && submittingMap !== mapName;
                   return (
-                    <button
-                      key={mapName}
-                      type="button"
-                      className={`${styles.mapCard} ${isAvailable ? "" : styles.mapCardDisabled}`}
-                      disabled={!isAvailable || !canUseVeto || !myTurn || submittingMap === mapName}
-                      onClick={() => onVeto(mapName)}
-                    >
-                      <div className={styles.mapThumb}>
-                        {!failedMapImages.has(mapName) ? (
-                          <img
-                            src={mapImageSrc(mapName)}
-                            alt={mapName}
-                            className={styles.mapImage}
-                            loading="lazy"
-                            onError={() => {
-                              setFailedMapImages((prev) => {
-                                if (prev.has(mapName)) return prev;
-                                const next = new Set(prev);
-                                next.add(mapName);
-                                return next;
-                              });
-                            }}
-                          />
-                        ) : (
-                          <span className={styles.mapThumbFallback}>IMG</span>
-                        )}
-                        {isBanned ? <span className={styles.mapBannedTag}>BANNED</span> : null}
-                        {isPicked ? <span className={styles.mapPickedTag}>PICKED</span> : null}
+                    canClickMap ? (
+                      <button
+                        key={mapName}
+                        type="button"
+                        className={`${styles.mapCard} ${isAvailable ? "" : styles.mapCardDisabled}`}
+                        disabled={!canClickMap}
+                        onClick={() => onVeto(mapName)}
+                      >
+                        <div className={styles.mapThumb}>
+                          {!failedMapImages.has(mapName) ? (
+                            <img
+                              src={mapImageSrc(mapName)}
+                              alt={mapName}
+                              className={styles.mapImage}
+                              loading="lazy"
+                              onError={() => {
+                                setFailedMapImages((prev) => {
+                                  if (prev.has(mapName)) return prev;
+                                  const next = new Set(prev);
+                                  next.add(mapName);
+                                  return next;
+                                });
+                              }}
+                            />
+                          ) : (
+                            <span className={styles.mapThumbFallback}>IMG</span>
+                          )}
+                          {isBanned ? <span className={styles.mapBannedTag}>BANNED</span> : null}
+                          {isPicked ? <span className={styles.mapPickedTag}>PICKED</span> : null}
+                        </div>
+                        <div className={styles.mapLabel}>{mapName}</div>
+                      </button>
+                    ) : (
+                      <div
+                        key={mapName}
+                        className={`${styles.mapCard} ${styles.mapCardReadonly} ${isAvailable ? "" : styles.mapCardDisabled}`}
+                      >
+                        <div className={styles.mapThumb}>
+                          {!failedMapImages.has(mapName) ? (
+                            <img
+                              src={mapImageSrc(mapName)}
+                              alt={mapName}
+                              className={styles.mapImage}
+                              loading="lazy"
+                              onError={() => {
+                                setFailedMapImages((prev) => {
+                                  if (prev.has(mapName)) return prev;
+                                  const next = new Set(prev);
+                                  next.add(mapName);
+                                  return next;
+                                });
+                              }}
+                            />
+                          ) : (
+                            <span className={styles.mapThumbFallback}>IMG</span>
+                          )}
+                          {isBanned ? <span className={styles.mapBannedTag}>BANNED</span> : null}
+                          {isPicked ? <span className={styles.mapPickedTag}>PICKED</span> : null}
+                        </div>
+                        <div className={styles.mapLabel}>{mapName}</div>
                       </div>
-                      <div className={styles.mapLabel}>{mapName}</div>
-                    </button>
+                    )
                   );
                 })}
               </div>

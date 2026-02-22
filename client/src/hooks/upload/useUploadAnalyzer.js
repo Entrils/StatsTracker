@@ -51,6 +51,69 @@ export default function useUploadAnalyzer({
       : [];
     if (!queue.length) return;
 
+    const cypressMockOutcomes =
+      typeof window !== "undefined" && window.Cypress
+        ? window.__CY_UPLOAD_MOCK_OUTCOMES
+        : null;
+    if (Array.isArray(cypressMockOutcomes)) {
+      setLoading(true);
+      setStatus(t.upload.processing || "Processing...");
+      setStatusTone("neutral");
+      setOcrRemaining(null);
+      setBatchResults([]);
+
+      try {
+        for (let index = 0; index < queue.length; index += 1) {
+          const file = queue[index];
+          const mock = cypressMockOutcomes[index] || {};
+          const status =
+            mock?.status === "ok" || mock?.status === "error" || mock?.status === "skip"
+              ? mock.status
+              : "ok";
+          const message =
+            String(mock?.message || "").trim() ||
+            (status === "ok"
+              ? t.upload.statusOk || "Uploaded"
+              : status === "skip"
+              ? t.upload.statusManualSkipped || "Result not selected"
+              : t.upload.statusOcrFailed || "OCR failed");
+          const item = {
+            name: mock?.name || file?.name || `${t.upload.fileLabel || "File"} ${index + 1}`,
+            status,
+            message,
+          };
+          const suffix = queue.length > 1 ? ` (${index + 1}/${queue.length})` : "";
+
+          setStatus(`${message}${suffix}`);
+          setStatusTone(status === "ok" ? "good" : status === "skip" ? "neutral" : "bad");
+          if (Number.isFinite(Number(mock?.remaining))) {
+            setOcrRemaining(Number(mock.remaining));
+          }
+          setBatchResults((prev) => [...prev, item]);
+          if (status === "ok") {
+            setLastMatch(
+              mock?.finalMatch || {
+                matchId: `cy-${index + 1}`,
+                result: "victory",
+                score: 1200,
+                kills: 10,
+                deaths: 6,
+                assists: 4,
+                damage: 3000,
+                damageShare: 20,
+              }
+            );
+          }
+          await Promise.resolve();
+        }
+      } finally {
+        setLoading(false);
+        setSelectedFile(null);
+        setImageUrl(null);
+      }
+      return;
+    }
+
     if (activeRunRef.current) {
       activeRunRef.current.abort();
     }

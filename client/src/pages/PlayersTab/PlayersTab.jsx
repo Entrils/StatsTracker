@@ -5,6 +5,7 @@ import StateMessage from "@/components/StateMessage/StateMessage";
 import PageState from "@/components/StateMessage/PageState";
 import Button from "@/components/ui/Button";
 import { useLang } from "@/i18n/LanguageContext";
+import { useAuth } from "@/auth/AuthContext";
 import { dedupedJsonRequest } from "@/utils/network/dedupedFetch";
 import { trackUxEvent } from "@/utils/analytics/trackUxEvent";
 
@@ -20,6 +21,7 @@ const SKELETON_ROWS = 8;
 
 export default function PlayersTab() {
   const { t } = useLang();
+  const { user } = useAuth();
 
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
   const [rawRows, setRawRows] = useState([]);
@@ -185,6 +187,63 @@ export default function PlayersTab() {
     };
   }, [filteredAndSorted, sortBy, t.leaderboard]);
 
+  const discoveryInsights = useMemo(() => {
+    if (!filteredAndSorted.length) return [];
+
+    const growth = [...filteredAndSorted]
+      .filter((p) => Number(p.rankDelta || 0) > 0)
+      .sort((a, b) => (b.rankDelta || 0) - (a.rankDelta || 0))[0];
+
+    const trend = [...filteredAndSorted]
+      .filter((p) => Number(p.matches || 0) >= 10)
+      .sort((a, b) => {
+        const scoreA = Number(a.winrate || 0) * 2 + Number(a.kda || 0) * 15;
+        const scoreB = Number(b.winrate || 0) * 2 + Number(b.kda || 0) * 15;
+        return scoreB - scoreA;
+      })[0];
+
+    const newcomers = filteredAndSorted
+      .filter((p) => isNewPlayer(p.createdAt))
+      .sort((a, b) => Number(b.elo || 0) - Number(a.elo || 0))[0];
+
+    const items = [];
+    if (growth?.uid) {
+      items.push({
+        key: "growth",
+        uid: growth.uid,
+        title: t.leaderboard?.discoveryGrowthTitle || "Fast Climber",
+        text: (t.leaderboard?.discoveryGrowthText ||
+          "{name} jumped {value} spots. Check what boosted them.")
+          .replace("{name}", growth.name)
+          .replace("{value}", String(Math.round(Number(growth.rankDelta || 0)))),
+      });
+    }
+    if (trend?.uid) {
+      items.push({
+        key: "trend",
+        uid: trend.uid,
+        title: t.leaderboard?.discoveryTrendTitle || "Hot Form",
+        text: (t.leaderboard?.discoveryTrendText ||
+          "{name} is heating up: {winrate}% WR and {kda} KDA.")
+          .replace("{name}", trend.name)
+          .replace("{winrate}", Number(trend.winrate || 0).toFixed(1))
+          .replace("{kda}", Number(trend.kda || 0).toFixed(2)),
+      });
+    }
+    if (newcomers?.uid) {
+      items.push({
+        key: "newcomer",
+        uid: newcomers.uid,
+        title: t.leaderboard?.discoveryNewTitle || "New Challenger",
+        text: (t.leaderboard?.discoveryNewText ||
+          "{name} is a new entry with {elo} ELO. Keep an eye on them.")
+          .replace("{name}", newcomers.name)
+          .replace("{elo}", String(Math.round(Number(newcomers.elo || 0)))),
+      });
+    }
+    return items.slice(0, 3);
+  }, [filteredAndSorted, t.leaderboard]);
+
   return (
     <div className={styles.wrapper}>
       <div className={styles.header}>
@@ -195,6 +254,34 @@ export default function PlayersTab() {
             <strong>{steamOnline.toLocaleString()}</strong>
           </p>
         )}
+        <div
+          className={`${styles.mobileQuickActions} ${
+            user ? "" : styles.mobileQuickActionsGuest
+          }`}
+        >
+          {user ? (
+            <>
+              <Link to="/upload" className={styles.mobileQuickBtn}>
+                {t.nav?.upload || "Upload"}
+              </Link>
+              <Link to="/tournaments" className={styles.mobileQuickBtn}>
+                {t.nav?.tournaments || "Tournaments"}
+              </Link>
+              <Link to="/me" className={styles.mobileQuickBtn}>
+                {t.nav?.myProfile || "My profile"}
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link to="/tournaments" className={styles.mobileQuickBtn}>
+                {t.nav?.tournaments || "Tournaments"}
+              </Link>
+              <Link to="/help" className={styles.mobileQuickBtn}>
+                {t.nav?.help || "Help"}
+              </Link>
+            </>
+          )}
+        </div>
 
         <div className={styles.controls}>
           <input
@@ -338,6 +425,32 @@ export default function PlayersTab() {
             </Link>
           </div>
         )}
+        {!!discoveryInsights.length && (
+          <div className={styles.discoveryGrid}>
+            {discoveryInsights.map((item) => (
+              <div className={styles.discoveryCard} key={item.key}>
+                <p className={styles.discoveryTitle}>{item.title}</p>
+                <p className={styles.discoveryText}>{item.text}</p>
+                <Link
+                  to={`/player/${item.uid}`}
+                  className={styles.discoveryCta}
+                  onClick={() =>
+                    trackUxEvent("activation_target_action", {
+                      meta: {
+                        source: "players_discovery_cta",
+                        type: item.key,
+                        uid: item.uid,
+                        sortBy,
+                      },
+                    })
+                  }
+                >
+                  {t.leaderboard?.discoveryCta || t.leaderboard?.quickInsightCta || "Open Player Breakdown"}
+                </Link>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <PageState
@@ -410,11 +523,9 @@ export default function PlayersTab() {
                       : p.createdAt?._seconds
                       ? p.createdAt._seconds * 1000
                       : 0;
-                  const isNew =
-                    createdAtMs &&
-                    Date.now() - createdAtMs < 7 * 24 * 60 * 60 * 1000;
+                  const isNew = isNewPlayer(createdAtMs);
                   const deltaLabel = isNew
-                    ? "NEW"
+                    ? t.leaderboard?.newLabel || "NEW"
                     : delta === 0
                     ? "=0"
                     : `${delta > 0 ? "+" : "-"} ${deltaAbs}`;
@@ -498,8 +609,12 @@ export default function PlayersTab() {
                   : p.createdAt?._seconds
                   ? p.createdAt._seconds * 1000
                   : 0;
-              const isNew = createdAtMs && Date.now() - createdAtMs < 7 * 24 * 60 * 60 * 1000;
-              const deltaLabel = isNew ? "NEW" : delta === 0 ? "=0" : `${delta > 0 ? "+" : "-"} ${Math.abs(delta)}`;
+              const isNew = isNewPlayer(createdAtMs);
+              const deltaLabel = isNew
+                ? t.leaderboard?.newLabel || "NEW"
+                : delta === 0
+                ? "=0"
+                : `${delta > 0 ? "+" : "-"} ${Math.abs(delta)}`;
               return (
                 <article className={styles.mobileCard} key={`mobile-${p.uid}`}>
                   <div className={styles.mobileTop}>
@@ -594,4 +709,17 @@ function normalizeSocialUrl(type, value) {
   if (type === "twitch") return `https://twitch.tv/${v.replace(/^@/, "")}`;
   if (type === "youtube") return `https://youtube.com/${v.replace(/^@/, "@")}`;
   return `https://tiktok.com/${v.replace(/^@/, "")}`;
+}
+
+function isNewPlayer(rawCreatedAt) {
+  const createdAtMs = parseCreatedAt(rawCreatedAt);
+  return createdAtMs > 0 && Date.now() - createdAtMs < 7 * 24 * 60 * 60 * 1000;
+}
+
+function parseCreatedAt(rawCreatedAt) {
+  if (typeof rawCreatedAt === "number") return rawCreatedAt;
+  if (typeof rawCreatedAt === "string") return Date.parse(rawCreatedAt);
+  if (rawCreatedAt?.seconds) return rawCreatedAt.seconds * 1000;
+  if (rawCreatedAt?._seconds) return rawCreatedAt._seconds * 1000;
+  return 0;
 }

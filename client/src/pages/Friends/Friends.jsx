@@ -6,6 +6,7 @@ import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import { useLang } from "@/i18n/LanguageContext";
 import { useAuth } from "@/auth/AuthContext";
+import { trackUxEvent } from "@/utils/analytics/trackUxEvent";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
@@ -71,6 +72,7 @@ export default function Friends() {
   const [outgoing, setOutgoing] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [feedExpanded, setFeedExpanded] = useState(false);
   const pendingRequestsRef = useRef(0);
 
   const beginLoading = useCallback(() => {
@@ -223,6 +225,78 @@ export default function Friends() {
     return t.friends?.empty || "No friends yet";
   }, [tab, t]);
 
+  const activityFeed = useMemo(() => {
+    if (!Array.isArray(friends) || !friends.length) return [];
+
+    const toMs = (value) => {
+      if (!value) return 0;
+      if (typeof value === "number") return value;
+      if (typeof value === "string") return Date.parse(value);
+      if (typeof value?.toMillis === "function") return value.toMillis();
+      if (typeof value?.seconds === "number") return value.seconds * 1000;
+      if (typeof value?._seconds === "number") return value._seconds * 1000;
+      return 0;
+    };
+    const winsInLast5 = (last5 = []) =>
+      (Array.isArray(last5) ? last5 : []).filter((r) => r === "W").length;
+
+    const events = [];
+    friends.forEach((friend) => {
+      const uid = String(friend?.uid || "").trim();
+      if (!uid) return;
+      const name = String(friend?.name || uid);
+      const createdAtMs = toMs(friend?.createdAt);
+      const baseScore = createdAtMs > 0 ? createdAtMs : 0;
+      const matches = Number(friend?.matches || 0);
+      const last5 = Array.isArray(friend?.last5) ? friend.last5 : [];
+      const wins = winsInLast5(last5);
+
+      if (createdAtMs > 0) {
+        events.push({
+          key: `added-${uid}`,
+          uid,
+          type: "added",
+          score: baseScore,
+          text: (t.friends?.feedAdded || "{name} joined your friends list.")
+            .replace("{name}", name),
+        });
+      }
+      if (last5.length >= 3 && wins >= 3) {
+        events.push({
+          key: `streak-${uid}`,
+          uid,
+          type: "streak",
+          score: baseScore - 1,
+          text: (t.friends?.feedStreak || "{name} is hot: {wins} wins in last 5.")
+            .replace("{name}", name)
+            .replace("{wins}", String(wins)),
+        });
+      }
+      if (matches >= 30) {
+        events.push({
+          key: `grind-${uid}`,
+          uid,
+          type: "grind",
+          score: baseScore - 2,
+          text: (t.friends?.feedGrind || "{name} is grinding hard: {matches} matches played.")
+            .replace("{name}", name)
+            .replace("{matches}", String(matches)),
+        });
+      }
+    });
+
+    return events
+      .sort((a, b) => Number(b.score || 0) - Number(a.score || 0))
+      .slice(0, 8);
+  }, [friends, t.friends]);
+
+  const feedPreviewText = activityFeed[0]?.text || "";
+
+  useEffect(() => {
+    if (tab !== "friends") setFeedExpanded(false);
+    if (!activityFeed.length) setFeedExpanded(false);
+  }, [activityFeed.length, tab]);
+
   if (!user) {
     return <div className={styles.wrapper}>{t.friends?.login || "Login required"}</div>;
   }
@@ -265,6 +339,61 @@ export default function Friends() {
             </Button>
           </div>
         </div>
+        <div className={styles.mobileQuickActions}>
+          <Link to="/players" className={styles.mobileQuickBtn}>
+            {t.nav?.players || "Players"}
+          </Link>
+          <Link to="/me" className={styles.mobileQuickBtn}>
+            {t.nav?.myProfile || "My profile"}
+          </Link>
+          <Link to="/upload" className={styles.mobileQuickBtn}>
+            {t.nav?.upload || "Upload"}
+          </Link>
+        </div>
+
+        {tab === "friends" && activityFeed.length > 0 ? (
+          <div className={styles.feedCard}>
+            <button
+              type="button"
+              className={styles.feedToggle}
+              onClick={() => setFeedExpanded((prev) => !prev)}
+              aria-expanded={feedExpanded ? "true" : "false"}
+            >
+              <span className={styles.feedTitle}>
+                {t.friends?.feedTitle || "Friends Activity Feed"} ({activityFeed.length})
+              </span>
+              <span className={styles.feedPreview}>{feedPreviewText}</span>
+              <span className={styles.feedChevron} aria-hidden="true">
+                {feedExpanded ? "▴" : "▾"}
+              </span>
+            </button>
+            {feedExpanded ? (
+              <div className={styles.feedList}>
+                {activityFeed.map((event) => (
+                  <div className={styles.feedItem} key={event.key}>
+                    <span className={styles.feedDot} aria-hidden="true" />
+                    <span className={styles.feedText}>{event.text}</span>
+                    <Link
+                      className={styles.feedCta}
+                      to={`/me?tab=friends&friend=${encodeURIComponent(event.uid)}`}
+                      onClick={() =>
+                        trackUxEvent("friend_compare_prompt_click", {
+                          meta: {
+                            source: "friends_feed",
+                            uid: event.uid,
+                            type: event.type,
+                          },
+                        })
+                      }
+                    >
+                      {t.friends?.feedCompareCta || "Compare"}
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
 
         <PageState
           loading={loading}
@@ -321,6 +450,20 @@ export default function Friends() {
                     <div className={styles.meta}>
                       {t.friends?.matches || "Matches"}: {friend.matches || 0}
                     </div>
+                    <Link
+                      className={styles.compareCta}
+                      to={`/me?tab=friends&friend=${encodeURIComponent(friend.uid)}`}
+                      onClick={() =>
+                        trackUxEvent("friend_compare_prompt_click", {
+                          meta: {
+                            source: "friends_list_card",
+                            uid: friend.uid,
+                          },
+                        })
+                      }
+                    >
+                      {t.friends?.feedCompareCta || "Compare"}
+                    </Link>
                     {last5.length ? (
                       <div className={styles.streak}>
                         {last5.map((r, idx) => (

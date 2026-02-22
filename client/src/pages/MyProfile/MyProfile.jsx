@@ -1,4 +1,5 @@
-import { lazy, Suspense, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import styles from "@/pages/MyProfile/MyProfile.module.css";
 import { useLang } from "@/i18n/LanguageContext";
 import { useAuth } from "@/auth/AuthContext";
@@ -36,6 +37,7 @@ export default function MyProfile() {
   const [matchesVisible, setMatchesVisible] = useState(MATCHES_STEP);
   const [matchOutcomeFilter, setMatchOutcomeFilter] = useState("all");
   const [matchRange, setMatchRange] = useState(MATCHES_STEP);
+  const [feedExpanded, setFeedExpanded] = useState(false);
 
   const uid = user?.uid;
   const { matches, loading, loadingMore, hasMore, fetchHistory } = useProfileMatches(uid);
@@ -111,6 +113,83 @@ export default function MyProfile() {
     [filteredRecentMatches, currentVisibleLimit]
   );
   const canLoadMoreMatches = hasMore || currentVisibleLimit < filteredRecentMatches.length;
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search || "");
+    const tabParam = String(params.get("tab") || "").trim().toLowerCase();
+    const friendParam = String(params.get("friend") || "").trim();
+    if (["overview", "matches", "performance", "friends"].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+    if (!friendParam || !Array.isArray(friends) || !friends.length) return;
+    const exists = friends.some((f) => String(f?.uid || "") === friendParam);
+    if (exists) {
+      setActiveTab("friends");
+      setFriendId(friendParam);
+    }
+  }, [friends, setFriendId]);
+
+  const friendsActivityFeed = useMemo(() => {
+    const toMs = (value) => {
+      if (!value) return 0;
+      if (typeof value === "number") return value;
+      if (typeof value === "string") return Date.parse(value);
+      if (typeof value?.toMillis === "function") return value.toMillis();
+      if (typeof value?.seconds === "number") return value.seconds * 1000;
+      if (typeof value?._seconds === "number") return value._seconds * 1000;
+      return 0;
+    };
+    const winsInLast5 = (last5 = []) =>
+      (Array.isArray(last5) ? last5 : []).filter((r) => r === "W").length;
+    if (!Array.isArray(friends) || !friends.length) return [];
+    const events = [];
+    friends.forEach((friend) => {
+      const uid = String(friend?.uid || "").trim();
+      if (!uid) return;
+      const name = String(friend?.name || uid);
+      const createdAtMs = toMs(friend?.createdAt);
+      const baseScore = createdAtMs > 0 ? createdAtMs : 0;
+      const matchesPlayed = Number(friend?.matches || 0);
+      const wins5 = winsInLast5(friend?.last5);
+      if (createdAtMs > 0) {
+        events.push({
+          key: `added-${uid}`,
+          uid,
+          score: baseScore,
+          text: (t.me?.feedAdded || "{name} joined your friends list.")
+            .replace("{name}", name),
+        });
+      }
+      if (wins5 >= 3) {
+        events.push({
+          key: `streak-${uid}`,
+          uid,
+          score: baseScore - 1,
+          text: (t.me?.feedStreak || "{name} has {wins} wins in the last 5 matches.")
+            .replace("{name}", name)
+            .replace("{wins}", String(wins5)),
+        });
+      }
+      if (matchesPlayed >= 30) {
+        events.push({
+          key: `grind-${uid}`,
+          uid,
+          score: baseScore - 2,
+          text: (t.me?.feedGrind || "{name} has played {matches} matches.")
+            .replace("{name}", name)
+            .replace("{matches}", String(matchesPlayed)),
+        });
+      }
+    });
+    return events.sort((a, b) => Number(b.score || 0) - Number(a.score || 0)).slice(0, 5);
+  }, [friends, t.me]);
+  const feedPreviewText = friendsActivityFeed[0]?.text || "";
+
+  useEffect(() => {
+    if (activeTab !== "friends") setFeedExpanded(false);
+    if (!friendsActivityFeed.length) setFeedExpanded(false);
+  }, [activeTab, friendsActivityFeed.length]);
 
   if (!user) {
     return <p className={styles.wrapper}>{t.me?.loginRequired || "Login required"}</p>;
@@ -252,6 +331,39 @@ export default function MyProfile() {
     <div className={styles.card}>
       <h2 className={styles.cardTitle}>{t.me?.compareTitle || "Compare"}</h2>
       <p className={styles.hint}>{t.me?.compareHint || "Compare your stats with a friend"}</p>
+      {!!friendsActivityFeed.length && (
+        <div className={styles.feedBox}>
+          <button
+            type="button"
+            className={styles.feedToggle}
+            onClick={() => setFeedExpanded((prev) => !prev)}
+            aria-expanded={feedExpanded ? "true" : "false"}
+          >
+            <span className={styles.feedTitle}>
+              {t.me?.feedTitle || "Friends activity"} ({friendsActivityFeed.length})
+            </span>
+            <span className={styles.feedPreview}>{feedPreviewText}</span>
+            <span className={styles.feedChevron} aria-hidden="true">
+              {feedExpanded ? "▴" : "▾"}
+            </span>
+          </button>
+          {feedExpanded ? (
+            <div className={styles.feedList}>
+              {friendsActivityFeed.map((event) => (
+                <button
+                  key={event.key}
+                  type="button"
+                  className={styles.feedItem}
+                  onClick={() => setFriendId(event.uid)}
+                >
+                  <span className={styles.feedDot} aria-hidden="true" />
+                  <span className={styles.feedText}>{event.text}</span>
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      )}
       <div className={styles.compareSelectWrap}>
         <select
           className={styles.compareSelect}
@@ -445,6 +557,21 @@ export default function MyProfile() {
             {tab.label}
           </button>
         ))}
+      </div>
+      <div className={styles.mobileQuickActions}>
+        <Link to="/upload" className={styles.mobileQuickBtn}>
+          {t.nav?.upload || "Upload"}
+        </Link>
+        <Link to="/friends" className={styles.mobileQuickBtn}>
+          {t.nav?.friends || "Friends"}
+        </Link>
+        <button
+          type="button"
+          className={styles.mobileQuickBtn}
+          onClick={() => setActiveTab("friends")}
+        >
+          {t.me?.tabFriends || "VS Friends"}
+        </button>
       </div>
 
       <div className={styles.profileLayout}>

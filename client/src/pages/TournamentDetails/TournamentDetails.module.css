@@ -37,6 +37,11 @@
   padding: var(--space-4);
 }
 
+.adminControlsSection {
+  border-color: rgba(255, 111, 133, 0.32);
+  background: rgba(32, 10, 18, 0.4);
+}
+
 .teamCreate {
   display: grid;
   grid-template-columns: minmax(180px, 1fr) minmax(180px, 1fr) 120px auto;

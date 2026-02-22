@@ -61,6 +61,7 @@
 
     --motion-fast: 140ms ease;
     --motion-normal: 220ms ease;
+    --mobile-quick-nav-h: 76px;
   }
 
   html,
@@ -219,6 +220,16 @@
     animation: none !important;
     transition: none !important;
     scroll-behavior: auto !important;
+  }
+}
+
+@media (max-width: 920px) {
+  #root {
+    padding-bottom: calc(var(--mobile-quick-nav-h) + env(safe-area-inset-bottom, 0px) + 12px);
+  }
+
+  .app-main {
+    padding-bottom: 6px;
   }
 }
 

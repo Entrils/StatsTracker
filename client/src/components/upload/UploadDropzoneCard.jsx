@@ -18,6 +18,7 @@ export default function UploadDropzoneCard({
     <div className={styles.card}>
       <input
         id="upload-file"
+        data-cy="upload-input"
         type="file"
         accept="image/*"
         className={styles.fileInput}
@@ -95,6 +96,7 @@ export default function UploadDropzoneCard({
       )}
 
       <button
+        data-cy="upload-analyze"
         onClick={onAnalyze}
         disabled={loading || !selectedFile}
         className={`${styles.button} ${selectedFile ? styles.buttonReady : ""}`}
@@ -112,4 +114,3 @@ export default function UploadDropzoneCard({
     </div>
   );
 }
-

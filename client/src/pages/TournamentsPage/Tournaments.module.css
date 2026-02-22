@@ -29,6 +29,19 @@
   flex-shrink: 0;
 }
 
+.mobileQuickActions {
+  display: none;
+}
+
+.mobileQuickBtn {
+  width: 100%;
+  justify-content: center;
+  min-height: 34px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 0.68rem;
+}
+
 .teamsSection {
   margin-top: var(--space-4);
   background: rgba(8, 12, 22, 0.75);
@@ -1288,6 +1301,14 @@
 
   .header {
     flex-direction: column;
+  }
+
+  .mobileQuickActions {
+    margin-top: 10px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    width: 100%;
   }
 
   .teamCreate {

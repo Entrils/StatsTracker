@@ -181,6 +181,36 @@
   flex-wrap: wrap;
 }
 
+.comparePrompt {
+  margin-top: 10px;
+}
+
+.compareCta {
+  display: inline-flex;
+  width: fit-content;
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 245, 212, 0.38);
+  background: rgba(7, 10, 18, 0.68);
+  color: #e7fbff;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  text-decoration: none;
+}
+
+.compareCta:hover {
+  border-color: rgba(0, 245, 212, 0.62);
+  color: #ffffff;
+}
+
+.compareHint {
+  margin: 0;
+  color: #b8c3df;
+  font-size: 0.82rem;
+}
+
 .friendIcon {
   width: 18px;
   height: 18px;

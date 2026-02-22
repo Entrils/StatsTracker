@@ -165,6 +165,92 @@
   text-align: center;
 }
 
+.modeBadge {
+  margin: 0;
+  justify-self: center;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.06);
+  color: #cfe0ff;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+}
+
+.matchFlow {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin: 4px 0;
+}
+
+.matchFlowStep {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 8px 6px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(5, 8, 15, 0.45);
+}
+
+.matchFlowDot {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  font-size: 0.74rem;
+  font-weight: 800;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #e2ebff;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.matchFlowLabel {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #b8c7e8;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.matchFlowStepDone {
+  border-color: rgba(97, 230, 166, 0.4);
+  background: rgba(23, 92, 64, 0.3);
+}
+
+.matchFlowStepDone .matchFlowDot {
+  border-color: rgba(97, 230, 166, 0.55);
+  background: rgba(97, 230, 166, 0.28);
+  color: #dcfff1;
+}
+
+.matchFlowStepDone .matchFlowLabel {
+  color: #b9ffe2;
+}
+
+.matchFlowStepCurrent {
+  border-color: rgba(159, 255, 234, 0.58);
+  background: rgba(38, 113, 95, 0.35);
+}
+
+.matchFlowStepCurrent .matchFlowDot {
+  border-color: rgba(159, 255, 234, 0.68);
+  background: rgba(159, 255, 234, 0.26);
+  color: #e8fff9;
+}
+
+.matchFlowStepCurrent .matchFlowLabel {
+  color: #dcfff6;
+}
+
+.matchFlowStepUpcoming {
+  opacity: 0.78;
+}
+
 .chatToggle {
   justify-self: center;
   display: inline-flex;
@@ -267,6 +353,10 @@
   color: #dbe7ff;
   cursor: pointer;
   text-align: left;
+}
+
+.mapCardReadonly {
+  cursor: default;
 }
 
 .mapCardDisabled {
@@ -613,6 +703,10 @@
   }
 
   .mapGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .matchFlow {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 

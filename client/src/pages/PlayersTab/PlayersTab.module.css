@@ -45,6 +45,36 @@
   width: 100%;
 }
 
+.mobileQuickActions {
+  display: none;
+}
+
+.mobileQuickActionsGuest {
+  display: none;
+}
+
+.mobileQuickBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(0, 245, 212, 0.34);
+  background: rgba(7, 10, 18, 0.68);
+  color: #eaf5ff;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+.mobileQuickBtn:hover {
+  border-color: rgba(0, 245, 212, 0.58);
+  color: #ffffff;
+}
+
 .quickInsight {
   width: 100%;
   margin-top: var(--space-2);
@@ -96,6 +126,60 @@
 }
 
 .quickInsightCta:hover {
+  border-color: rgba(0, 245, 212, 0.58);
+  color: #ffffff;
+}
+
+.discoveryGrid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.discoveryCard {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: linear-gradient(
+    140deg,
+    rgba(255, 255, 255, 0.05),
+    rgba(7, 10, 18, 0.75)
+  );
+}
+
+.discoveryTitle {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #c5fff5;
+}
+
+.discoveryText {
+  margin: 0;
+  color: #e8f0ff;
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.discoveryCta {
+  width: fit-content;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(0, 245, 212, 0.35);
+  background: rgba(7, 10, 18, 0.78);
+  color: #f4feff;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.discoveryCta:hover {
   border-color: rgba(0, 245, 212, 0.58);
   color: #ffffff;
 }
@@ -631,6 +715,17 @@
     margin-top: -6px;
   }
 
+  .mobileQuickActions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    width: 100%;
+  }
+
+  .mobileQuickActionsGuest {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .tableWrapper {
     display: none;
   }
@@ -642,6 +737,10 @@
   .quickInsight {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .discoveryGrid {
+    grid-template-columns: 1fr;
   }
 
   .gold,

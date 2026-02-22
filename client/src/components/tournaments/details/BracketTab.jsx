@@ -1,4 +1,3 @@
-import Button from "@/components/ui/Button";
 import { Link } from "react-router-dom";
 import styles from "@/pages/TournamentDetails/TournamentDetails.module.css";
 
@@ -7,10 +6,6 @@ export default function BracketTab({
   isSolo = false,
   tournamentId,
   buildMatchHref,
-  isAdmin,
-  generating,
-  canGenerateBracket,
-  onGenerate,
   matchesSource,
   stageTabs,
   stageFilter,
@@ -23,9 +18,7 @@ export default function BracketTab({
   hasTeamIdentity,
   savingResultId,
   onOpenScoreModal,
-  onFinishGroupStage,
-  canFinishGroupStage,
-  generatingPlayoff,
+  isAdmin,
   isDoubleAllView,
   doubleElimRef,
   doubleElimOverlay,
@@ -62,27 +55,6 @@ export default function BracketTab({
     <section className={styles.teamsSection}>
       <div className={styles.cardTop}>
         <h2 className={styles.formTitle}>{td?.bracket?.title || "Bracket"}</h2>
-        <div className={styles.actions}>
-          {isAdmin && (
-            <>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={onGenerate}
-                disabled={generating || !canGenerateBracket}
-              >
-                {generating
-                  ? td?.bracket?.generating || "Generating..."
-                  : td?.bracket?.generate || "Generate bracket"}
-              </Button>
-              {!canGenerateBracket && (
-                <span className={styles.rowSubText}>
-                  {td?.bracket?.minParticipants || "At least 2 participants are required"}
-                </span>
-              )}
-            </>
-          )}
-        </div>
       </div>
 
       {!!matchesSource.length && (
@@ -233,19 +205,6 @@ export default function BracketTab({
             </div>
           </div>
 
-          {isAdmin && (
-            <div className={styles.formActions}>
-              <Button
-                size="sm"
-                onClick={onFinishGroupStage}
-                disabled={!canFinishGroupStage || generatingPlayoff}
-              >
-                {generatingPlayoff
-                  ? td?.bracket?.finishingGroup || "Finishing..."
-                  : td?.bracket?.finishGroup || "Finish group stage"}
-              </Button>
-            </div>
-          )}
         </div>
       ) : isDoubleAllView ? (
         <div className={styles.doubleElimScroll}>

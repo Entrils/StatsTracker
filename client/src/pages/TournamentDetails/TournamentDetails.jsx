@@ -651,7 +651,46 @@ export default function TournamentDetailsPage() {
           <Link className={styles.detailsLink} to="/tournaments">
             {td.backToList || "Back to list"}
           </Link>
-          {isAdmin ? (
+        </div>
+      </header>
+
+      {notice ? <StateMessage text={notice} tone="neutral" /> : null}
+
+      {isAdmin ? (
+        <section className={`${styles.teamsSection} ${styles.adminControlsSection}`}>
+          <div className={styles.cardTop}>
+            <h3 className={styles.formTitle}>{td?.admin?.title || "Admin controls"}</h3>
+          </div>
+          <p className={styles.hint}>
+            {td?.admin?.hint || "Administrative actions are isolated from the public tournament view."}
+          </p>
+          <div className={styles.actions}>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={onGenerate}
+              disabled={generating || !canGenerateBracket}
+            >
+              {generating
+                ? td?.bracket?.generating || "Generating..."
+                : td?.bracket?.generate || "Generate bracket"}
+            </Button>
+            {!canGenerateBracket ? (
+              <span className={styles.rowSubText}>
+                {td?.bracket?.minParticipants || "At least 2 participants are required"}
+              </span>
+            ) : null}
+            {(stageFilter === "group" || stageFilter === "all") ? (
+              <Button
+                size="sm"
+                onClick={onFinishGroupStage}
+                disabled={!canFinishGroupStage || generatingPlayoff}
+              >
+                {generatingPlayoff
+                  ? td?.bracket?.finishingGroup || "Finishing..."
+                  : td?.bracket?.finishGroup || "Finish group stage"}
+              </Button>
+            ) : null}
             <Button
               variant="danger"
               size="sm"
@@ -662,11 +701,9 @@ export default function TournamentDetailsPage() {
                 ? td?.deleting || "Deleting..."
                 : td?.delete || "Delete tournament"}
             </Button>
-          ) : null}
-        </div>
-      </header>
-
-      {notice ? <StateMessage text={notice} tone="neutral" /> : null}
+          </div>
+        </section>
+      ) : null}
 
       <div className={styles.tabs}>
         {championTabs.map((item) => (
@@ -705,9 +742,6 @@ export default function TournamentDetailsPage() {
           isSolo={isSolo}
           tournamentId={id}
           isAdmin={isAdmin}
-          generating={generating}
-          canGenerateBracket={canGenerateBracket}
-          onGenerate={onGenerate}
           matchesSource={matchesSource}
           stageTabs={stageTabs}
           stageFilter={stageFilter}
@@ -719,9 +753,6 @@ export default function TournamentDetailsPage() {
           hasTeamIdentity={hasTeamIdentity}
           savingResultId={savingResultId}
           onOpenScoreModal={onOpenScoreModal}
-          onFinishGroupStage={onFinishGroupStage}
-          canFinishGroupStage={canFinishGroupStage}
-          generatingPlayoff={generatingPlayoff}
           isDoubleAllView={isDoubleAllView}
           doubleElimRef={doubleElimRef}
           doubleElimOverlay={{ width: 1, height: 1, upper: "", lower: "" }}

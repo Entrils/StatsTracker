@@ -137,6 +137,38 @@ export default function Navbar() {
     location.pathname === "/" || location.pathname.startsWith("/players");
   const isAdmin = user && (claims?.admin === true || claims?.role === "admin");
   const tournamentsLabel = t.nav.tournaments || "Tournaments";
+  const isTournamentsActive = location.pathname.startsWith("/tournaments");
+  const isUploadActive = location.pathname.startsWith("/upload");
+  const isHelpActive = location.pathname.startsWith("/help");
+  const isFriendsActive = location.pathname.startsWith("/friends");
+  const mobileQuickItems = user
+    ? [
+        { key: "upload", to: "/upload", label: t.nav.upload || "Upload", active: isUploadActive },
+        { key: "players", to: "/players", label: t.nav.players || "Players", active: isPlayersActive },
+        {
+          key: "tournaments",
+          to: "/tournaments",
+          label: tournamentsLabel,
+          active: isTournamentsActive,
+        },
+        {
+          key: "friends",
+          to: "/friends",
+          label: t.nav.friends || "Friends",
+          active: isFriendsActive,
+          badge: friendRequests > 0 ? friendRequests : 0,
+        },
+      ]
+    : [
+        { key: "players", to: "/players", label: t.nav.players || "Players", active: isPlayersActive },
+        {
+          key: "tournaments",
+          to: "/tournaments",
+          label: tournamentsLabel,
+          active: isTournamentsActive,
+        },
+        { key: "help", to: "/help", label: t.nav.help || "Help", active: isHelpActive },
+      ];
 
   return (
     <nav className={styles.navbar}>
@@ -343,6 +375,7 @@ export default function Navbar() {
             onClick={() => setMobileOpen((v) => !v)}
             aria-label="Open menu"
             aria-expanded={mobileOpen}
+            data-cy="nav-burger"
           >
             <span />
             <span />
@@ -362,6 +395,7 @@ export default function Navbar() {
         className={`${styles.offcanvas} ${
           mobileOpen ? styles.offcanvasOpen : ""
         }`}
+        data-cy="nav-offcanvas"
       >
         <div className={styles.offcanvasHeader}>
           <div className={styles.logo}>
@@ -556,6 +590,26 @@ export default function Navbar() {
           </div>
         </div>
       </aside>
+
+      <div
+        className={`${styles.mobileQuickNav} ${
+          mobileOpen ? styles.mobileQuickNavHidden : ""
+        }`}
+        style={{ "--quick-cols": mobileQuickItems.length }}
+        data-cy="mobile-quick-nav"
+      >
+        {mobileQuickItems.map((item) => (
+          <NavLink
+            key={item.key}
+            to={item.to}
+            className={`${styles.quickLink} ${item.active ? styles.quickLinkActive : ""}`}
+            data-cy={`mobile-quick-link-${item.key}`}
+          >
+            <span className={styles.quickLabel}>{item.label}</span>
+            {item.badge ? <span className={styles.quickBadge}>{item.badge}</span> : null}
+          </NavLink>
+        ))}
+      </div>
     </nav>
   );
 }

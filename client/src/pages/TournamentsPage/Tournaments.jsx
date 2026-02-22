@@ -57,6 +57,53 @@ export default function TournamentsPage() {
           <p className={styles.subtitle}>
             {tt.subtitle || "Join upcoming events, follow live brackets, and climb with your team."}
           </p>
+          <div className={styles.mobileQuickActions}>
+            {user ? (
+              <>
+                <Button
+                  size="sm"
+                  className={styles.mobileQuickBtn}
+                  onClick={() => navigate("/my-teams")}
+                >
+                  {t.nav?.myTeams || "My teams"}
+                </Button>
+                {isAdmin ? (
+                  <Button
+                    size="sm"
+                    className={styles.mobileQuickBtn}
+                    onClick={() => navigate("/tournaments/create")}
+                  >
+                    {tt.create || "Create tournament"}
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    className={styles.mobileQuickBtn}
+                    onClick={() => navigate("/help")}
+                  >
+                    {t.nav?.help || "Help"}
+                  </Button>
+                )}
+              </>
+            ) : (
+              <>
+                <Button
+                  size="sm"
+                  className={styles.mobileQuickBtn}
+                  onClick={() => navigate("/players")}
+                >
+                  {t.nav?.players || "Players"}
+                </Button>
+                <Button
+                  size="sm"
+                  className={styles.mobileQuickBtn}
+                  onClick={() => navigate("/help")}
+                >
+                  {t.nav?.help || "Help"}
+                </Button>
+              </>
+            )}
+          </div>
         </div>
         <div className={styles.actions}>
           {isAdmin && (

@@ -304,6 +304,8 @@ export default function PlayerProfile() {
     }
   };
 
+  const compareUrl = `/me?tab=friends&friend=${encodeURIComponent(uid || "")}`;
+
   if (loading) {
     return <p className={styles.wrapper}>{t.profile.loading}</p>;
   }
@@ -433,6 +435,31 @@ export default function PlayerProfile() {
               >
                 {t.friends?.reject || "Reject"}
               </button>
+            </div>
+          )}
+          {user && user.uid !== uid && (
+            <div className={styles.comparePrompt}>
+              {friendStatus === "friend" ? (
+                <Link
+                  to={compareUrl}
+                  className={styles.compareCta}
+                  onClick={() =>
+                    trackUxEvent("friend_compare_prompt_click", {
+                      meta: {
+                        source: "player_profile",
+                        uid,
+                        status: friendStatus,
+                      },
+                    })
+                  }
+                >
+                  {t.profile?.compareCta || "Compare in duel"}
+                </Link>
+              ) : (
+                <p className={styles.compareHint}>
+                  {t.profile?.compareHintPrompt || "Add this player to friends to unlock duel compare."}
+                </p>
+              )}
             </div>
           )}
         </div>

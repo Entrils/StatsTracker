@@ -22,6 +22,7 @@ export default function UploadResultsPanel({
     >
       <>
       <p
+        data-cy="upload-status"
         className={`${styles.status} ${
           statusTone === "good"
             ? styles.statusOk
@@ -34,7 +35,7 @@ export default function UploadResultsPanel({
       </p>
 
       {batchResults.length > 0 && (
-        <div className={styles.batchPanel}>
+        <div className={styles.batchPanel} data-cy="upload-batch">
           <div className={styles.batchTitle}>
             {t.upload.batchTitle || "Batch results"}
           </div>
@@ -54,6 +55,8 @@ export default function UploadResultsPanel({
             {batchResults.map((item, idx) => (
               <li
                 key={`${item.name}-${idx}`}
+                data-cy="upload-batch-item"
+                data-status={item.status}
                 className={`${styles.batchItem} ${
                   item.status === "ok"
                     ? styles.batchItemOk
@@ -84,7 +87,7 @@ export default function UploadResultsPanel({
       )}
 
       {lastMatch && (
-        <div className={styles.matchCard}>
+        <div className={styles.matchCard} data-cy="upload-last-match">
           <div className={styles.matchCardHeader}>
             <span className={styles.matchCardTitle}>
               {t.upload.matchCardTitle || "Last match"}

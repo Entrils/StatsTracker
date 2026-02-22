@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /me
+Disallow: /settings
+Disallow: /upload
+Disallow: /auth/
+Sitemap: https://fragpunktracker.fun/sitemap.xml
+Sitemap: https://www.fragpunktracker.fun/sitemap.xml
