@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import styles from "@/pages/Admin/Admin.module.css";
 import { useAuth } from "@/auth/AuthContext";
 
@@ -82,7 +82,7 @@ export default function Admin() {
     }
   };
 
-  const loadRankSubmissions = async () => {
+  const loadRankSubmissions = useCallback(async () => {
     if (!user) return;
     setRankLoading(true);
     try {
@@ -96,7 +96,7 @@ export default function Admin() {
     } finally {
       setRankLoading(false);
     }
-  };
+  }, [user]);
 
   const decideRank = async (id, decision) => {
     if (!user) return;
@@ -118,7 +118,7 @@ export default function Admin() {
     }
   };
 
-  const loadBans = async () => {
+  const loadBans = useCallback(async () => {
     if (!user) return;
     setBanLoading(true);
     try {
@@ -131,9 +131,9 @@ export default function Admin() {
     } finally {
       setBanLoading(false);
     }
-  };
+  }, [user]);
 
-  const loadHiddenElo = async () => {
+  const loadHiddenElo = useCallback(async () => {
     if (!user) return;
     setEloLoading(true);
     try {
@@ -146,7 +146,7 @@ export default function Admin() {
     } finally {
       setEloLoading(false);
     }
-  };
+  }, [user]);
 
   const recomputeHiddenElo = async () => {
     if (!user) return;
@@ -227,7 +227,7 @@ export default function Admin() {
     loadRankSubmissions();
     loadBans();
     loadHiddenElo();
-  }, [user, isAdmin]);
+  }, [user, isAdmin, loadBans, loadHiddenElo, loadRankSubmissions]);
 
   if (!user) {
     return (

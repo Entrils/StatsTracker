@@ -6,6 +6,8 @@ import { useLang } from "@/i18n/LanguageContext";
 import StateMessage from "@/components/StateMessage/StateMessage";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+const EMPTY_OBJECT = Object.freeze({});
+const EMPTY_ARRAY = Object.freeze([]);
 
 function formatCountdown(ms) {
   const value = Number(ms);
@@ -51,13 +53,6 @@ function mapImageSrc(mapName) {
     .replace(/\s+/g, "")
     .replace(/[^a-z0-9_-]/g, "");
   return `/maps/${key}.png`;
-}
-
-function parseTeamSize(format = "5x5") {
-  const left = String(format || "5x5").split("x")[0];
-  const n = Number.parseInt(left, 10);
-  if (!Number.isFinite(n) || n < 1) return 5;
-  return Math.min(n, 5);
 }
 
 function resolveSoloPlayer(side = {}, fallbackName = "Player") {
@@ -106,7 +101,7 @@ function TeamLineup({ side, fallbackTeamName = "Team", eloLabel = "ELO", entityH
             <div className={styles.memberText}>
               <span className={styles.memberName}>{m.name || "-"}</span>
               {m.role === "captain" ? (
-                <span className={styles.memberFragId}>FragPunk ID: {m.fragpunkId || "—"}</span>
+                <span className={styles.memberFragId}>FragPunk ID: {m.fragpunkId || "-"}</span>
               ) : null}
               <span className={styles.memberElo}>{eloLabel} {Number(m.elo || 0)}</span>
             </div>
@@ -134,7 +129,7 @@ function SoloPlayerCard({ player, fallbackName = "Player", eloLabel = "ELO", ent
           <h2 className={styles.teamName}>{name}</h2>
         )}
         <p className={styles.soloElo}>{eloLabel} {elo}</p>
-        <p className={styles.soloFragId}>FragPunk ID: {fragpunkId || "—"}</p>
+        <p className={styles.soloFragId}>FragPunk ID: {fragpunkId || "-"}</p>
       </div>
     </section>
   );
@@ -145,8 +140,8 @@ export default function TournamentMatchPage() {
   const { user } = useAuth();
   const { t, lang } = useLang();
 
-  const td = t?.tournaments?.details || {};
-  const tm = td?.match || {};
+  const td = t?.tournaments?.details || EMPTY_OBJECT;
+  const tm = td?.match || EMPTY_OBJECT;
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -308,8 +303,8 @@ export default function TournamentMatchPage() {
   const match = payload?.match || null;
   const tournament = payload?.tournament || null;
   const isSolo = String(tournament?.teamFormat || "") === "1x1";
-  const teamA = match?.teamA || {};
-  const teamB = match?.teamB || {};
+  const teamA = match?.teamA || EMPTY_OBJECT;
+  const teamB = match?.teamB || EMPTY_OBJECT;
   const soloA = resolveSoloPlayer(teamA, tm.playerA || "Player A");
   const soloB = resolveSoloPlayer(teamB, tm.playerB || "Player B");
   const sideAHref = entityHrefFromSide(teamA, isSolo);
@@ -344,7 +339,7 @@ export default function TournamentMatchPage() {
     : ["Yggdrasil", "Naos", "Dongtian", "Blackmarket", "Akhet", "Outpost", "Tundra", "Itzamna", "Caesarea", "Tulix"];
   const bestOfValue = [1, 3, 5].includes(Number(match?.bestOf)) ? Number(match.bestOf) : 1;
   const availableMaps = Array.isArray(veto?.availableMaps) ? veto.availableMaps : [];
-  const vetoBans = Array.isArray(veto?.bans) ? veto.bans : [];
+  const vetoBans = Array.isArray(veto?.bans) ? veto.bans : EMPTY_ARRAY;
   const vetoDone = String(veto?.status || "") === "done";
   const seriesMaps = useMemo(() => {
     const direct = Array.isArray(veto?.seriesMaps) ? veto.seriesMaps.filter(Boolean) : [];

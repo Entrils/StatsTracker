@@ -18,7 +18,7 @@ export default function Policy() {
       <p className={styles.text}>
         {renderText(
           t.policy?.p1 ||
-            "By using FragPunk Tracker, you agree the service is provided вЂњas isвЂќ, without guarantees of availability or data accuracy."
+            "By using FragPunk Tracker, you agree the service is provided \"as is\", without guarantees of availability or data accuracy."
         )}
       </p>
       <p className={styles.text}>

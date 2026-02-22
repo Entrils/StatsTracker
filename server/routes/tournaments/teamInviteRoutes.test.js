@@ -147,6 +147,48 @@ describe("team invite routes", () => {
     expect(String(res.body.error || "")).toContain("Multiple players found");
   });
 
+  it("invite endpoint rejects nickname when leaderboard profile exists but auth user is missing", async () => {
+    const db = createFakeFirestore({
+      "teams/team1": {
+        name: "Alpha",
+        captainUid: "u1",
+        memberUids: ["u1", "u2"],
+        teamFormat: "2x2",
+        maxMembers: 3,
+      },
+      "leaderboard_users/stale-user": {
+        name: "StaleNick",
+      },
+    });
+    const app = createApp(
+      baseDeps({
+        admin: {
+          ...createAdminMock(),
+          auth: () => ({
+            getUser: vi.fn(async () => {
+              const err = new Error("not found");
+              err.code = "auth/user-not-found";
+              throw err;
+            }),
+          }),
+        },
+        db,
+        requireAuth: (req, _res, next) => {
+          req.user = { uid: "u1" };
+          next();
+        },
+      })
+    );
+
+    const res = await request(app)
+      .post("/teams/team1/invite")
+      .send({ uid: "StaleNick" });
+
+    expect(res.status).toBe(404);
+    expect(String(res.body.error || "")).toContain("Player not found");
+    expect(db._store.get("teams/team1/invites/stale-user")).toBeUndefined();
+  });
+
   it("lists pending invites for captain by team", async () => {
     const db = createFakeFirestore({
       "teams/team1": {
@@ -293,6 +335,17 @@ describe("team invite routes", () => {
     });
     const app = createApp(
       baseDeps({
+        admin: {
+          ...createAdminMock(),
+          auth: () => ({
+            getUser: vi.fn(async (uid) => {
+              if (uid === "u3") return { uid };
+              const err = new Error("not found");
+              err.code = "auth/user-not-found";
+              throw err;
+            }),
+          }),
+        },
         db,
         requireAuth: (req, _res, next) => {
           req.user = { uid: "u1" };
@@ -401,6 +454,17 @@ describe("team invite routes", () => {
     });
     const app = createApp(
       baseDeps({
+        admin: {
+          ...createAdminMock(),
+          auth: () => ({
+            getUser: vi.fn(async (uid) => {
+              if (uid === "fresh-user-uid") return { uid };
+              const err = new Error("not found");
+              err.code = "auth/user-not-found";
+              throw err;
+            }),
+          }),
+        },
         db,
         requireAuth: (req, _res, next) => {
           req.user = { uid: "u1" };
@@ -418,6 +482,89 @@ describe("team invite routes", () => {
     expect(res.body.ok).toBe(true);
     expect(db._store.get("teams/team1/invites/fresh-user-uid")).toBeTruthy();
     expect(db._store.get("users/fresh-user-uid/team_invites/team1")).toBeTruthy();
+  });
+
+  it("invite endpoint rejects direct uid when user does not exist", async () => {
+    const db = createFakeFirestore({
+      "teams/team1": {
+        name: "Alpha",
+        captainUid: "u1",
+        memberUids: ["u1", "u2"],
+        teamFormat: "2x2",
+        maxMembers: 3,
+      },
+    });
+    const app = createApp(
+      baseDeps({
+        admin: {
+          ...createAdminMock(),
+          auth: () => ({
+            getUser: vi.fn(async () => {
+              const err = new Error("not found");
+              err.code = "auth/user-not-found";
+              throw err;
+            }),
+          }),
+        },
+        db,
+        requireAuth: (req, _res, next) => {
+          req.user = { uid: "u1" };
+          next();
+        },
+        findUserTeamInFormat: vi.fn().mockResolvedValue(null),
+      })
+    );
+
+    const res = await request(app)
+      .post("/teams/team1/invite")
+      .send({ uid: "ghost-user-uid" });
+
+    expect(res.status).toBe(404);
+    expect(String(res.body.error || "")).toContain("Player not found");
+    expect(db._store.get("teams/team1/invites/ghost-user-uid")).toBeUndefined();
+  });
+
+  it("invite endpoint rejects direct uid from leaderboard when auth user is missing", async () => {
+    const db = createFakeFirestore({
+      "teams/team1": {
+        name: "Alpha",
+        captainUid: "u1",
+        memberUids: ["u1", "u2"],
+        teamFormat: "2x2",
+        maxMembers: 3,
+      },
+      "leaderboard_users/stale-user": {
+        name: "Stale User",
+      },
+    });
+    const app = createApp(
+      baseDeps({
+        admin: {
+          ...createAdminMock(),
+          auth: () => ({
+            getUser: vi.fn(async () => {
+              const err = new Error("not found");
+              err.code = "auth/user-not-found";
+              throw err;
+            }),
+          }),
+        },
+        db,
+        requireAuth: (req, _res, next) => {
+          req.user = { uid: "u1" };
+          next();
+        },
+        findUserTeamInFormat: vi.fn().mockResolvedValue(null),
+      })
+    );
+
+    const res = await request(app)
+      .post("/teams/team1/invite")
+      .send({ uid: "stale-user" });
+
+    expect(res.status).toBe(404);
+    expect(String(res.body.error || "")).toContain("Player not found");
+    expect(db._store.get("teams/team1/invites/stale-user")).toBeUndefined();
   });
 
   it("returns only pending invites from primary query", async () => {
@@ -660,5 +807,105 @@ describe("team invite routes", () => {
     const res = await request(app).post("/teams/team1/invites/u2/accept").send({});
     expect(res.status).toBe(409);
     expect(String(res.body.error || "")).toContain("another team of this format");
+  });
+
+  it("reject invite returns 404 when team is missing", async () => {
+    const db = createFakeFirestore({});
+    const app = createApp(
+      baseDeps({
+        db,
+        requireAuth: (req, _res, next) => {
+          req.user = { uid: "u2" };
+          next();
+        },
+      })
+    );
+
+    const res = await request(app).post("/teams/team404/invites/u2/reject").send({});
+    expect(res.status).toBe(404);
+    expect(String(res.body.error || "")).toContain("Team not found");
+  });
+
+  it("reject invite returns 404 when invite is missing", async () => {
+    const db = createFakeFirestore({
+      "teams/team1": {
+        name: "Alpha",
+        captainUid: "captain-1",
+        memberUids: ["captain-1"],
+        teamFormat: "2x2",
+      },
+    });
+    const app = createApp(
+      baseDeps({
+        db,
+        requireAuth: (req, _res, next) => {
+          req.user = { uid: "u2" };
+          next();
+        },
+      })
+    );
+
+    const res = await request(app).post("/teams/team1/invites/u2/reject").send({});
+    expect(res.status).toBe(404);
+    expect(String(res.body.error || "")).toContain("Invite not found");
+  });
+
+  it("reject invite returns 409 when invite is not pending", async () => {
+    const db = createFakeFirestore({
+      "teams/team1": {
+        name: "Alpha",
+        captainUid: "captain-1",
+        memberUids: ["captain-1"],
+        teamFormat: "2x2",
+      },
+      "teams/team1/invites/u2": {
+        uid: "u2",
+        status: "accepted",
+        teamId: "team1",
+      },
+    });
+    const app = createApp(
+      baseDeps({
+        db,
+        requireAuth: (req, _res, next) => {
+          req.user = { uid: "u2" };
+          next();
+        },
+      })
+    );
+
+    const res = await request(app).post("/teams/team1/invites/u2/reject").send({});
+    expect(res.status).toBe(409);
+    expect(String(res.body.error || "")).toContain("Invite is not pending");
+  });
+
+  it("reject invite marks existing pending invite as rejected", async () => {
+    const db = createFakeFirestore({
+      "teams/team1": {
+        name: "Alpha",
+        captainUid: "captain-1",
+        memberUids: ["captain-1"],
+        teamFormat: "2x2",
+      },
+      "teams/team1/invites/u2": {
+        uid: "u2",
+        status: "pending",
+        teamId: "team1",
+      },
+    });
+    const app = createApp(
+      baseDeps({
+        db,
+        requireAuth: (req, _res, next) => {
+          req.user = { uid: "u2" };
+          next();
+        },
+      })
+    );
+
+    const res = await request(app).post("/teams/team1/invites/u2/reject").send({});
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+    expect((db._store.get("teams/team1/invites/u2") || {}).status).toBe("rejected");
   });
 });

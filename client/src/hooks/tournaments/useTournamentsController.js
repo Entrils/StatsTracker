@@ -124,8 +124,9 @@ export default function useTournamentsController({
   }, [loadTournaments, tab]);
 
   useEffect(() => {
+    const requestState = tournamentsRequestRef.current;
     return () => {
-      tournamentsRequestRef.current.controller?.abort();
+      requestState.controller?.abort();
     };
   }, []);
 

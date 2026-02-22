@@ -54,6 +54,18 @@ export default defineConfig([
     },
   },
   {
+    files: ['cypress/**/*.cy.js'],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+        ...globals.node,
+        ...globals.mocha,
+        cy: 'readonly',
+        Cypress: 'readonly',
+      },
+    },
+  },
+  {
     files: ['src/workers/**/*.js'],
     languageOptions: {
       globals: {

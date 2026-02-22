@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import styles from "@/pages/PlayersTab/PlayersTab.module.css";
 import StateMessage from "@/components/StateMessage/StateMessage";
@@ -29,10 +29,15 @@ export default function PlayersTab() {
   const [error, setError] = useState("");
   const [refreshing, setRefreshing] = useState(false);
   const [steamOnline, setSteamOnline] = useState(null);
+  const rawRowsRef = useRef([]);
 
-  const fetchPage = async (reset = false) => {
+  useEffect(() => {
+    rawRowsRef.current = rawRows;
+  }, [rawRows]);
+
+  const fetchPage = useCallback(async (reset = false) => {
     if (reset) {
-      setRefreshing(rawRows.length > 0);
+      setRefreshing(rawRowsRef.current.length > 0);
       setLoading(true);
       setHasMore(true);
       setRawRows([]);
@@ -46,7 +51,7 @@ export default function PlayersTab() {
         throw new Error("Backend URL not configured");
       }
 
-      const offset = reset ? 0 : rawRows.length;
+      const offset = reset ? 0 : rawRowsRef.current.length;
       const url = `${backendUrl}/leaderboard?limit=${PAGE_SIZE}&offset=${offset}&sort=${sortBy}`;
       const payload = await dedupedJsonRequest(
         `leaderboard:${url}`,
@@ -71,18 +76,18 @@ export default function PlayersTab() {
       setHasMore(offset + data.length < total);
     } catch (err) {
       setError(
-        err?.message || t.leaderboard.error || "Failed to load leaderboard"
+        err?.message || t.leaderboard?.error || "Failed to load leaderboard"
       );
     } finally {
       setLoading(false);
       setLoadingMore(false);
       setRefreshing(false);
     }
-  };
+  }, [backendUrl, sortBy, t.leaderboard?.error]);
 
   useEffect(() => {
     fetchPage(true);
-  }, [sortBy]);
+  }, [fetchPage]);
 
   const players = useMemo(() => {
     return rawRows

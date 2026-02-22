@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import styles from "@/pages/Friends/Friends.module.css";
 import StateMessage from "@/components/StateMessage/StateMessage";
@@ -70,15 +70,28 @@ export default function Friends() {
   const [requests, setRequests] = useState([]);
   const [outgoing, setOutgoing] = useState([]);
   const [loading, setLoading] = useState(false);
+  const pendingRequestsRef = useRef(0);
 
-  const tokenPromise = async () => {
+  const beginLoading = useCallback(() => {
+    pendingRequestsRef.current += 1;
+    setLoading(true);
+  }, []);
+
+  const endLoading = useCallback(() => {
+    pendingRequestsRef.current = Math.max(0, pendingRequestsRef.current - 1);
+    if (pendingRequestsRef.current === 0) {
+      setLoading(false);
+    }
+  }, []);
+
+  const tokenPromise = useCallback(async () => {
     if (!user) return null;
     return user.getIdToken();
-  };
+  }, [user]);
 
-  const loadFriends = async () => {
+  const loadFriends = useCallback(async () => {
     if (!user) return;
-    setLoading(true);
+    beginLoading();
     try {
       const token = await tokenPromise();
       const res = await fetch(`${BACKEND_URL}/friends/list`, {
@@ -87,13 +100,13 @@ export default function Friends() {
       const data = await res.json().catch(() => null);
       setFriends(Array.isArray(data?.rows) ? data.rows : []);
     } finally {
-      setLoading(false);
+      endLoading();
     }
-  };
+  }, [beginLoading, endLoading, tokenPromise, user]);
 
-  const loadRequests = async () => {
+  const loadRequests = useCallback(async () => {
     if (!user) return;
-    setLoading(true);
+    beginLoading();
     try {
       const token = await tokenPromise();
       const res = await fetch(`${BACKEND_URL}/friends/requests`, {
@@ -102,13 +115,13 @@ export default function Friends() {
       const data = await res.json().catch(() => null);
       setRequests(Array.isArray(data?.rows) ? data.rows : []);
     } finally {
-      setLoading(false);
+      endLoading();
     }
-  };
+  }, [beginLoading, endLoading, tokenPromise, user]);
 
-  const loadOutgoing = async () => {
+  const loadOutgoing = useCallback(async () => {
     if (!user) return;
-    setLoading(true);
+    beginLoading();
     try {
       const token = await tokenPromise();
       const res = await fetch(`${BACKEND_URL}/friends/outgoing`, {
@@ -117,9 +130,9 @@ export default function Friends() {
       const data = await res.json().catch(() => null);
       setOutgoing(Array.isArray(data?.rows) ? data.rows : []);
     } finally {
-      setLoading(false);
+      endLoading();
     }
-  };
+  }, [beginLoading, endLoading, tokenPromise, user]);
 
   const acceptRequest = async (uid) => {
     if (!user || !uid) return;
@@ -170,11 +183,15 @@ export default function Friends() {
   };
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      pendingRequestsRef.current = 0;
+      setLoading(false);
+      return;
+    }
     loadFriends();
     loadRequests();
     loadOutgoing();
-  }, [user]);
+  }, [loadFriends, loadOutgoing, loadRequests, user]);
 
   const emptyText = useMemo(() => {
     if (tab === "requests") {

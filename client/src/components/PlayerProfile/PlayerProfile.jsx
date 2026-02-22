@@ -36,6 +36,8 @@ export default function PlayerProfile() {
   const [shareStatus, setShareStatus] = useState("");
 
   useEffect(() => {
+    setLoading(true);
+    setError("");
     const fetchHistory = async () => {
       try {
         const res = await fetch(
@@ -57,14 +59,14 @@ export default function PlayerProfile() {
           Number.isFinite(data?.friendCount) ? data.friendCount : null
         );
       } catch (e) {
-        setError(t.profile.empty || "No match history");
+        setError(t.profile?.empty || "No match history");
       } finally {
         setLoading(false);
       }
     };
 
     fetchHistory();
-  }, [uid]);
+  }, [uid, t.profile?.empty]);
 
   useEffect(() => {
     const fetchStatus = async () => {
@@ -216,7 +218,7 @@ export default function PlayerProfile() {
         Math.max(1, total.deaths)
       ).toFixed(2),
     };
-  }, [matches]);
+  }, [matches, profileName]);
 
   const avatarUrl = useMemo(() => {
     if (!uid) return null;

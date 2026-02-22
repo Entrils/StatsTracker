@@ -21,6 +21,36 @@ export function registerTeamInviteRoutes(app, ctx) {
     typeof isValidUid === "function"
       ? isValidUid
       : (value) => typeof value === "string" && String(value || "").trim().length > 0;
+  const normalizeInviteUidCandidates = (value = "") => {
+    const cleanUid = String(value || "").trim();
+    if (!cleanUid) return [];
+    const candidates = new Set([cleanUid]);
+    if (cleanUid.startsWith("discord:")) {
+      const rawDiscordId = cleanUid.slice("discord:".length).trim();
+      if (rawDiscordId) candidates.add(rawDiscordId);
+    } else if (/^\d+$/.test(cleanUid)) {
+      candidates.add(`discord:${cleanUid}`);
+    }
+    return [...candidates];
+  };
+  const resolveExistingAuthUid = async (value = "") => {
+    if (!admin || typeof admin.auth !== "function") return undefined;
+    const authApi = admin.auth();
+    if (!authApi || typeof authApi.getUser !== "function") return undefined;
+    const candidates = normalizeInviteUidCandidates(value);
+    for (const candidateUid of candidates) {
+      try {
+        const userRecord = await authApi.getUser(candidateUid);
+        const resolvedUid = String(userRecord?.uid || "").trim();
+        if (resolvedUid) return resolvedUid;
+      } catch (err) {
+        const code = String(err?.code || "").toLowerCase();
+        if (code.includes("user-not-found")) continue;
+        logger.warn("TEAM INVITE AUTH UID RESOLVE ERROR:", err?.message || err);
+      }
+    }
+    return null;
+  };
   const invalidateUserTeamDerivedCaches = (uids = []) => {
     const uniq = [...new Set((uids || []).map((v) => String(v || "")).filter(Boolean))];
     if (!uniq.length) return;
@@ -48,7 +78,10 @@ export function registerTeamInviteRoutes(app, ctx) {
     }
     const directProfile = await db.collection("leaderboard_users").doc(cleanTarget).get();
     if (directProfile?.exists) {
-      return { uid: cleanTarget };
+      const existingAuthUid = await resolveExistingAuthUid(cleanTarget);
+      if (existingAuthUid === undefined) return { uid: cleanTarget };
+      if (existingAuthUid) return { uid: existingAuthUid };
+      return { error: "Player not found" };
     }
     const byNameSnap = await db
       .collection("leaderboard_users")
@@ -60,22 +93,19 @@ export function registerTeamInviteRoutes(app, ctx) {
       return { error: "Multiple players found with this nickname. Use UID." };
     }
     if (docs.length === 1) {
-      return { uid: String(docs[0].id || "").trim() };
+      const nicknameResolvedUid = String(docs[0].id || "").trim();
+      const existingAuthUid = await resolveExistingAuthUid(nicknameResolvedUid);
+      if (existingAuthUid === undefined) return { uid: nicknameResolvedUid };
+      if (existingAuthUid) return { uid: existingAuthUid };
+      return { error: "Player not found" };
     }
-    // Allow explicit UID invites even when user has no leaderboard profile yet.
-    return { uid: cleanTarget };
+    const existingAuthUid = await resolveExistingAuthUid(cleanTarget);
+    if (existingAuthUid === undefined) return { uid: cleanTarget };
+    if (existingAuthUid) return { uid: existingAuthUid };
+    return { error: "Player not found" };
   };
   const buildInviteUidCandidates = (uid = "") => {
-    const cleanUid = String(uid || "").trim();
-    if (!cleanUid) return [];
-    const candidates = new Set([cleanUid]);
-    if (cleanUid.startsWith("discord:")) {
-      const rawDiscordId = cleanUid.slice("discord:".length).trim();
-      if (rawDiscordId) candidates.add(rawDiscordId);
-    } else if (/^\d+$/.test(cleanUid)) {
-      candidates.add(`discord:${cleanUid}`);
-    }
-    return [...candidates];
+    return normalizeInviteUidCandidates(uid);
   };
   const userInviteRef = (targetUid = "", teamId = "") =>
     db.collection("users").doc(String(targetUid || "")).collection("team_invites").doc(String(teamId || ""));
@@ -548,12 +578,17 @@ export function registerTeamInviteRoutes(app, ctx) {
       if (!teamId || !targetUid || uid !== targetUid || !isValidUidSafe(targetUid)) {
         return res.status(400).json({ error: "Invalid params" });
       }
-      await db
-        .collection("teams")
-        .doc(teamId)
-        .collection("invites")
-        .doc(uid)
-        .set({ status: "rejected" }, { merge: true });
+      const teamRef = db.collection("teams").doc(teamId);
+      const inviteRef = teamRef.collection("invites").doc(uid);
+      const [teamSnap, inviteSnap] = await Promise.all([teamRef.get(), inviteRef.get()]);
+      if (!teamSnap.exists) return res.status(404).json({ error: "Team not found" });
+      if (!inviteSnap.exists) return res.status(404).json({ error: "Invite not found" });
+      const invite = inviteSnap.data() || {};
+      if (String(invite.status || "") !== "pending") {
+        return res.status(409).json({ error: "Invite is not pending" });
+      }
+
+      await inviteRef.set({ status: "rejected" }, { merge: true });
       await userInviteRef(uid, teamId).delete().catch(() => {});
       return res.json({ ok: true });
     } catch (err) {

@@ -364,7 +364,7 @@ export default function Settings() {
                     }
                     title={t.me?.edit || "Edit"}
                   >
-                    вњЋ
+                    ✎
                   </button>
                 </div>
               ) : (

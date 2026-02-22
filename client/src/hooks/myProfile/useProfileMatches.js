@@ -65,7 +65,7 @@ export default function useProfileMatches(uid) {
   useEffect(() => {
     if (!uid) return;
     fetchHistory(true);
-  }, [uid]);
+  }, [fetchHistory, uid]);
 
   return { matches, loading, loadingMore, hasMore, fetchHistory };
 }
