@@ -108,7 +108,6 @@ describe("tournament details components", () => {
 
   it("BracketTab handles generate and stage switching", async () => {
     const user = userEvent.setup();
-    const onGenerate = vi.fn();
     const onStageFilterChange = vi.fn();
 
     render(
@@ -117,9 +116,6 @@ describe("tournament details components", () => {
         td={{ bracket: { title: "Bracket", generate: "Generate" } }}
         tournamentId="t1"
         isAdmin
-        generating={false}
-        canGenerateBracket
-        onGenerate={onGenerate}
         matchesSource={[]}
         stageTabs={["all", "single"]}
         stageFilter="all"
@@ -153,8 +149,7 @@ describe("tournament details components", () => {
       </MemoryRouter>
     );
 
-    await user.click(screen.getByRole("button", { name: "Generate" }));
-    expect(onGenerate).toHaveBeenCalled();
+    expect(screen.getByText("Bracket is not generated yet")).toBeInTheDocument();
 
     render(
       <MemoryRouter>
@@ -162,9 +157,6 @@ describe("tournament details components", () => {
         td={{ bracket: { title: "Bracket" } }}
         tournamentId="t1"
         isAdmin={false}
-        generating={false}
-        canGenerateBracket={false}
-        onGenerate={vi.fn()}
         matchesSource={[{ id: "m", stage: "single", round: 1, teamA: null, teamB: null }]}
         stageTabs={["all", "single"]}
         stageFilter="all"

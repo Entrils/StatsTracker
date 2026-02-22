@@ -35,6 +35,10 @@ vi.mock("@/i18n/LanguageContext", () => ({
   }),
 }));
 
+vi.mock("@/auth/AuthContext", () => ({
+  useAuth: () => ({ user: null }),
+}));
+
 function renderPlayers() {
   return render(
     <MemoryRouter>
