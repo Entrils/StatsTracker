@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import { buildAchievements } from "@/utils/achievements";
 import { fetchFriendsMeta, fetchUserMatches } from "@/services/upload/uploadService";
+import { trackUxEvent } from "@/utils/analytics/trackUxEvent";
 import {
   createOpenCvCropRunner,
   runSingleUploadStage,
@@ -173,6 +174,13 @@ export default function useUploadAnalyzer({
         if (outcome.status === "ok" && outcome.finalMatch) {
           setLastMatch(outcome.finalMatch);
           matchesList = [...matchesList, outcome.finalMatch];
+          trackUxEvent("upload_completion", {
+            meta: {
+              source: "upload_tab",
+              batchSize: queue.length,
+              fileIndex: index + 1,
+            },
+          });
 
           const newAchievements = buildAchievements({
             matches: matchesList,

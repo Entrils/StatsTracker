@@ -276,64 +276,83 @@ export default function MyProfile() {
 
       {!friendsLoading && selectedFriend && (
         <div className={styles.compareGrid}>
+          {(() => {
+            const asNumber = (value) => {
+              const parsed = Number(value);
+              return Number.isFinite(parsed) ? parsed : 0;
+            };
+            const friend = {
+              avgScore: asNumber(selectedFriend.avgScore),
+              avgKills: asNumber(selectedFriend.avgKills),
+              avgDeaths: asNumber(selectedFriend.avgDeaths),
+              avgAssists: asNumber(selectedFriend.avgAssists),
+              avgDamage: asNumber(selectedFriend.avgDamage),
+              kda: asNumber(selectedFriend.kda),
+              winrate: asNumber(selectedFriend.winrate),
+            };
+            return (
+              <>
           <CompareRow
             label={t.me?.score || "Score"}
             you={summary.avgScore}
-            global={round1(selectedFriend.avgScore)}
-            delta={round1(summary.avgScore - selectedFriend.avgScore)}
-            accent={diffAccent(summary.avgScore - selectedFriend.avgScore, true)}
+            global={round1(friend.avgScore)}
+            delta={round1(summary.avgScore - friend.avgScore)}
+            accent={diffAccent(summary.avgScore - friend.avgScore, true)}
             compareSep={t.me?.compareSep || "vs"}
           />
           <CompareRow
             label={t.me?.kills || "Kills"}
             you={summary.avgKills}
-            global={round1(selectedFriend.avgKills)}
-            delta={round1(summary.avgKills - selectedFriend.avgKills)}
-            accent={diffAccent(summary.avgKills - selectedFriend.avgKills, true)}
+            global={round1(friend.avgKills)}
+            delta={round1(summary.avgKills - friend.avgKills)}
+            accent={diffAccent(summary.avgKills - friend.avgKills, true)}
             compareSep={t.me?.compareSep || "vs"}
           />
           <CompareRow
             label={t.me?.deaths || "Deaths"}
             you={summary.avgDeaths}
-            global={round1(selectedFriend.avgDeaths)}
-            delta={round1(summary.avgDeaths - selectedFriend.avgDeaths)}
-            accent={diffAccent(summary.avgDeaths - selectedFriend.avgDeaths, false)}
+            global={round1(friend.avgDeaths)}
+            delta={round1(summary.avgDeaths - friend.avgDeaths)}
+            accent={diffAccent(summary.avgDeaths - friend.avgDeaths, false)}
             compareSep={t.me?.compareSep || "vs"}
           />
           <CompareRow
             label={t.me?.assists || "Assists"}
             you={summary.avgAssists}
-            global={round1(selectedFriend.avgAssists)}
-            delta={round1(summary.avgAssists - selectedFriend.avgAssists)}
-            accent={diffAccent(summary.avgAssists - selectedFriend.avgAssists, true)}
+            global={round1(friend.avgAssists)}
+            delta={round1(summary.avgAssists - friend.avgAssists)}
+            accent={diffAccent(summary.avgAssists - friend.avgAssists, true)}
             compareSep={t.me?.compareSep || "vs"}
           />
           <CompareRow
             label={t.me?.damage || "Damage"}
             you={summary.avgDamage}
-            global={round1(selectedFriend.avgDamage)}
-            delta={round1(summary.avgDamage - selectedFriend.avgDamage)}
-            accent={diffAccent(summary.avgDamage - selectedFriend.avgDamage, true)}
+            global={round1(friend.avgDamage)}
+            delta={round1(summary.avgDamage - friend.avgDamage)}
+            accent={diffAccent(summary.avgDamage - friend.avgDamage, true)}
             compareSep={t.me?.compareSep || "vs"}
           />
           <CompareRow
             label={t.me?.kda || "KDA"}
             you={summary.kda}
-            global={round1(selectedFriend.kda)}
-            delta={round1(summary.kda - selectedFriend.kda)}
-            accent={diffAccent(summary.kda - selectedFriend.kda, true)}
+            global={round1(friend.kda)}
+            delta={round1(summary.kda - friend.kda)}
+            accent={diffAccent(summary.kda - friend.kda, true)}
             compareSep={t.me?.compareSep || "vs"}
           />
           <CompareRow
             label={t.me?.winrate || "Winrate"}
             you={`${summary.winrate}%`}
-            global={`${round1(selectedFriend.winrate)}%`}
-            delta={`${sign(round1(summary.winrate - selectedFriend.winrate))}${round1(
-              summary.winrate - selectedFriend.winrate
+            global={`${round1(friend.winrate)}%`}
+            delta={`${sign(round1(summary.winrate - friend.winrate))}${round1(
+              summary.winrate - friend.winrate
             )}%`}
-            accent={diffAccent(summary.winrate - selectedFriend.winrate, true)}
+            accent={diffAccent(summary.winrate - friend.winrate, true)}
             compareSep={t.me?.compareSep || "vs"}
           />
+              </>
+            );
+          })()}
         </div>
       )}
     </div>

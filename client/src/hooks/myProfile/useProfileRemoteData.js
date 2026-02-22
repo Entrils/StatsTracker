@@ -164,9 +164,9 @@ export default function useProfileRemoteData({ uid, user, summary, backendUrl })
       try {
         const token = await user.getIdToken();
         const data = await dedupedJsonRequest(
-          `friends-list:compact:${user.uid}`,
+          `friends-list:full:${user.uid}`,
           async () => {
-            const res = await fetch(`${backendUrl}/friends/list?view=compact`, {
+            const res = await fetch(`${backendUrl}/friends/list?view=full`, {
               headers: { Authorization: `Bearer ${token}` },
             });
             if (!res.ok) {

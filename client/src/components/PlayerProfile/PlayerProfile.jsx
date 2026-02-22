@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
   LineChart,
@@ -13,6 +13,7 @@ import styles from "@/components/PlayerProfile/PlayerProfile.module.css";
 import { useLang } from "@/i18n/LanguageContext";
 import { useAuth } from "@/auth/AuthContext";
 import Achievements from "@/components/Achievements/Achievements";
+import { trackUxEvent } from "@/utils/analytics/trackUxEvent";
 
 const backend = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
@@ -34,8 +35,12 @@ export default function PlayerProfile() {
   const [profileFriendDates, setProfileFriendDates] = useState([]);
   const [profileFriendCount, setProfileFriendCount] = useState(null);
   const [shareStatus, setShareStatus] = useState("");
+  const viewStartedAtRef = useRef(Date.now());
+  const timeToValueTrackedRef = useRef(false);
 
   useEffect(() => {
+    viewStartedAtRef.current = Date.now();
+    timeToValueTrackedRef.current = false;
     setLoading(true);
     setError("");
     const fetchHistory = async () => {
@@ -220,6 +225,41 @@ export default function PlayerProfile() {
     };
   }, [matches, profileName]);
 
+  const quickInsight = useMemo(() => {
+    if (!summary) return null;
+    const winrate = Number(summary.winrate || 0);
+    const kda = Number(summary.kda || 0);
+    if (winrate >= 60) {
+      return (t.profile?.insightWinrate || "Locked in: winrate is sitting at {value}%.")
+        .replace("{value}", String(winrate.toFixed(1)));
+    }
+    if (kda >= 2) {
+      return (t.profile?.insightKda || "Good impact: KDA is {value}.")
+        .replace("{value}", kda.toFixed(2));
+    }
+    if (summary.avgScore >= 2500) {
+      return (t.profile?.insightScore || "Solid pace: average score is {value}.")
+        .replace("{value}", String(summary.avgScore));
+    }
+    return t.profile?.insightDefault || "Stats are stable. Play more matches to reveal clearer trends.";
+  }, [summary, t.profile]);
+
+    useEffect(() => {
+    if (timeToValueTrackedRef.current) return;
+    if (loading) return;
+    if (!summary || !matches.length) return;
+    timeToValueTrackedRef.current = true;
+    const elapsedMs = Math.max(0, Date.now() - viewStartedAtRef.current);
+    trackUxEvent("time_to_value_insight", {
+      valueMs: elapsedMs,
+      meta: {
+        source: "player_profile",
+        selfView: Boolean(user?.uid && user.uid === uid),
+        matches: matches.length,
+      },
+    });
+  }, [loading, summary, matches.length, uid, user?.uid]);
+
   const avatarUrl = useMemo(() => {
     if (!uid) return null;
     const isDiscord = uid.startsWith("discord:");
@@ -377,7 +417,7 @@ export default function PlayerProfile() {
             )}
           </div>
           <p className={styles.subtitle}>
-            {t.profile.matches}: {summary.matches} • {(t.profile.elo || "ELO")}: {Math.round(profileElo || 0)}
+            {t.profile.matches}: {summary.matches} | {(t.profile.elo || "ELO")}: {Math.round(profileElo || 0)}
           </p>
           {user && user.uid !== uid && friendStatus === "incoming" && (
             <div className={styles.friendActions}>
@@ -414,6 +454,16 @@ export default function PlayerProfile() {
             <span className={styles.headerValue}>{summary.winrate}%</span>
           </div>
         </div>
+      </div>
+
+      <div className={styles.insightCard}>
+        <div className={styles.insightTitle}>
+          {t.profile?.insightTitle || "Quick Breakdown"}
+        </div>
+        <p className={styles.insightText}>{quickInsight}</p>
+        <Link to="/players" className={styles.insightCta}>
+          {t.profile?.insightCta || "Back to leaderboard"}
+        </Link>
       </div>
 
       <div className={styles.statsGrid}>
@@ -618,4 +668,10 @@ function rankIconSrc(rank) {
   const key = String(rank || "unranked").toLowerCase();
   return `/ranks/${key}.png`;
 }
+
+
+
+
+
+
 

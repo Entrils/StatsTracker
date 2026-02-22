@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { isSoloFormat, teamSizeByFormat } from "@/shared/tournaments/teamUtils";
+import { trackUxEvent } from "@/utils/analytics/trackUxEvent";
 
 function deriveTournamentStatus(row, now = Date.now()) {
   const startsAt = Number(row?.startsAt || 0);
@@ -222,6 +223,14 @@ export default function useTournamentsController({
       if (!res.ok) throw new Error(data?.error || "Failed to register team");
       setNotice(data?.alreadyRegistered ? tt.registered || "You are participating" : tt.register || "Registration");
       setParticipatingByTournament((prev) => ({ ...prev, [tournament.id]: true }));
+      trackUxEvent("tournament_register_conversion", {
+        meta: {
+          source: "tournaments_page",
+          tournamentId: String(tournament?.id || ""),
+          teamFormat: String(tournament?.teamFormat || ""),
+          alreadyRegistered: Boolean(data?.alreadyRegistered),
+        },
+      });
       loadTournaments(tab);
     } catch (err) {
       setNotice(err?.message || "Registration error");

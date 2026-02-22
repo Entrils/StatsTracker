@@ -54,7 +54,9 @@ export default function TournamentsPage() {
       <header className={styles.header}>
         <div>
           <h1 className={styles.title}>{tt.title || "Tournaments"}</h1>
-          <p className={styles.subtitle}>{tt.empty || "No tournaments yet"}</p>
+          <p className={styles.subtitle}>
+            {tt.subtitle || "Join upcoming events, follow live brackets, and climb with your team."}
+          </p>
         </div>
         <div className={styles.actions}>
           {isAdmin && (

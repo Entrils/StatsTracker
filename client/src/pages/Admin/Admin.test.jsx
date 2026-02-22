@@ -8,6 +8,9 @@ const { authState } = vi.hoisted(() => ({
 vi.mock("@/auth/AuthContext", () => ({
   useAuth: () => authState,
 }));
+vi.mock("@/i18n/LanguageContext", () => ({
+  useLang: () => ({ t: {} }),
+}));
 
 describe("Admin page", () => {
   beforeEach(() => {
@@ -28,4 +31,3 @@ describe("Admin page", () => {
     expect(screen.getByText("Access denied")).toBeInTheDocument();
   });
 });
-

@@ -5,6 +5,13 @@
   text-align: center;
 }
 
+.wrapperWide {
+  max-width: none;
+  width: 100%;
+  padding-left: 0;
+  padding-right: 0;
+}
+
 .title {
   font-size: var(--text-xl);
   font-weight: 800;
@@ -66,10 +73,40 @@
   margin-top: var(--space-6);
 }
 
+.sectionGridSingle {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-5);
+  margin-top: var(--space-6);
+  width: 100%;
+}
+
 @media (max-width: 900px) {
   .sectionGrid {
     grid-template-columns: 1fr;
   }
+}
+
+.tabBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: var(--space-5);
+}
+
+.tabButton {
+  padding: 0.45rem 0.8rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(8, 12, 22, 0.6);
+  color: #f3f6ff;
+  font-weight: 700;
+}
+
+.tabButtonActive {
+  border-color: rgba(0, 245, 212, 0.6);
+  background: rgba(0, 245, 212, 0.12);
+  color: #d1fff7;
 }
 
 .section {
@@ -78,6 +115,10 @@
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: var(--radius-lg);
   padding: var(--space-5);
+}
+
+.uxFullWidthSection {
+  width: 100%;
 }
 
 .sectionHeader {
@@ -91,6 +132,28 @@
 .actionsRow {
   display: inline-flex;
   gap: 0.5rem;
+  align-items: center;
+}
+
+.periodRow {
+  display: inline-flex;
+  gap: 0.35rem;
+}
+
+.periodButton {
+  padding: 0.22rem 0.52rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(8, 12, 22, 0.6);
+  color: #d7def0;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.periodButtonActive {
+  border-color: rgba(0, 245, 212, 0.6);
+  background: rgba(0, 245, 212, 0.16);
+  color: #d1fff7;
 }
 
 .sectionTitle {
@@ -401,4 +464,83 @@
 .banInactive {
   font-size: 0.75rem;
   color: rgba(154, 164, 193, 0.75);
+}
+
+.uxList {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.uxItem {
+  padding: 16px 18px;
+  border-radius: var(--radius-md);
+  background: rgba(6, 10, 20, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.uxEvent {
+  font-weight: 700;
+  color: #f3f6ff;
+  font-size: 1rem;
+  margin-bottom: 0.25rem;
+}
+
+.uxHint {
+  font-size: 0.75rem;
+  color: #9aa4c1;
+  margin-bottom: 0.45rem;
+}
+
+.uxMeta {
+  display: inline-flex;
+  gap: 0.8rem;
+  font-size: 0.85rem;
+  color: #9aa4c1;
+}
+
+.uxChart {
+  margin-top: 0.55rem;
+  height: 128px;
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  padding: 6px;
+  border-radius: var(--radius-sm);
+  background: rgba(3, 6, 14, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.uxBarWrap {
+  flex: 1 1 0;
+  min-width: 4px;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+}
+
+.uxBar {
+  width: 100%;
+  border-radius: 4px 4px 0 0;
+  background: linear-gradient(180deg, #00f5d4, #3b82f6);
+}
+
+.uxAxis {
+  margin-top: 0.35rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+  color: rgba(154, 164, 193, 0.88);
+}
+
+.uxAxis span {
+  flex: 1 1 0;
+}
+
+.uxAxis span:nth-child(2) {
+  text-align: center;
+}
+
+.uxAxis span:last-child {
+  text-align: right;
 }

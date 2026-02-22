@@ -1,66 +1,63 @@
-# FragPunk Tracker
+﻿# FragPunk Tracker
 
-Сайт проекта: fragpunktracker.fun
+Неофициальный трекер статистики для FragPunk.
 
-Неофициальный трекер статистики для FragPunk. Загружайте скриншоты матча, распознавайте статистику через OCR и анализируйте прогресс, тренды и лидерборды.
+## Что умеет проект
 
-## Возможности
+- Загрузка скриншотов матчей и распознавание статистики через OCR
+- Профиль игрока: средние метрики, динамика, рекорды, активность
+- Лидерборд с фильтрами, пагинацией и карточками игроков
+- Верификация ранга с модерацией в админке
+- Турниры: список, карточка турнира, брекет, матчи, команды и инвайты
+- Локализация интерфейса: RU / EN / DE / FR
 
-- OCR разбор скриншотов (EN/RU/FR/DE)
-- Личный дашборд: средние, тренды, рекорды, активность
-- Сравнение с глобальными средними + процентили
-- Лидерборд с фильтрами и пагинацией
-- Верификация ранга (модерация админом)
-- Добавление соцсетей (Twitch/YouTube/TikTok)
-- Админ-панель: пересборка лидерборда, заявки на ранги, баны
-- Полная локализация интерфейса (RU/EN/FR/DE)
+## Что сделано недавно
 
-## Разделы
-
-- Лидерборд игроков
-- Мой профиль (статистика, рекорды, графики, ранги)
-- Профиль игрока
-- Загрузка скриншота (OCR)
-- Админ-панель
-- Policy / Ads / Support
-- Settings (соцсети + верификация рангов)
+- Исправлены критичные сценарии инвайтов в команды:
+  - корректный порядок проверок прав и цели,
+  - защита от инвайтов на несуществующих или удаленных auth-пользователей,
+  - защита от создания "висячих" reject-документов.
+- Стабилизирован контракт `POST /tournaments/:id/matches/:matchId/result`:
+  - `alreadyCompleted` возвращается только в idempotent-сценарии.
+- Доработана админ-панель:
+  - вкладки `Tech`, `Community`, `UX metrics`,
+  - блок UX-метрик с графиками по дням и выбором периода (7/14/30),
+  - удален legacy-блок Hidden ELO.
+- Добавлены E2E-тесты на Cypress (`leaderboard`, `navigation`) и исправлен ESLint-конфиг под Cypress-глобалы.
+- Добавлен анти-моджибейк контроль:
+  - скрипт `npm run check:mojibake`,
+  - проверка включена в CI.
+- Обновлены пользовательские тексты и состояния UI на более понятные (включая турниры и профиль).
 
 ## Технологии
 
-Клиент
+Клиент:
 - Vite + React
-- Recharts
 - Firebase (Auth + Firestore)
-- Собственная i18n-логика
+- Recharts
 
-Сервер
+Сервер:
 - Node.js + Express
 - Firebase Admin SDK
 - OCR.space API
-- Rate limiting, CORS, Helmet, CSP
+- Helmet + CORS + rate limit
 
-## Структура
+## Структура проекта
 
-```
-client/   # фронтенд (Vite)
-server/   # бэкенд (Express API)
-```
+- `client/` - фронтенд-приложение
+- `server/` - backend API
 
 ## Локальный запуск
 
-Требования:
-- Node.js 18+ (рекомендуется 20)
-- Firebase проект
-
 Клиент:
-```
+```bash
 cd client
 npm install
 npm run dev
 ```
 
 Сервер:
-```
+```bash
 cd server
 npm install
 npm run dev
@@ -68,54 +65,33 @@ npm run dev
 
 ## Переменные окружения
 
-Используйте .env.example как шаблон.
+Клиент (`client/.env`):
+- `VITE_BACKEND_URL`
+- `VITE_FIREBASE_*`
 
-Client: `client/.env`
-- VITE_BACKEND_URL
-- VITE_FIREBASE_* (Web config Firebase)
+Сервер (`server/.env`):
+- `PORT`
+- `CORS_ORIGINS`
+- `DISCORD_CLIENT_ID`
+- `DISCORD_CLIENT_SECRET`
+- `DISCORD_REDIRECT_URI`
+- `OCR_SPACE_API_KEY`
+- `FIREBASE_SERVICE_ACCOUNT_JSON`
 
-Server: `server/.env`
-- PORT
-- CORS_ORIGINS
-- DISCORD_CLIENT_ID
-- DISCORD_CLIENT_SECRET
-- DISCORD_REDIRECT_URI
-- OCR_SPACE_API_KEY
-- FIREBASE_SERVICE_ACCOUNT_JSON
-- GLOBAL_CACHE_TTL_MS
-- PERCENTILES_CACHE_TTL_MS
-- RANK_SUBMIT_DAILY_LIMIT
-- STEAM_APP_ID (e.g. `2943650`)
-- STEAM_ONLINE_CACHE_TTL_MS
+## Полезные команды
 
-## OCR пайплайн (Upload)
+Клиент (`client/`):
+- `npm run lint` - линтинг
+- `npm run test` - unit/integration тесты (Vitest)
+- `npm run cy:open` - открыть Cypress
+- `npm run cy:run` - прогон Cypress в headless
+- `npm run check:mojibake` - проверка битой кодировки в UI-текстах
 
-1) Клиент подготавливает изображение (crop/контраст)
-2) Извлекается Match ID и результат
-3) OCR.space распознаёт таблицу игрока
-4) Данные пишутся в Firestore
-5) Бэкенд обновляет лидерборд
+Сервер (`server/`):
+- `npm test` - тесты роутов и логики API
 
-## Модель данных (упрощённо)
+## Примечание
 
-Firestore коллекции:
-- users/{uid}/matches/{matchId}
-- matches/{matchId}
-- matches/{matchId}/players/{uid}
-- leaderboard_users/{uid}
-- stats_cache/{docId}
-- rate_limits/{docId}
-- rank_submissions/{docId}
-- bans/{uid}
-
-## Админ и модерация
-
-- Пересборка лидерборда
-- Проверка заявок на верификацию ранга
-- Бан/разбан пользователей (OCR + лидерборд)
-
-## Важно
-
-- Проект неофициальный и фанатский.
-- Не связан с FragPunk или его издателями.
-- Не использует официальный игровой код/сети.
+- Это фанатский неофициальный проект.
+- Не аффилирован с FragPunk и издателями игры.
+- Не использует официальный код игры, серверы или сетевую инфраструктуру.

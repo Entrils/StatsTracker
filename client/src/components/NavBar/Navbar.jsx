@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+﻿import { useEffect, useRef, useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { signOut } from "firebase/auth";
 import styles from "@/components/NavBar/Navbar.module.css";
@@ -126,10 +126,10 @@ export default function Navbar() {
   };
 
   const languages = [
-    { code: "ru", label: "Русский", flagSrc: "/flags/ru.png" },
+    { code: "ru", label: "Russian", flagSrc: "/flags/ru.png" },
     { code: "en", label: "English", flagSrc: "/flags/eng.png" },
     { code: "de", label: "Deutsch", flagSrc: "/flags/de.png" },
-    { code: "fr", label: "Français", flagSrc: "/flags/fr.png" },
+    { code: "fr", label: "Francais", flagSrc: "/flags/fr.png" },
   ];
   const currentLang =
     languages.find((item) => item.code === lang) || languages[0];
@@ -559,3 +559,4 @@ export default function Navbar() {
     </nav>
   );
 }
+

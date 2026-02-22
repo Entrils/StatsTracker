@@ -6,6 +6,7 @@ import PageState from "@/components/StateMessage/PageState";
 import Button from "@/components/ui/Button";
 import { useLang } from "@/i18n/LanguageContext";
 import { dedupedJsonRequest } from "@/utils/network/dedupedFetch";
+import { trackUxEvent } from "@/utils/analytics/trackUxEvent";
 
 const SORTS = {
   ELO: "elo",
@@ -31,6 +32,7 @@ export default function PlayersTab() {
   const [refreshing, setRefreshing] = useState(false);
   const [steamOnline, setSteamOnline] = useState(null);
   const rawRowsRef = useRef([]);
+  const activationTrackedRef = useRef(false);
 
   useEffect(() => {
     rawRowsRef.current = rawRows;
@@ -90,6 +92,20 @@ export default function PlayersTab() {
     fetchPage(true);
   }, [fetchPage]);
 
+  useEffect(() => {
+    if (activationTrackedRef.current) return;
+    if (loading) return;
+    if (!rawRows.length) return;
+    activationTrackedRef.current = true;
+    trackUxEvent("activation_target_action", {
+      meta: {
+        source: "players_tab",
+        sortBy,
+        playersLoaded: rawRows.length,
+      },
+    });
+  }, [loading, rawRows.length, sortBy]);
+
   const players = useMemo(() => {
     return rawRows
       .filter((row) => row && (row.uid || row.ownerUid || row.userId))
@@ -124,6 +140,50 @@ export default function PlayersTab() {
       p.name?.toLowerCase().includes(search.toLowerCase())
     );
   }, [players, search]);
+
+  const quickInsight = useMemo(() => {
+    if (!filteredAndSorted.length) return null;
+    const top = filteredAndSorted[0];
+    if (!top?.uid) return null;
+    if (sortBy === SORTS.WINRATE) {
+      return {
+        uid: top.uid,
+        name: top.name,
+        metric: t.leaderboard?.winrate || "Winrate",
+        value: `${Number(top.winrate || 0).toFixed(1)}%`,
+      };
+    }
+    if (sortBy === SORTS.KDA) {
+      return {
+        uid: top.uid,
+        name: top.name,
+        metric: t.leaderboard?.kda || "KDA",
+        value: Number(top.kda || 0).toFixed(2),
+      };
+    }
+    if (sortBy === SORTS.AVG_SCORE) {
+      return {
+        uid: top.uid,
+        name: top.name,
+        metric: t.leaderboard?.avgScore || "Avg score",
+        value: String(Math.round(Number(top.avgScore || 0))),
+      };
+    }
+    if (sortBy === SORTS.ELO) {
+      return {
+        uid: top.uid,
+        name: top.name,
+        metric: t.leaderboard?.elo || "ELO",
+        value: String(Math.round(Number(top.elo || 0))),
+      };
+    }
+    return {
+      uid: top.uid,
+      name: top.name,
+      metric: t.leaderboard?.matches || "Matches",
+      value: String(Math.round(Number(top.matches || 0))),
+    };
+  }, [filteredAndSorted, sortBy, t.leaderboard]);
 
   return (
     <div className={styles.wrapper}>
@@ -247,6 +307,37 @@ export default function PlayersTab() {
             </Button>
           </div>
         </div>
+        {!!quickInsight && (
+          <div className={styles.quickInsight}>
+            <div className={styles.quickInsightMeta}>
+              <p className={styles.quickInsightTitle}>
+                {t.leaderboard?.quickInsightTitle || "Who Is Popping Off"}
+              </p>
+              <p className={styles.quickInsightText}>
+                {(t.leaderboard?.quickInsightText ||
+                  "{name} is topping {metric}: {value}. Jump into profile to see the build-up.")
+                  .replace("{name}", quickInsight.name)
+                  .replace("{metric}", quickInsight.metric)
+                  .replace("{value}", quickInsight.value)}
+              </p>
+            </div>
+            <Link
+              to={`/player/${quickInsight.uid}`}
+              className={styles.quickInsightCta}
+              onClick={() =>
+                trackUxEvent("activation_target_action", {
+                  meta: {
+                    source: "players_quick_insight_cta",
+                    sortBy,
+                    uid: quickInsight.uid,
+                  },
+                })
+              }
+            >
+              {t.leaderboard?.quickInsightCta || "Open Player Breakdown"}
+            </Link>
+          </div>
+        )}
       </div>
 
       <PageState
@@ -429,6 +520,9 @@ export default function PlayersTab() {
                   </div>
                   <Link to={`/player/${p.uid}`} className={styles.mobileName}>
                     {p.name}
+                  </Link>
+                  <Link to={`/player/${p.uid}`} className={styles.mobileCta}>
+                    {t.leaderboard?.openProfile || "Player Profile"}
                   </Link>
                   <div className={styles.mobileMeta}>
                     <span>{t.leaderboard.elo || "ELO"}: {Math.round(p.elo || 0)}</span>

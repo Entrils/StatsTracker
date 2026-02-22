@@ -41,10 +41,12 @@ export default function RulesTab({ td, tournament, lang, rulesItems, formatDate 
 
         <div className={styles.overviewRequirementRow}>
           <span className={styles.overviewRequirementChip}>
-            Min {tournament?.requirements?.minElo ?? 0} ELO
+            {(td?.rules?.minElo || "Minimum ELO: {value}")
+              .replace("{value}", tournament?.requirements?.minElo ?? 0)}
           </span>
           <span className={styles.overviewRequirementChip}>
-            Min {tournament?.requirements?.minMatches ?? 0} Matches
+            {(td?.rules?.minMatches || "Minimum matches: {value}")
+              .replace("{value}", tournament?.requirements?.minMatches ?? 0)}
           </span>
         </div>
       </div>
