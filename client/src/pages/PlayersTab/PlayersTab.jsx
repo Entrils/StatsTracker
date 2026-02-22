@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import styles from "@/pages/PlayersTab/PlayersTab.module.css";
 import StateMessage from "@/components/StateMessage/StateMessage";
+import PageState from "@/components/StateMessage/PageState";
 import Button from "@/components/ui/Button";
 import { useLang } from "@/i18n/LanguageContext";
 import { dedupedJsonRequest } from "@/utils/network/dedupedFetch";
@@ -123,21 +124,6 @@ export default function PlayersTab() {
       p.name?.toLowerCase().includes(search.toLowerCase())
     );
   }, [players, search]);
-
-  if (!players.length && !loading) {
-    if (error) {
-      return (
-        <div className={styles.wrapper}>
-          <StateMessage text={error} tone="error" />
-        </div>
-      );
-    }
-    return (
-      <div className={styles.wrapper}>
-        <StateMessage text={t.leaderboard.empty} tone="empty" />
-      </div>
-    );
-  }
 
   return (
     <div className={styles.wrapper}>
@@ -263,60 +249,154 @@ export default function PlayersTab() {
         </div>
       </div>
 
-      {loading && (
-        <div className={styles.skeletonWrap} aria-hidden="true">
-          {Array.from({ length: SKELETON_ROWS }).map((_, i) => (
-            <div className={styles.skeletonRow} key={i}>
-              <span className={`${styles.skeletonCell} ${styles.skeletonRank}`} />
-              <span className={`${styles.skeletonCell} ${styles.skeletonPlayer}`} />
-              <span className={styles.skeletonCell} />
-              <span className={styles.skeletonCell} />
-              <span className={styles.skeletonCell} />
-              <span className={styles.skeletonCell} />
-              <span className={styles.skeletonCell} />
-            </div>
-          ))}
-        </div>
-      )}
-      {!loading && error && <StateMessage text={error} tone="error" />}
+      <PageState
+        loading={loading}
+        error={error}
+        empty={!players.length}
+        errorText={error}
+        emptyText={t.leaderboard.empty}
+        renderLoading={() => (
+          <div className={styles.skeletonWrap} aria-hidden="true">
+            {Array.from({ length: SKELETON_ROWS }).map((_, i) => (
+              <div className={styles.skeletonRow} key={i}>
+                <span className={`${styles.skeletonCell} ${styles.skeletonRank}`} />
+                <span className={`${styles.skeletonCell} ${styles.skeletonPlayer}`} />
+                <span className={styles.skeletonCell} />
+                <span className={styles.skeletonCell} />
+                <span className={styles.skeletonCell} />
+                <span className={styles.skeletonCell} />
+                <span className={styles.skeletonCell} />
+              </div>
+            ))}
+          </div>
+        )}
+      >
+        <>
+          <div className={styles.tableWrapper}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>{t.upload.player}</th>
+                  <th>
+                    <span className={styles.thLabel}>
+                      {t.leaderboard.elo || "ELO"}
+                      <Link
+                        to="/help#elo-rating"
+                        className={styles.eloHelpLink}
+                        aria-label={t.help?.eloTitle || "ELO rating help"}
+                        title={t.help?.eloTitle || "ELO rating help"}
+                      >
+                        ?
+                      </Link>
+                    </span>
+                  </th>
+                  <th>{t.leaderboard.matches || "Matches"}</th>
+                  <th>{t.leaderboard.wl || "W/L"}</th>
+                  <th>{t.leaderboard.winrate || "Winrate"}</th>
+                  <th>{t.leaderboard.avgScore || "Avg score"}</th>
+                  <th>{t.leaderboard.kda || "KDA"}</th>
+                </tr>
+              </thead>
 
-      <div className={styles.tableWrapper}>
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>{t.upload.player}</th>
-              <th>
-                <span className={styles.thLabel}>
-                  {t.leaderboard.elo || "ELO"}
-                  <Link
-                    to="/help#elo-rating"
-                    className={styles.eloHelpLink}
-                    aria-label={t.help?.eloTitle || "ELO rating help"}
-                    title={t.help?.eloTitle || "ELO rating help"}
-                  >
-                    ?
-                  </Link>
-                </span>
-              </th>
-              <th>{t.leaderboard.matches || "Matches"}</th>
-              <th>{t.leaderboard.wl || "W/L"}</th>
-              <th>{t.leaderboard.winrate || "Winrate"}</th>
-              <th>{t.leaderboard.avgScore || "Avg score"}</th>
-              <th>{t.leaderboard.kda || "KDA"}</th>
-            </tr>
-          </thead>
+              <tbody>
+                {filteredAndSorted.map((p, index) => {
+                  const kda = p.kda.toFixed(2);
+                  const avgScore = Math.round(p.avgScore);
+                  const winrate = p.winrate.toFixed(1);
+                  const socials = p.settings || {};
 
-          <tbody>
+                  const rank = p.rank ?? index + 1;
+                  const delta = p.rankDelta || 0;
+                  const deltaAbs = Math.abs(delta);
+                  const createdAtMs =
+                    typeof p.createdAt === "number"
+                      ? p.createdAt
+                      : typeof p.createdAt === "string"
+                      ? Date.parse(p.createdAt)
+                      : p.createdAt?.seconds
+                      ? p.createdAt.seconds * 1000
+                      : p.createdAt?._seconds
+                      ? p.createdAt._seconds * 1000
+                      : 0;
+                  const isNew =
+                    createdAtMs &&
+                    Date.now() - createdAtMs < 7 * 24 * 60 * 60 * 1000;
+                  const deltaLabel = isNew
+                    ? "NEW"
+                    : delta === 0
+                    ? "=0"
+                    : `${delta > 0 ? "+" : "-"} ${deltaAbs}`;
+                  return (
+                    <tr
+                      key={p.uid}
+                      className={`${styles.row} ${
+                        index === 0
+                          ? styles.gold
+                          : index === 1
+                          ? styles.silver
+                          : index === 2
+                          ? styles.bronze
+                          : ""
+                      }`}
+                    >
+                      <td className={styles.rankCell}>
+                        <div className={styles.rankWrap}>
+                          <span className={styles.rankValue}>{rank}</span>
+                          <span
+                            className={`${styles.rankDelta} ${
+                              isNew
+                                ? styles.rankNew
+                                : delta > 0
+                                ? styles.rankUp
+                                : delta < 0
+                                ? styles.rankDown
+                                : styles.rankSame
+                            }`}
+                          >
+                            {deltaLabel}
+                          </span>
+                        </div>
+                      </td>
+                      <td>
+                        <div className={styles.playerCell}>
+                          <Link
+                            to={`/player/${p.uid}`}
+                            className={styles.playerLink}
+                          >
+                            {p.name}
+                          </Link>
+                          <div className={styles.socialIcons}>
+                            {renderSocialIcon("twitch", socials.twitch)}
+                            {renderSocialIcon("youtube", socials.youtube)}
+                            {renderSocialIcon("tiktok", socials.tiktok)}
+                          </div>
+                        </div>
+                      </td>
+                      <td>{Math.round(p.elo || 0)}</td>
+                      <td>{p.matches}</td>
+                      <td className={styles.wlCell}>
+                        <span className={styles.winText}>W</span> {p.wins}
+                        <span className={styles.wlSep}>/</span>
+                        <span className={styles.lossText}>L</span> {p.losses}
+                      </td>
+                      <td>{winrate}%</td>
+                      <td>{avgScore}</td>
+                      <td>{kda}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+
+            {!filteredAndSorted.length && (
+              <StateMessage text={t.leaderboard.notFound} tone="empty" />
+            )}
+          </div>
+          <div className={styles.mobileList}>
             {filteredAndSorted.map((p, index) => {
-              const kda = p.kda.toFixed(2);
-              const avgScore = Math.round(p.avgScore);
-              const winrate = p.winrate.toFixed(1);
-              const socials = p.settings || {};
-
               const rank = p.rank ?? index + 1;
               const delta = p.rankDelta || 0;
-              const deltaAbs = Math.abs(delta);
               const createdAtMs =
                 typeof p.createdAt === "number"
                   ? p.createdAt
@@ -327,144 +407,58 @@ export default function PlayersTab() {
                   : p.createdAt?._seconds
                   ? p.createdAt._seconds * 1000
                   : 0;
-              const isNew =
-                createdAtMs &&
-                Date.now() - createdAtMs < 7 * 24 * 60 * 60 * 1000;
-              const deltaLabel = isNew
-                ? "NEW"
-                : delta === 0
-                ? "=0"
-                : `${delta > 0 ? "+" : "-"} ${deltaAbs}`;
+              const isNew = createdAtMs && Date.now() - createdAtMs < 7 * 24 * 60 * 60 * 1000;
+              const deltaLabel = isNew ? "NEW" : delta === 0 ? "=0" : `${delta > 0 ? "+" : "-"} ${Math.abs(delta)}`;
               return (
-                <tr
-                  key={p.uid}
-                  className={`${styles.row} ${
-                    index === 0
-                      ? styles.gold
-                      : index === 1
-                      ? styles.silver
-                      : index === 2
-                      ? styles.bronze
-                      : ""
-                  }`}
-                >
-                  <td className={styles.rankCell}>
-                    <div className={styles.rankWrap}>
-                      <span className={styles.rankValue}>{rank}</span>
-                      <span
-                        className={`${styles.rankDelta} ${
-                          isNew
-                            ? styles.rankNew
-                            : delta > 0
-                            ? styles.rankUp
-                            : delta < 0
-                            ? styles.rankDown
-                            : styles.rankSame
-                        }`}
-                      >
-                        {deltaLabel}
-                      </span>
-                    </div>
-                  </td>
-                  <td>
-                    <div className={styles.playerCell}>
-                      <Link
-                        to={`/player/${p.uid}`}
-                        className={styles.playerLink}
-                      >
-                        {p.name}
-                      </Link>
-                      <div className={styles.socialIcons}>
-                        {renderSocialIcon("twitch", socials.twitch)}
-                        {renderSocialIcon("youtube", socials.youtube)}
-                        {renderSocialIcon("tiktok", socials.tiktok)}
-                      </div>
-                    </div>
-                  </td>
-                  <td>{Math.round(p.elo || 0)}</td>
-                  <td>{p.matches}</td>
-                  <td className={styles.wlCell}>
-                    <span className={styles.winText}>W</span> {p.wins}
-                    <span className={styles.wlSep}>/</span>
-                    <span className={styles.lossText}>L</span> {p.losses}
-                  </td>
-                  <td>{winrate}%</td>
-                  <td>{avgScore}</td>
-                  <td>{kda}</td>
-                </tr>
+                <article className={styles.mobileCard} key={`mobile-${p.uid}`}>
+                  <div className={styles.mobileTop}>
+                    <span className={styles.mobileRank}>#{rank}</span>
+                    <span
+                      className={`${styles.rankDelta} ${
+                        isNew
+                          ? styles.rankNew
+                          : delta > 0
+                          ? styles.rankUp
+                          : delta < 0
+                          ? styles.rankDown
+                          : styles.rankSame
+                      }`}
+                    >
+                      {deltaLabel}
+                    </span>
+                  </div>
+                  <Link to={`/player/${p.uid}`} className={styles.mobileName}>
+                    {p.name}
+                  </Link>
+                  <div className={styles.mobileMeta}>
+                    <span>{t.leaderboard.elo || "ELO"}: {Math.round(p.elo || 0)}</span>
+                    <span>{t.leaderboard.matches || "Matches"}: {p.matches}</span>
+                    <span>{t.leaderboard.winrate || "Winrate"}: {p.winrate.toFixed(1)}%</span>
+                    <span>{t.leaderboard.avgScore || "Avg score"}: {Math.round(p.avgScore)}</span>
+                    <span>{t.leaderboard.kda || "KDA"}: {p.kda.toFixed(2)}</span>
+                  </div>
+                </article>
               );
             })}
-          </tbody>
-        </table>
+          </div>
 
-        {!filteredAndSorted.length && (
-          <StateMessage text={t.leaderboard.notFound} tone="empty" />
-        )}
-      </div>
-      <div className={styles.mobileList}>
-        {filteredAndSorted.map((p, index) => {
-          const rank = p.rank ?? index + 1;
-          const delta = p.rankDelta || 0;
-          const createdAtMs =
-            typeof p.createdAt === "number"
-              ? p.createdAt
-              : typeof p.createdAt === "string"
-              ? Date.parse(p.createdAt)
-              : p.createdAt?.seconds
-              ? p.createdAt.seconds * 1000
-              : p.createdAt?._seconds
-              ? p.createdAt._seconds * 1000
-              : 0;
-          const isNew = createdAtMs && Date.now() - createdAtMs < 7 * 24 * 60 * 60 * 1000;
-          const deltaLabel = isNew ? "NEW" : delta === 0 ? "=0" : `${delta > 0 ? "+" : "-"} ${Math.abs(delta)}`;
-          return (
-            <article className={styles.mobileCard} key={`mobile-${p.uid}`}>
-              <div className={styles.mobileTop}>
-                <span className={styles.mobileRank}>#{rank}</span>
-                <span
-                  className={`${styles.rankDelta} ${
-                    isNew
-                      ? styles.rankNew
-                      : delta > 0
-                      ? styles.rankUp
-                      : delta < 0
-                      ? styles.rankDown
-                      : styles.rankSame
-                  }`}
-                >
-                  {deltaLabel}
-                </span>
-              </div>
-              <Link to={`/player/${p.uid}`} className={styles.mobileName}>
-                {p.name}
-              </Link>
-              <div className={styles.mobileMeta}>
-                <span>{t.leaderboard.elo || "ELO"}: {Math.round(p.elo || 0)}</span>
-                <span>{t.leaderboard.matches || "Matches"}: {p.matches}</span>
-                <span>{t.leaderboard.winrate || "Winrate"}: {p.winrate.toFixed(1)}%</span>
-                <span>{t.leaderboard.avgScore || "Avg score"}: {Math.round(p.avgScore)}</span>
-                <span>{t.leaderboard.kda || "KDA"}: {p.kda.toFixed(2)}</span>
-              </div>
-            </article>
-          );
-        })}
-      </div>
-
-      {hasMore && !loading && (
-        <div className={styles.loadMoreWrap}>
-          <Button
-            className={styles.loadMoreBtn}
-            onClick={() => fetchPage(false)}
-            disabled={loadingMore}
-            variant="secondary"
-            size="md"
-          >
-            {loadingMore
-              ? t.leaderboard.loading || "Loading..."
-              : t.leaderboard.loadMore || "Load more"}
-          </Button>
-        </div>
-      )}
+          {hasMore && (
+            <div className={styles.loadMoreWrap}>
+              <Button
+                className={styles.loadMoreBtn}
+                onClick={() => fetchPage(false)}
+                disabled={loadingMore}
+                variant="secondary"
+                size="md"
+              >
+                {loadingMore
+                  ? t.leaderboard.loading || "Loading..."
+                  : t.leaderboard.loadMore || "Load more"}
+              </Button>
+            </div>
+          )}
+        </>
+      </PageState>
     </div>
   );
 }

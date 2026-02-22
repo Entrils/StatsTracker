@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import styles from "@/pages/Friends/Friends.module.css";
-import StateMessage from "@/components/StateMessage/StateMessage";
+import PageState from "@/components/StateMessage/PageState";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import { useLang } from "@/i18n/LanguageContext";
@@ -246,23 +246,18 @@ export default function Friends() {
           </div>
         </div>
 
-        {loading && (
-          <StateMessage text={t.friends?.loading || "Loading..."} tone="loading" />
-        )}
+        <PageState
+          loading={loading}
+          empty={
+            (tab === "friends" && !friends.length) ||
+            (tab === "requests" && !requests.length) ||
+            (tab === "outgoing" && !outgoing.length)
+          }
+          loadingText={t.friends?.loading || "Loading..."}
+          emptyText={emptyText}
+        >
 
-        {!loading && tab === "friends" && !friends.length && (
-          <StateMessage text={emptyText} tone="empty" />
-        )}
-
-        {!loading && tab === "requests" && !requests.length && (
-          <StateMessage text={emptyText} tone="empty" />
-        )}
-
-        {!loading && tab === "outgoing" && !outgoing.length && (
-          <StateMessage text={emptyText} tone="empty" />
-        )}
-
-        {!loading && tab === "friends" && (
+        {tab === "friends" && (
           <div className={`${styles.list} ${styles.listGrid}`}>
             {friends.map((friend) => {
               const avatarUrl = buildAvatarUrl(
@@ -343,7 +338,7 @@ export default function Friends() {
           </div>
         )}
 
-        {!loading && tab === "requests" && (
+        {tab === "requests" && (
           <div className={styles.list}>
             {requests.map((friend) => {
               const avatarUrl = buildAvatarUrl(
@@ -406,7 +401,7 @@ export default function Friends() {
           </div>
         )}
 
-        {!loading && tab === "outgoing" && (
+        {tab === "outgoing" && (
           <div className={styles.list}>
             {outgoing.map((friend) => {
               const avatarUrl = buildAvatarUrl(
@@ -461,6 +456,7 @@ export default function Friends() {
             })}
           </div>
         )}
+        </PageState>
       </div>
     </div>
   );

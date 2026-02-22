@@ -5,6 +5,7 @@ import { useLang } from "@/i18n/LanguageContext";
 import { useAuth } from "@/auth/AuthContext";
 import Button from "@/components/ui/Button";
 import StateMessage from "@/components/StateMessage/StateMessage";
+import PageState from "@/components/StateMessage/PageState";
 import OverviewTab from "@/components/tournaments/details/OverviewTab";
 import RulesTab from "@/components/tournaments/details/RulesTab";
 import ParticipantsTab from "@/components/tournaments/details/ParticipantsTab";
@@ -618,18 +619,15 @@ export default function TournamentDetailsPage() {
     setConfirmDeleteOpen(true);
   };
 
-  if (loading) {
+  if (loading || error || !tournament) {
     return (
       <div className={styles.wrapper}>
-        <StateMessage text={td.loading || "Loading tournament..."} tone="neutral" />
-      </div>
-    );
-  }
-
-  if (error || !tournament) {
-    return (
-      <div className={styles.wrapper}>
-        <StateMessage text={error || td.notFound || "Tournament not found"} tone="error" />
+        <PageState
+          loading={loading}
+          error={error || (!tournament ? td.notFound || "Tournament not found" : "")}
+          loadingText={td.loading || "Loading tournament..."}
+          errorText={error || td.notFound || "Tournament not found"}
+        />
       </div>
     );
   }

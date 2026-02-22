@@ -173,6 +173,133 @@ describe("leaderboard routes", () => {
     expect(res.body.nextCursor).toEqual({ afterUid: "u1", afterHiddenElo: 1800 });
   });
 
+  it("returns hidden elo list even when admin.firestore.FieldPath is unavailable", async () => {
+    const hiddenEloQuery = {
+      orderBy: vi.fn(() => hiddenEloQuery),
+      startAfter: vi.fn(() => hiddenEloQuery),
+      limit: vi.fn(() => ({
+        get: async () => ({
+          docs: [
+            {
+              id: "u1",
+              data: () => ({
+                name: "User 1",
+                hiddenElo: 1700,
+                matches: 5,
+                wins: 3,
+                losses: 2,
+                score: 20000,
+                kills: 60,
+                deaths: 40,
+                assists: 20,
+              }),
+            },
+          ],
+        }),
+      })),
+    };
+    const app = createApp({
+      admin: { firestore: {} },
+      db: {
+        collection: () => hiddenEloQuery,
+      },
+      logger: { error: vi.fn() },
+      authLimiter: (_req, _res, next) => next(),
+      requireAuth: (req, _res, next) => {
+        req.user = { uid: "admin:u1", admin: true };
+        next();
+      },
+      statsLimiter: (_req, _res, next) => next(),
+      getLeaderboardPage: vi.fn(),
+      parseIntParam: (v, fallback) => {
+        if (v === undefined) return fallback;
+        const n = Number.parseInt(v, 10);
+        return Number.isFinite(n) ? n : null;
+      },
+      getActiveBansSet: vi.fn(),
+    });
+
+    const res = await request(app).get("/admin/hidden-elo?limit=20&afterHiddenElo=1800");
+    expect(res.status).toBe(200);
+    expect(res.body.rows).toHaveLength(1);
+    expect(res.body.rows[0].uid).toBe("u1");
+    expect(hiddenEloQuery.startAfter).toHaveBeenCalledWith(1800);
+  });
+
+  it("falls back to memory sort when hiddenElo indexes are unavailable", async () => {
+    const hiddenEloIndexErr = Object.assign(new Error("FAILED_PRECONDITION: query requires an index"), {
+      code: "failed-precondition",
+    });
+    const uidOrderQuery = {
+      limit: vi.fn(() => ({
+        get: async () => ({
+          docs: [
+            {
+              id: "u2",
+              data: () => ({ name: "User 2", hiddenElo: 1700, matches: 5, wins: 2, losses: 3 }),
+            },
+            {
+              id: "u1",
+              data: () => ({ name: "User 1", hiddenElo: 1800, matches: 10, wins: 7, losses: 3 }),
+            },
+          ],
+        }),
+      })),
+      startAfter: vi.fn(() => uidOrderQuery),
+    };
+    const hiddenEloQuery = {
+      orderBy: vi.fn(() => ({
+        limit: vi.fn(() => ({
+          get: async () => {
+            throw hiddenEloIndexErr;
+          },
+        })),
+      })),
+      limit: vi.fn(() => ({
+        get: async () => {
+          throw hiddenEloIndexErr;
+        },
+      })),
+      startAfter: vi.fn(() => hiddenEloQuery),
+      offset: vi.fn(() => hiddenEloQuery),
+    };
+    const app = createApp({
+      admin: {
+        firestore: {
+          FieldPath: {
+            documentId: vi.fn(() => "__name__"),
+          },
+        },
+      },
+      db: {
+        collection: () => ({
+          orderBy: (field) => (field === "__name__" ? uidOrderQuery : hiddenEloQuery),
+        }),
+      },
+      logger: { error: vi.fn(), warn: vi.fn() },
+      authLimiter: (_req, _res, next) => next(),
+      requireAuth: (req, _res, next) => {
+        req.user = { uid: "admin:u1", admin: true };
+        next();
+      },
+      statsLimiter: (_req, _res, next) => next(),
+      getLeaderboardPage: vi.fn(),
+      parseIntParam: (v, fallback) => {
+        if (v === undefined) return fallback;
+        const n = Number.parseInt(v, 10);
+        return Number.isFinite(n) ? n : null;
+      },
+      getActiveBansSet: vi.fn(),
+    });
+
+    const res = await request(app).get("/admin/hidden-elo?limit=20");
+    expect(res.status).toBe(200);
+    expect(res.body.orderMode).toBe("memory:hiddenElo+uid");
+    expect(res.body.rows).toHaveLength(2);
+    expect(res.body.rows[0].uid).toBe("u1");
+    expect(res.body.rows[1].uid).toBe("u2");
+  });
+
   it("forbids share metrics backfill for non-admin", async () => {
     const app = createApp({
       admin: {},

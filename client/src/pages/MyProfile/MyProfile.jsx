@@ -2,7 +2,7 @@ import { lazy, Suspense, useMemo, useState } from "react";
 import styles from "@/pages/MyProfile/MyProfile.module.css";
 import { useLang } from "@/i18n/LanguageContext";
 import { useAuth } from "@/auth/AuthContext";
-import StateMessage from "@/components/StateMessage/StateMessage";
+import PageState from "@/components/StateMessage/PageState";
 import Achievements from "@/components/Achievements/Achievements";
 import ProfileHeader from "@/components/MyProfile/ProfileHeader";
 import OverviewSection from "@/components/MyProfile/OverviewSection";
@@ -116,18 +116,15 @@ export default function MyProfile() {
     return <p className={styles.wrapper}>{t.me?.loginRequired || "Login required"}</p>;
   }
 
-  if (loading) {
+  if (loading || !matches.length || !summary) {
     return (
       <div className={styles.wrapper}>
-        <StateMessage text={t.me?.loading || "Loading..."} tone="loading" />
-      </div>
-    );
-  }
-
-  if (!matches.length || !summary) {
-    return (
-      <div className={styles.wrapper}>
-        <StateMessage text={t.me?.empty || "No data yet"} tone="empty" />
+        <PageState
+          loading={loading}
+          empty={!loading}
+          loadingText={t.me?.loading || "Loading..."}
+          emptyText={t.me?.empty || "No data yet"}
+        />
       </div>
     );
   }

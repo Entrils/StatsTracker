@@ -3,6 +3,7 @@ import styles from "./Tournaments.module.css";
 import { useLang } from "@/i18n/LanguageContext";
 import { useAuth } from "@/auth/AuthContext";
 import StateMessage from "@/components/StateMessage/StateMessage";
+import PageState from "@/components/StateMessage/PageState";
 import Button from "@/components/ui/Button";
 import useTournamentsController from "@/hooks/tournaments/useTournamentsController";
 import TournamentTabs from "@/components/tournaments/TournamentTabs";
@@ -71,14 +72,14 @@ export default function TournamentsPage() {
       <TournamentTabs tabs={tabs} currentTab={tab} onChange={setTab} />
 
       {notice ? <StateMessage text={notice} tone="neutral" /> : null}
-      {error ? <StateMessage text={error} tone="error" /> : null}
-      {loading ? <StateMessage text={tt.loading || "Loading tournaments..."} tone="neutral" /> : null}
-
-      {!loading && !rows.length ? (
-        <p className={styles.hint}>{tt.empty || "No tournaments yet"}</p>
-      ) : null}
-
-      {!loading && rows.length > 0 ? (
+      <PageState
+        loading={loading}
+        error={error}
+        empty={!rows.length}
+        loadingText={tt.loading || "Loading tournaments..."}
+        errorText={error}
+        emptyText={tt.empty || "No tournaments yet"}
+      >
         <section className={styles.board}>
           <div className={styles.boardHead}>
             <div className={styles.headTournament}>{tt?.columns?.tournament || "Tournament"}</div>
@@ -110,7 +111,7 @@ export default function TournamentsPage() {
             ))}
           </div>
         </section>
-      ) : null}
+      </PageState>
     </div>
   );
 }

@@ -14,6 +14,51 @@ export function registerLeaderboardRoutes(app, deps) {
     parseIntParam,
     getActiveBansSet,
   } = deps;
+  const canOrderByDocumentId =
+    typeof admin?.firestore?.FieldPath?.documentId === "function";
+  const isMissingIndexError = (err) => {
+    const code = String(err?.code || "").toLowerCase();
+    const msg = String(err?.message || "").toLowerCase();
+    return code.includes("failed-precondition")
+      || msg.includes("failed_precondition")
+      || msg.includes("failed precondition")
+      || msg.includes("requires an index")
+      || msg.includes("create index");
+  };
+  const listHiddenEloWithoutIndexes = async () => {
+    if (!canOrderByDocumentId) return null;
+    const scanLimit = 5000;
+    const pageSize = 500;
+    const rows = [];
+    let scanned = 0;
+    let lastDoc = null;
+
+    while (scanned < scanLimit) {
+      let query = db
+        .collection("leaderboard_users")
+        .orderBy(admin.firestore.FieldPath.documentId(), "asc")
+        .limit(Math.min(pageSize, scanLimit - scanned));
+      if (lastDoc) {
+        query = query.startAfter(lastDoc);
+      }
+      const snap = await query.get();
+      if (!snap?.docs?.length) break;
+      for (const doc of snap.docs) {
+        rows.push({ uid: doc.id, ...(doc.data() || {}) });
+      }
+      scanned += snap.docs.length;
+      lastDoc = snap.docs[snap.docs.length - 1];
+      if (snap.docs.length < pageSize) break;
+    }
+
+    rows.sort((a, b) => {
+      const eloA = Number.isFinite(Number(a.hiddenElo)) ? Number(a.hiddenElo) : 0;
+      const eloB = Number.isFinite(Number(b.hiddenElo)) ? Number(b.hiddenElo) : 0;
+      if (eloA !== eloB) return eloB - eloA;
+      return String(a.uid || "").localeCompare(String(b.uid || ""));
+    });
+    return rows;
+  };
 
   app.post("/leaderboard/update", authLimiter, requireAuth, async (req, res) => {
     try {
@@ -317,7 +362,8 @@ export function registerLeaderboardRoutes(app, deps) {
       const afterUid = String(req.query.afterUid || "").trim();
       const afterHiddenEloRaw = req.query.afterHiddenElo;
       const afterHiddenEloNum = Number(afterHiddenEloRaw);
-      const hasCursor = Boolean(afterUid) && Number.isFinite(afterHiddenEloNum);
+      const hasCursor = Number.isFinite(afterHiddenEloNum)
+        && (canOrderByDocumentId ? Boolean(afterUid) : true);
       const hasOffset = req.query.offset !== undefined;
       const offsetRaw = hasOffset ? parseIntParam(req.query.offset, 0) : 0;
       if (hasOffset && offsetRaw === null) {
@@ -325,26 +371,72 @@ export function registerLeaderboardRoutes(app, deps) {
       }
       const offset = Math.max(offsetRaw || 0, 0);
 
-      let query = db
-        .collection("leaderboard_users")
-        .orderBy("hiddenElo", "desc")
-        .orderBy(admin.firestore.FieldPath.documentId(), "asc");
-      if (hasCursor && typeof query.startAfter === "function") {
-        query = query.startAfter(afterHiddenEloNum, afterUid);
-      } else if (hasOffset && offset > 0 && typeof query.offset === "function") {
-        // Legacy fallback for old clients.
-        query = query.offset(offset);
+      const runQuery = async (withDocIdTieBreak) => {
+        let query = db
+          .collection("leaderboard_users")
+          .orderBy("hiddenElo", "desc");
+        if (withDocIdTieBreak) {
+          query = query.orderBy(admin.firestore.FieldPath.documentId(), "asc");
+        }
+        if (hasCursor && typeof query.startAfter === "function") {
+          query = withDocIdTieBreak
+            ? query.startAfter(afterHiddenEloNum, afterUid)
+            : query.startAfter(afterHiddenEloNum);
+        } else if (hasOffset && offset > 0 && typeof query.offset === "function") {
+          // Legacy fallback for old clients.
+          query = query.offset(offset);
+        }
+        query = query.limit(limit);
+        return query.get();
+      };
+
+      let usedDocIdTieBreak = canOrderByDocumentId;
+      let snap;
+      let memoryRows = null;
+      try {
+        snap = await runQuery(usedDocIdTieBreak);
+      } catch (err) {
+        if (!usedDocIdTieBreak || !isMissingIndexError(err)) throw err;
+        logger?.warn?.("ADMIN HIDDEN ELO LIST QUERY FALLBACK (NO COMPOSITE INDEX):", err?.message || err);
+        usedDocIdTieBreak = false;
+        try {
+          snap = await runQuery(false);
+        } catch (fallbackErr) {
+          if (!isMissingIndexError(fallbackErr)) throw fallbackErr;
+          logger?.warn?.(
+            "ADMIN HIDDEN ELO LIST QUERY FALLBACK (NO INDEX FOR hiddenElo, USING MEMORY SORT):",
+            fallbackErr?.message || fallbackErr
+          );
+          memoryRows = await listHiddenEloWithoutIndexes();
+          if (!memoryRows) throw fallbackErr;
+        }
       }
-      query = query.limit(limit);
-      const snap = await query.get();
 
       const toNum = (v) => {
         const n = Number(v);
         return Number.isFinite(n) ? n : 0;
       };
 
-      const rows = snap.docs.map((doc) => {
-        const d = doc.data() || {};
+      const materializedRows = memoryRows || snap.docs.map((doc) => ({ uid: doc.id, ...(doc.data() || {}) }));
+      let rowsPool = materializedRows;
+      let pagedRows = materializedRows;
+      if (memoryRows) {
+        if (hasCursor) {
+          rowsPool = rowsPool.filter((row) => {
+            const rowHiddenElo = toNum(row.hiddenElo);
+            if (rowHiddenElo < afterHiddenEloNum) return true;
+            if (rowHiddenElo > afterHiddenEloNum) return false;
+            if (!afterUid) return false;
+            return String(row.uid || "") > afterUid;
+          });
+        } else if (hasOffset && offset > 0) {
+          rowsPool = rowsPool.slice(offset);
+        }
+        pagedRows = rowsPool.slice(0, limit);
+      }
+
+      const rows = pagedRows.map((row) => {
+        const d = row || {};
         const matches = toNum(d.matches);
         const wins = toNum(d.wins);
         const losses = toNum(d.losses);
@@ -352,7 +444,7 @@ export function registerLeaderboardRoutes(app, deps) {
         const deaths = toNum(d.deaths);
         const assists = toNum(d.assists);
         return {
-          uid: doc.id,
+          uid: d.uid,
           name: d.name || "Unknown",
           hiddenElo: toNum(d.hiddenElo),
           hiddenEloUpdatedAt: d.hiddenEloUpdatedAt || null,
@@ -365,17 +457,18 @@ export function registerLeaderboardRoutes(app, deps) {
         };
       });
 
-      const lastDoc = snap.docs[snap.docs.length - 1] || null;
-      const lastData = lastDoc?.data ? lastDoc.data() || {} : {};
-      const nextAfterUid = lastDoc?.id || null;
-      const nextAfterHiddenElo = Number.isFinite(Number(lastData.hiddenElo))
-        ? Number(lastData.hiddenElo)
-        : null;
+      const hasMore = memoryRows
+        ? rowsPool.length > rows.length
+        : snap.docs.length === limit;
+      const lastRow = rows[rows.length - 1] || null;
+      const nextAfterUid = lastRow?.uid || null;
+      const nextAfterHiddenElo = nextAfterUid ? toNum(lastRow.hiddenElo) : null;
       return res.json({
         limit,
         offset: hasOffset ? offset : 0,
         rows,
-        hasMore: snap.docs.length === limit,
+        hasMore,
+        orderMode: memoryRows ? "memory:hiddenElo+uid" : usedDocIdTieBreak ? "hiddenElo+uid" : "hiddenElo",
         nextCursor:
           nextAfterUid && nextAfterHiddenElo !== null
             ? { afterUid: nextAfterUid, afterHiddenElo: nextAfterHiddenElo }
