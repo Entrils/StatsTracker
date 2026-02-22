@@ -330,7 +330,7 @@ export default function Admin() {
                 <div className={styles.eloRight}>
                   <span className={styles.eloValue}>{Math.round(item.hiddenElo || 0)}</span>
                   <span className={styles.eloMeta}>
-                    {Math.round(item.winrate || 0)}% WR • {Math.round(item.matches || 0)} m
+                    {Math.round(item.winrate || 0)}% WR | {Math.round(item.matches || 0)} m
                   </span>
                 </div>
               </div>
@@ -361,7 +361,7 @@ export default function Admin() {
               <div key={err.id} className={styles.errorItem}>
                 <div className={styles.errorMessage}>{err.message}</div>
                 <div className={styles.errorMeta}>
-                  {err.url || "Unknown URL"} •{" "}
+                  {err.url || "Unknown URL"} |{" "}
                   {err.ts ? new Date(err.ts).toLocaleString() : "Unknown time"}
                 </div>
                 {err.stack && (
@@ -408,7 +408,7 @@ export default function Admin() {
                   <div className={styles.rankSub}>
                     {item.createdAt?.seconds
                       ? new Date(item.createdAt.seconds * 1000).toLocaleString()
-                      : "—"}
+                      : "-"}
                   </div>
                 </div>
 
