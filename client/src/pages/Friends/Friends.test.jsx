@@ -24,6 +24,7 @@ vi.mock("@/i18n/LanguageContext", () => ({
         empty: "No friends yet",
         emptyRequests: "No requests yet",
         emptyOutgoing: "No outgoing requests",
+        loadError: "Failed to load friends",
         accept: "Accept",
         reject: "Reject",
       },
@@ -90,5 +91,20 @@ describe("Friends", () => {
         expect.objectContaining({ method: "POST" })
       );
     });
+  });
+
+  it("shows error state when friends endpoints fail", async () => {
+    authState.user = {
+      uid: "discord:1",
+      getIdToken: vi.fn().mockResolvedValue("token-1"),
+    };
+
+    global.fetch = vi.fn().mockImplementation(async () => ({
+      ok: false,
+      json: async () => ({ error: "boom" }),
+    }));
+
+    renderFriends();
+    expect(await screen.findByText("Failed to load friends")).toBeInTheDocument();
   });
 });

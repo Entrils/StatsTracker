@@ -70,6 +70,7 @@ export default function Friends() {
   const [requests, setRequests] = useState([]);
   const [outgoing, setOutgoing] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const pendingRequestsRef = useRef(0);
 
   const beginLoading = useCallback(() => {
@@ -93,46 +94,64 @@ export default function Friends() {
     if (!user) return;
     beginLoading();
     try {
+      setError("");
       const token = await tokenPromise();
       const res = await fetch(`${BACKEND_URL}/friends/list`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      if (!res.ok) {
+        throw new Error(t.friends?.loadError || "Failed to load friends");
+      }
       const data = await res.json().catch(() => null);
       setFriends(Array.isArray(data?.rows) ? data.rows : []);
+    } catch (err) {
+      setError(err?.message || t.friends?.loadError || "Failed to load friends");
     } finally {
       endLoading();
     }
-  }, [beginLoading, endLoading, tokenPromise, user]);
+  }, [beginLoading, endLoading, t.friends?.loadError, tokenPromise, user]);
 
   const loadRequests = useCallback(async () => {
     if (!user) return;
     beginLoading();
     try {
+      setError("");
       const token = await tokenPromise();
       const res = await fetch(`${BACKEND_URL}/friends/requests`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      if (!res.ok) {
+        throw new Error(t.friends?.loadError || "Failed to load friends");
+      }
       const data = await res.json().catch(() => null);
       setRequests(Array.isArray(data?.rows) ? data.rows : []);
+    } catch (err) {
+      setError(err?.message || t.friends?.loadError || "Failed to load friends");
     } finally {
       endLoading();
     }
-  }, [beginLoading, endLoading, tokenPromise, user]);
+  }, [beginLoading, endLoading, t.friends?.loadError, tokenPromise, user]);
 
   const loadOutgoing = useCallback(async () => {
     if (!user) return;
     beginLoading();
     try {
+      setError("");
       const token = await tokenPromise();
       const res = await fetch(`${BACKEND_URL}/friends/outgoing`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      if (!res.ok) {
+        throw new Error(t.friends?.loadError || "Failed to load friends");
+      }
       const data = await res.json().catch(() => null);
       setOutgoing(Array.isArray(data?.rows) ? data.rows : []);
+    } catch (err) {
+      setError(err?.message || t.friends?.loadError || "Failed to load friends");
     } finally {
       endLoading();
     }
-  }, [beginLoading, endLoading, tokenPromise, user]);
+  }, [beginLoading, endLoading, t.friends?.loadError, tokenPromise, user]);
 
   const acceptRequest = async (uid) => {
     if (!user || !uid) return;
@@ -186,6 +205,7 @@ export default function Friends() {
     if (!user) {
       pendingRequestsRef.current = 0;
       setLoading(false);
+      setError("");
       return;
     }
     loadFriends();
@@ -248,12 +268,14 @@ export default function Friends() {
 
         <PageState
           loading={loading}
+          error={error}
           empty={
             (tab === "friends" && !friends.length) ||
             (tab === "requests" && !requests.length) ||
             (tab === "outgoing" && !outgoing.length)
           }
           loadingText={t.friends?.loading || "Loading..."}
+          errorText={error}
           emptyText={emptyText}
         >
 

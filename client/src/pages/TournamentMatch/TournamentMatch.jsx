@@ -4,6 +4,7 @@ import styles from "./TournamentMatch.module.css";
 import { useAuth } from "@/auth/AuthContext";
 import { useLang } from "@/i18n/LanguageContext";
 import StateMessage from "@/components/StateMessage/StateMessage";
+import PageState from "@/components/StateMessage/PageState";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 const EMPTY_OBJECT = Object.freeze({});
@@ -547,18 +548,21 @@ export default function TournamentMatchPage() {
     nowMs,
   ]);
 
-  if (loading) {
-    return (
-      <div className={styles.wrapper}>
-        <StateMessage text={tm.loading || "Loading match..."} tone="neutral" />
-      </div>
-    );
-  }
+  const pageError =
+    error ||
+    (!loading && (!payload || !match || !tournament)
+      ? tm.notFound || "Match not found"
+      : "");
 
-  if (error || !payload || !match || !tournament) {
+  if (loading || pageError) {
     return (
       <div className={styles.wrapper}>
-        <StateMessage text={error || tm.notFound || "Match not found"} tone="error" />
+        <PageState
+          loading={loading}
+          error={pageError}
+          loadingText={tm.loading || "Loading match..."}
+          errorText={pageError}
+        />
       </div>
     );
   }

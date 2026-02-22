@@ -3,6 +3,7 @@ import styles from "@/pages/UploadTab/UploadTab.module.css";
 import { useLang } from "@/i18n/LanguageContext";
 import { useAuth } from "@/auth/AuthContext";
 import useUploadAnalyzer from "@/hooks/upload/useUploadAnalyzer";
+import PageState from "@/components/StateMessage/PageState";
 import ToastStack from "@/components/upload/ToastStack";
 import ManualResultModal from "@/components/upload/ManualResultModal";
 import UploadDropzoneCard from "@/components/upload/UploadDropzoneCard";
@@ -221,7 +222,10 @@ export default function UploadTab() {
     return (
       <div className={styles.container}>
         <h1 className={styles.title}>{t.upload.title}</h1>
-        <p>{t.upload.loginRequired}</p>
+        <PageState
+          error={t.upload.loginRequired || "Login required"}
+          errorText={t.upload.loginRequired || "Login required"}
+        />
       </div>
     );
   }

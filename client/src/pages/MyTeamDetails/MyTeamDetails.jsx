@@ -4,6 +4,7 @@ import { useLang } from "@/i18n/LanguageContext";
 import { useAuth } from "@/auth/AuthContext";
 import Button from "@/components/ui/Button";
 import StateMessage from "@/components/StateMessage/StateMessage";
+import PageState from "@/components/StateMessage/PageState";
 import useMyTeamDetailsController from "@/hooks/tournaments/useMyTeamDetailsController";
 import TeamOverviewSection from "@/components/tournaments/myTeamDetails/TeamOverviewSection";
 import TeamRosterSection from "@/components/tournaments/myTeamDetails/TeamRosterSection";
@@ -69,7 +70,10 @@ export default function MyTeamDetailsPage() {
   if (!user) {
     return (
       <div className={styles.wrapper}>
-        <StateMessage text={tm.loginRequired || "Login required"} tone="error" />
+        <PageState
+          error={tm.loginRequired || "Login required"}
+          errorText={tm.loginRequired || "Login required"}
+        />
       </div>
     );
   }
@@ -77,7 +81,7 @@ export default function MyTeamDetailsPage() {
   if (loading) {
     return (
       <div className={styles.wrapper}>
-        <StateMessage text={tm.loading || "Loading..."} tone="neutral" />
+        <PageState loading loadingText={tm.loading || "Loading..."} />
       </div>
     );
   }
@@ -85,7 +89,10 @@ export default function MyTeamDetailsPage() {
   if (!row) {
     return (
       <div className={styles.wrapper}>
-        <StateMessage text={notice || tm.teamNotFound || "Team not found"} tone="error" />
+        <PageState
+          error={notice || tm.teamNotFound || "Team not found"}
+          errorText={notice || tm.teamNotFound || "Team not found"}
+        />
       </div>
     );
   }

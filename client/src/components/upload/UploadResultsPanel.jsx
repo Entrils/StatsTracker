@@ -1,4 +1,5 @@
 import styles from "@/pages/UploadTab/UploadTab.module.css";
+import PageState from "@/components/StateMessage/PageState";
 
 export default function UploadResultsPanel({
   t,
@@ -8,8 +9,18 @@ export default function UploadResultsPanel({
   ocrRemaining,
   lastMatch,
 }) {
+  const isIdle =
+    !status &&
+    (!Array.isArray(batchResults) || batchResults.length === 0) &&
+    typeof ocrRemaining !== "number" &&
+    !lastMatch;
+
   return (
-    <>
+    <PageState
+      empty={isIdle}
+      emptyText={t.upload?.idle || "Select a screenshot to start analysis"}
+    >
+      <>
       <p
         className={`${styles.status} ${
           statusTone === "good"
@@ -131,7 +142,7 @@ export default function UploadResultsPanel({
           </div>
         </div>
       )}
-    </>
+      </>
+    </PageState>
   );
 }
-

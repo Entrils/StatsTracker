@@ -3,6 +3,7 @@ import Achievements from "@/components/Achievements/Achievements";
 import styles from "@/pages/Achievements/Achievements.module.css";
 import { useAuth } from "@/auth/AuthContext";
 import { useLang } from "@/i18n/LanguageContext";
+import PageState from "@/components/StateMessage/PageState";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
@@ -16,18 +17,23 @@ export default function AchievementsPage() {
     latestFriendAt: null,
   });
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (!user) return;
     let alive = true;
     const load = async () => {
       setLoading(true);
+      setError("");
       try {
         const token = await user.getIdToken();
         const friendsRes = await fetch(`${BACKEND_URL}/friends/meta`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const friendsData = await friendsRes.json().catch(() => null);
+        if (!friendsRes.ok) {
+          throw new Error(friendsData?.error || t.achievements?.loadError || "Failed to load achievements");
+        }
         if (!alive) return;
         const friendCountRaw = Number(friendsData?.friendCount ?? friendsData?.count);
         setFriendMeta({
@@ -43,8 +49,15 @@ export default function AchievementsPage() {
           headers: { Authorization: `Bearer ${token}` },
         });
         const matchesData = await matchesRes.json().catch(() => null);
+        if (!matchesRes.ok) {
+          throw new Error(matchesData?.error || t.achievements?.loadError || "Failed to load achievements");
+        }
         if (!alive) return;
         setMatches(Array.isArray(matchesData?.matches) ? matchesData.matches : []);
+      } catch (err) {
+        if (alive) {
+          setError(err?.message || t.achievements?.loadError || "Failed to load achievements");
+        }
       } finally {
         if (alive) setLoading(false);
       }
@@ -53,10 +66,17 @@ export default function AchievementsPage() {
     return () => {
       alive = false;
     };
-  }, [user]);
+  }, [t.achievements?.loadError, user]);
 
   if (!user) {
-    return <div className={styles.wrapper}>{t.friends?.login || "Login required"}</div>;
+    return (
+      <div className={styles.wrapper}>
+        <PageState
+          error={t.friends?.login || "Login required"}
+          errorText={t.friends?.login || "Login required"}
+        />
+      </div>
+    );
   }
 
   return (
@@ -67,18 +87,21 @@ export default function AchievementsPage() {
           {t.achievements?.hint || "Your progress and unlock dates"}
         </span>
       </div>
-      {loading ? (
-        <div className={styles.hint}>{t.friends?.loading || "Loading..."}</div>
-      ) : (
+      <PageState
+        loading={loading}
+        error={error}
+        loadingText={t.friends?.loading || "Loading..."}
+        errorText={error}
+      >
         <Achievements
           matches={matches}
           friendCount={friendMeta.friendCount}
           friendMilestones={friendMeta.milestoneDates}
           friendDates={
-            friendMeta.latestFriendAt ? [friendMeta.latestFriendAt] : []
+          friendMeta.latestFriendAt ? [friendMeta.latestFriendAt] : []
           }
         />
-      )}
+      </PageState>
     </div>
   );
 }

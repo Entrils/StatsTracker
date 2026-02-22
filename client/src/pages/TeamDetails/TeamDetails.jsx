@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import styles from "@/pages/MyTeamDetails/MyTeamDetails.module.css";
 import { useLang } from "@/i18n/LanguageContext";
 import StateMessage from "@/components/StateMessage/StateMessage";
+import PageState from "@/components/StateMessage/PageState";
 import TeamOverviewSection from "@/components/tournaments/myTeamDetails/TeamOverviewSection";
 import TeamRosterSection from "@/components/tournaments/myTeamDetails/TeamRosterSection";
 import TeamMatchHistorySection from "@/components/tournaments/myTeamDetails/TeamMatchHistorySection";
@@ -56,7 +57,7 @@ export default function TeamDetailsPage() {
   if (loading) {
     return (
       <div className={styles.wrapper}>
-        <StateMessage text={tm.loading || "Loading..."} tone="neutral" />
+        <PageState loading loadingText={tm.loading || "Loading..."} />
       </div>
     );
   }
@@ -64,7 +65,10 @@ export default function TeamDetailsPage() {
   if (!row) {
     return (
       <div className={styles.wrapper}>
-        <StateMessage text={notice || tm.teamNotFound || "Team not found"} tone="error" />
+        <PageState
+          error={notice || tm.teamNotFound || "Team not found"}
+          errorText={notice || tm.teamNotFound || "Team not found"}
+        />
       </div>
     );
   }

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import styles from "@/pages/Admin/Admin.module.css";
 import { useAuth } from "@/auth/AuthContext";
+import PageState from "@/components/StateMessage/PageState";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
@@ -233,7 +234,7 @@ export default function Admin() {
     return (
       <div className={styles.wrapper}>
         <h1 className={styles.title}>Admin</h1>
-        <p className={styles.hint}>Login required</p>
+        <PageState error="Login required" errorText="Login required" />
       </div>
     );
   }
@@ -242,7 +243,7 @@ export default function Admin() {
     return (
       <div className={styles.wrapper}>
         <h1 className={styles.title}>Admin</h1>
-        <p className={styles.hint}>Access denied</p>
+        <PageState error="Access denied" errorText="Access denied" />
       </div>
     );
   }
