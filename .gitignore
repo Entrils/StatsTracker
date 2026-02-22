@@ -35,3 +35,6 @@ lerna-debug.log*
 *.njsproj
 *.sln
 *.sw?
+
+# local docs
+UX_EXECUTION_BACKLOG.md
