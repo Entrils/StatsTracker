@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import styles from "@/pages/PlayersTab/PlayersTab.module.css";
 import StateMessage from "@/components/StateMessage/StateMessage";
 import PageState from "@/components/StateMessage/PageState";
+import TrustMetaBar from "@/components/TrustMetaBar/TrustMetaBar";
 import Button from "@/components/ui/Button";
 import { useLang } from "@/i18n/LanguageContext";
 import { useAuth } from "@/auth/AuthContext";
@@ -33,6 +34,7 @@ export default function PlayersTab() {
   const [error, setError] = useState("");
   const [refreshing, setRefreshing] = useState(false);
   const [steamOnline, setSteamOnline] = useState(null);
+  const [lastSyncedAt, setLastSyncedAt] = useState(0);
   const rawRowsRef = useRef([]);
   const activationTrackedRef = useRef(false);
 
@@ -79,6 +81,7 @@ export default function PlayersTab() {
 
       setRawRows((prev) => (reset ? data : [...prev, ...data]));
       setHasMore(offset + data.length < total);
+      setLastSyncedAt(Date.now());
     } catch (err) {
       setError(
         err?.message || t.leaderboard?.error || "Failed to load leaderboard"
@@ -243,6 +246,18 @@ export default function PlayersTab() {
     }
     return items.slice(0, 3);
   }, [filteredAndSorted, t.leaderboard]);
+
+  const trustMeta = useMemo(() => {
+    const syncLabel = lastSyncedAt
+      ? new Date(lastSyncedAt).toLocaleTimeString()
+      : (t.leaderboard?.trustPending || "pending");
+    const sourceText = t.leaderboard?.trustSource || "Community match uploads";
+    const coverageText = (t.leaderboard?.trustCoverage || "Up to {limit} rows per request")
+      .replace("{limit}", String(PAGE_SIZE));
+    const syncedText = (t.leaderboard?.trustSynced || "Synced: {time}")
+      .replace("{time}", syncLabel);
+    return `${sourceText} | ${coverageText} | ${syncedText}`;
+  }, [lastSyncedAt, t.leaderboard]);
 
   return (
     <div className={styles.wrapper}>
@@ -666,6 +681,7 @@ export default function PlayersTab() {
               </Button>
             </div>
           )}
+          <TrustMetaBar text={trustMeta} className={styles.trustMeta} />
         </>
       </PageState>
     </div>

@@ -35,6 +35,13 @@
   font-size: 0.95rem;
 }
 
+.trustMeta {
+  margin: 8px 0 0;
+  font-size: 0.78rem;
+  color: rgba(199, 214, 241, 0.85);
+  text-align: center;
+}
+
 .header {
   display: flex;
   justify-content: space-between;

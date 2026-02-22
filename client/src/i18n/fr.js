@@ -96,6 +96,10 @@
     discoveryCta: "Ouvrir le profil",
     compareCta: "Comparer",
     openProfile: "Profil joueur",
+    trustSource: "Source : uploads de matchs de la communaute",
+    trustCoverage: "Couverture : jusqu'a {limit} lignes par requete",
+    trustSynced: "Synchronise : {time}",
+    trustPending: "en attente",
   },
 
   upload: {
@@ -150,6 +154,10 @@
     resultUnknown: "Resultat",
     helpLink: "Aide upload",
     ocrRemaining: "OCR restant aujourd’hui : {count}",
+    trustSource: "Source : OCR des captures ecran envoyees",
+    trustCoverage: "Couverture : une ligne joueur par capture",
+    trustSynced: "Derniere analyse : {time}",
+    trustPending: "en attente",
   },
 
   profile: {
@@ -190,6 +198,10 @@
     bannedBadge: "Banni",
     compareCta: "Comparer en duel",
     compareHintPrompt: "Ajoute ce joueur en ami pour debloquer la comparaison en duel.",
+    trustSource: "Source : historique de matchs et instantanes de rang",
+    trustCoverage: "Couverture : jusqu'a 200 matchs recents",
+    trustSynced: "Synchronise : {time}",
+    trustPending: "en attente",
   },
 
   me: {
@@ -312,6 +324,10 @@
     insightScore: "Rythme solide : score moyen a {value}.",
     insightDefault: "Base stable. Joue plus de matchs pour des tendances plus claires.",
     insightCta: "Retour au leaderboard",
+    trustSource: "Source : journal de matchs perso et agregats globaux",
+    trustCoverage: "Couverture : jusqu'a {limit} matchs",
+    trustSynced: "Dernier match : {time}",
+    trustPending: "en attente",
   },
 
   footer: {

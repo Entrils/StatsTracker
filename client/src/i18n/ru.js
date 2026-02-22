@@ -95,6 +95,10 @@
     discoveryCta: "Открыть профиль",
     compareCta: "Сравнить",
     openProfile: "Профиль игрока",
+    trustSource: "Источник: пользовательские загрузки матчей",
+    trustCoverage: "Покрытие: до {limit} строк за запрос",
+    trustSynced: "Синхронизировано: {time}",
+    trustPending: "ожидание",
   },
   upload: {
     title: "Залей скрин матча",
@@ -148,6 +152,10 @@
     resultUnknown: "Результат",
     helpLink: "Гайд по загрузке",
     ocrRemaining: "OCR осталось на сегодня: {count}",
+    trustSource: "Источник: OCR по загруженным скриншотам",
+    trustCoverage: "Покрытие: одна строка игрока на скриншот",
+    trustSynced: "Последний анализ: {time}",
+    trustPending: "ожидание",
   },
   profile: {
     loading: "Загрузка профиля...",
@@ -197,6 +205,10 @@
     insightCta: "Назад в рейтинг",
     compareCta: "Сравнить в дуэли",
     compareHintPrompt: "Добавь игрока в друзья, чтобы открыть дуэль стат.",
+    trustSource: "Источник: история матчей и снимки рангов",
+    trustCoverage: "Покрытие: до 200 последних матчей",
+    trustSynced: "Синхронизировано: {time}",
+    trustPending: "ожидание",
   },
   me: {
     title: "Мой профиль",
@@ -315,6 +327,10 @@
     bannedTitle: "ВЫ ЗАБАНЕНЫ",
     bannedHint: "Вы не можете загружать скриншоты и отображаться в лидерборде.",
     bannedReason: "Причина",
+    trustSource: "Источник: личный лог матчей и глобальные агрегаты",
+    trustCoverage: "Покрытие: до {limit} матчей",
+    trustSynced: "Последний матч: {time}",
+    trustPending: "ожидание",
   },
 
   footer: {

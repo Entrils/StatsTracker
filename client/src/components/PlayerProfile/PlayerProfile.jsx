@@ -13,6 +13,7 @@ import styles from "@/components/PlayerProfile/PlayerProfile.module.css";
 import { useLang } from "@/i18n/LanguageContext";
 import { useAuth } from "@/auth/AuthContext";
 import Achievements from "@/components/Achievements/Achievements";
+import TrustMetaBar from "@/components/TrustMetaBar/TrustMetaBar";
 import { trackUxEvent } from "@/utils/analytics/trackUxEvent";
 
 const backend = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
@@ -35,6 +36,7 @@ export default function PlayerProfile() {
   const [profileFriendDates, setProfileFriendDates] = useState([]);
   const [profileFriendCount, setProfileFriendCount] = useState(null);
   const [shareStatus, setShareStatus] = useState("");
+  const [lastSyncedAt, setLastSyncedAt] = useState(0);
   const viewStartedAtRef = useRef(Date.now());
   const timeToValueTrackedRef = useRef(false);
 
@@ -63,6 +65,7 @@ export default function PlayerProfile() {
         setProfileFriendCount(
           Number.isFinite(data?.friendCount) ? data.friendCount : null
         );
+        setLastSyncedAt(Date.now());
       } catch (e) {
         setError(t.profile?.empty || "No match history");
       } finally {
@@ -305,6 +308,16 @@ export default function PlayerProfile() {
   };
 
   const compareUrl = `/me?tab=friends&friend=${encodeURIComponent(uid || "")}`;
+  const trustMeta = useMemo(() => {
+    const syncLabel = lastSyncedAt
+      ? new Date(lastSyncedAt).toLocaleTimeString()
+      : (t.profile?.trustPending || "pending");
+    const sourceText = t.profile?.trustSource || "Player match history and rank snapshots";
+    const coverageText = t.profile?.trustCoverage || "Up to 200 recent matches";
+    const syncedText = (t.profile?.trustSynced || "Synced: {time}")
+      .replace("{time}", syncLabel);
+    return `${sourceText} | ${coverageText} | ${syncedText}`;
+  }, [lastSyncedAt, t.profile]);
 
   if (loading) {
     return <p className={styles.wrapper}>{t.profile.loading}</p>;
@@ -606,6 +619,7 @@ export default function PlayerProfile() {
           </LineChart>
         </ResponsiveContainer>
       </div>
+      <TrustMetaBar text={trustMeta} className={styles.trustMeta} />
     </div>
   );
 }

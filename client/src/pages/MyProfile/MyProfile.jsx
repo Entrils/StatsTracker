@@ -13,6 +13,7 @@ import RanksCard from "@/components/MyProfile/RanksCard";
 import RecordsCard from "@/components/MyProfile/RecordsCard";
 import Mini from "@/components/MyProfile/Mini";
 import CompareRow from "@/components/MyProfile/CompareRow";
+import TrustMetaBar from "@/components/TrustMetaBar/TrustMetaBar";
 import useProfileMatches from "@/hooks/myProfile/useProfileMatches";
 import useProfileRemoteData from "@/hooks/myProfile/useProfileRemoteData";
 import useMyProfileViewModel from "@/hooks/myProfile/useMyProfileViewModel";
@@ -113,6 +114,30 @@ export default function MyProfile() {
     [filteredRecentMatches, currentVisibleLimit]
   );
   const canLoadMoreMatches = hasMore || currentVisibleLimit < filteredRecentMatches.length;
+  const trustMeta = useMemo(() => {
+    const toMs = (value) => {
+      if (!value) return 0;
+      if (typeof value === "number") return value;
+      if (typeof value === "string") return Date.parse(value);
+      if (typeof value?.toMillis === "function") return value.toMillis();
+      if (typeof value?.seconds === "number") return value.seconds * 1000;
+      if (typeof value?._seconds === "number") return value._seconds * 1000;
+      return 0;
+    };
+    const latestMatchMs = matches.reduce((max, row) => {
+      const ts = toMs(row?.createdAt);
+      return ts > max ? ts : max;
+    }, 0);
+    const syncLabel = latestMatchMs
+      ? formatTimeAgo(latestMatchMs, lang)
+      : (t.me?.trustPending || "pending");
+    const sourceText = t.me?.trustSource || "Personal match log and global aggregates";
+    const coverageText = (t.me?.trustCoverage || "Showing up to {limit} matches")
+      .replace("{limit}", "2000");
+    const syncedText = (t.me?.trustSynced || "Latest match: {time}")
+      .replace("{time}", syncLabel);
+    return `${sourceText} | ${coverageText} | ${syncedText}`;
+  }, [matches, lang, t.me]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -694,6 +719,7 @@ export default function MyProfile() {
           {activeTab === "friends" && renderVsFriends()}
         </section>
       </div>
+      <TrustMetaBar text={trustMeta} className={styles.trustMeta} />
     </div>
   );
 }

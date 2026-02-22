@@ -17,6 +17,13 @@
   box-shadow: none;
 }
 
+.trustMeta {
+  margin: 14px 0 0;
+  font-size: 0.76rem;
+  color: rgba(199, 214, 241, 0.84);
+  text-align: center;
+}
+
 .mobileQuickActions {
   display: none;
 }

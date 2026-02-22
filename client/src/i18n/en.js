@@ -96,6 +96,10 @@
     discoveryCta: "Open profile",
     compareCta: "Compare",
     openProfile: "Player Profile",
+    trustSource: "Source: community match uploads",
+    trustCoverage: "Coverage: up to {limit} rows per request",
+    trustSynced: "Synced: {time}",
+    trustPending: "pending",
   },
 
   upload: {
@@ -150,6 +154,10 @@
     resultUnknown: "Result",
     helpLink: "Upload help",
     ocrRemaining: "OCR left today: {count}",
+    trustSource: "Source: OCR from uploaded screenshots",
+    trustCoverage: "Coverage: one player row per screenshot",
+    trustSynced: "Last analysis: {time}",
+    trustPending: "pending",
   },
 
   profile: {
@@ -208,6 +216,10 @@
     insightCta: "Back to leaderboard",
     compareCta: "Compare in duel",
     compareHintPrompt: "Add this player to friends to unlock duel compare.",
+    trustSource: "Source: player match history and rank snapshots",
+    trustCoverage: "Coverage: up to 200 recent matches",
+    trustSynced: "Synced: {time}",
+    trustPending: "pending",
   },
 
   me: {
@@ -315,6 +327,10 @@
     bannedTitle: "YOU ARE BANNED",
     bannedHint: "You cannot upload screenshots or appear on the leaderboard.",
     bannedReason: "Reason",
+    trustSource: "Source: personal match log and global aggregates",
+    trustCoverage: "Coverage: showing up to {limit} matches",
+    trustSynced: "Latest match: {time}",
+    trustPending: "pending",
   },
 
   footer: {

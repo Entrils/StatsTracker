@@ -35,6 +35,13 @@
   margin-bottom: var(--space-5);
 }
 
+.trustMeta {
+  margin: var(--space-4) 0 0;
+  font-size: 0.76rem;
+  color: rgba(199, 214, 241, 0.82);
+  text-align: center;
+}
+
 .helpIcon {
   width: 28px;
   height: 28px;

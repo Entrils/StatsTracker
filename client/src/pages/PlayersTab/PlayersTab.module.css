@@ -36,6 +36,14 @@
   color: #eaffff;
 }
 
+.trustMeta {
+  margin: 14px 0 0;
+  font-size: 0.74rem;
+  color: rgba(204, 219, 245, 0.86);
+  letter-spacing: 0.01em;
+  text-align: center;
+}
+
 
 .controls {
   display: flex;

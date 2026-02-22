@@ -95,6 +95,10 @@
     discoveryCta: "Profil offnen",
     compareCta: "Vergleichen",
     openProfile: "Spielerprofil",
+    trustSource: "Quelle: Community-Match-Uploads",
+    trustCoverage: "Abdeckung: bis zu {limit} Zeilen pro Anfrage",
+    trustSynced: "Synchronisiert: {time}",
+    trustPending: "ausstehend",
   },
 
   upload: {
@@ -149,6 +153,10 @@
     resultUnknown: "Ergebnis",
     helpLink: "Upload-Hilfe",
     ocrRemaining: "OCR ubrig heute: {count}",
+    trustSource: "Quelle: OCR aus hochgeladenen Screenshots",
+    trustCoverage: "Abdeckung: eine Spielerzeile pro Screenshot",
+    trustSynced: "Letzte Analyse: {time}",
+    trustPending: "ausstehend",
   },
 
   profile: {
@@ -189,6 +197,10 @@
     bannedBadge: "Gesperrt",
     compareCta: "Im Duell vergleichen",
     compareHintPrompt: "Fuge den Spieler als Freund hinzu, um den Duell-Vergleich freizuschalten.",
+    trustSource: "Quelle: Match-Historie des Spielers und Rang-Snapshots",
+    trustCoverage: "Abdeckung: bis zu 200 letzte Matches",
+    trustSynced: "Synchronisiert: {time}",
+    trustPending: "ausstehend",
   },
 
   me: {
@@ -310,6 +322,10 @@
     insightScore: "Solides Tempo: Durchschnittsscore liegt bei {value}.",
     insightDefault: "Stabile Basis. Mehr Matches zeigen klarere Trends.",
     insightCta: "Zuruck zum Leaderboard",
+    trustSource: "Quelle: personliches Match-Log und globale Aggregate",
+    trustCoverage: "Abdeckung: bis zu {limit} Matches",
+    trustSynced: "Letztes Match: {time}",
+    trustPending: "ausstehend",
   },
 
   footer: {

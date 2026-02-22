@@ -8,6 +8,7 @@ import ToastStack from "@/components/upload/ToastStack";
 import ManualResultModal from "@/components/upload/ManualResultModal";
 import UploadDropzoneCard from "@/components/upload/UploadDropzoneCard";
 import UploadResultsPanel from "@/components/upload/UploadResultsPanel";
+import TrustMetaBar from "@/components/TrustMetaBar/TrustMetaBar";
 
 export default function UploadTab() {
   const { t, lang } = useLang();
@@ -27,6 +28,7 @@ export default function UploadTab() {
   const [previewUrls, setPreviewUrls] = useState([]);
   const [toasts, setToasts] = useState([]);
   const [manualResultRequest, setManualResultRequest] = useState(null);
+  const [lastAnalyzedAt, setLastAnalyzedAt] = useState(0);
 
   const tesseractRef = useRef(null);
   const tesseractInitRef = useRef(null);
@@ -198,6 +200,11 @@ export default function UploadTab() {
     []
   );
 
+  useEffect(() => {
+    if (!batchResults.length && !lastMatch) return;
+    setLastAnalyzedAt(Date.now());
+  }, [batchResults.length, lastMatch]);
+
   const handleAnalyze = useUploadAnalyzer({
     t,
     lang,
@@ -229,6 +236,15 @@ export default function UploadTab() {
       </div>
     );
   }
+
+  const trustMeta = [
+    t.upload?.trustSource || "Source: OCR from uploaded screenshots",
+    t.upload?.trustCoverage || "Coverage: one player row per screenshot",
+    (t.upload?.trustSynced || "Last analysis: {time}").replace(
+      "{time}",
+      lastAnalyzedAt ? new Date(lastAnalyzedAt).toLocaleTimeString() : (t.upload?.trustPending || "pending")
+    ),
+  ].join(" | ");
 
   return (
     <div className={styles.container}>
@@ -271,6 +287,7 @@ export default function UploadTab() {
         onDefeat={() => resolveManualResult("defeat")}
         onSkip={() => resolveManualResult(null)}
       />
+      <TrustMetaBar text={trustMeta} className={styles.trustMeta} />
     </div>
   );
 }
