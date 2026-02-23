@@ -11,12 +11,15 @@ export default function Help() {
     return joinParagraph(t.help?.[listKey]);
   };
   const tocItems = [
+    { id: "quick-start", label: t.help?.quickStartTitle || "Quick start (2 minutes)" },
     { id: "upload-guide", label: t.help?.uploadTitle || "How to upload a screenshot" },
     { id: "profile-buttons", label: t.help?.profileTitle || "Profile buttons" },
     { id: "match-issues", label: t.help?.matchIssuesTitle || "Why match upload failed" },
     { id: "friends-compare", label: t.help?.friendsCompareTitle || "Friends and comparison" },
     { id: "teams-guide", label: t.help?.teamsTitle || "Teams" },
     { id: "tournaments-guide", label: t.help?.tournamentsTitle || "Tournaments" },
+    { id: "glossary", label: t.help?.glossaryTitle || "Glossary" },
+    { id: "privacy-simple", label: t.help?.privacySimpleTitle || "Privacy in plain words" },
     { id: "elo-rating", label: t.help?.eloTitle || "ELO rating" },
     { id: "player-profile-guide", label: t.help?.playerProfileTitle || "Player profile" },
     { id: "bug-report", label: t.help?.bugReportTitle || "How to report a bug" },
@@ -42,9 +45,27 @@ export default function Help() {
       </nav>
 
       <div className={styles.content}>
-        <section className={styles.section} id="upload-guide">
+        <section className={styles.section} id="quick-start">
           <h2 className={styles.sectionTitle}>
             <span className={styles.sectionIndex}>1.</span>{" "}
+            {t.help?.quickStartTitle || "Quick start (2 minutes)"}
+          </h2>
+          <p className={styles.sectionText}>
+            {t.help?.quickStartBody ||
+              "Complete these steps to start using all key features quickly."}
+          </p>
+          {((Array.isArray(t.help?.quickStartSteps) && t.help.quickStartSteps.length) ||
+            (typeof t.help?.quickStartStepsText === "string" &&
+              t.help.quickStartStepsText.trim())) && (
+            <p className={styles.sectionText}>
+              {paragraphOrJoin("quickStartStepsText", "quickStartSteps")}
+            </p>
+          )}
+        </section>
+
+        <section className={styles.section} id="upload-guide">
+          <h2 className={styles.sectionTitle}>
+            <span className={styles.sectionIndex}>2.</span>{" "}
             {t.help?.uploadTitle || "How to upload a screenshot"}
           </h2>
           <p className={styles.sectionText}>
@@ -74,7 +95,7 @@ export default function Help() {
 
         <section className={styles.section} id="profile-buttons">
           <h2 className={styles.sectionTitle}>
-            <span className={styles.sectionIndex}>2.</span>{" "}
+            <span className={styles.sectionIndex}>3.</span>{" "}
             {t.help?.profileTitle || "Profile buttons"}
           </h2>
           <p className={styles.sectionText}>
@@ -106,7 +127,7 @@ export default function Help() {
 
         <section className={styles.section} id="match-issues">
           <h2 className={styles.sectionTitle}>
-            <span className={styles.sectionIndex}>3.</span>{" "}
+            <span className={styles.sectionIndex}>4.</span>{" "}
             {t.help?.matchIssuesTitle || "Why match upload failed"}
           </h2>
           <p className={styles.sectionText}>
@@ -120,7 +141,7 @@ export default function Help() {
 
         <section className={styles.section} id="friends-compare">
           <h2 className={styles.sectionTitle}>
-            <span className={styles.sectionIndex}>4.</span>{" "}
+            <span className={styles.sectionIndex}>5.</span>{" "}
             {t.help?.friendsCompareTitle || "Friends and comparison"}
           </h2>
           <p className={styles.sectionText}>
@@ -135,7 +156,7 @@ export default function Help() {
 
         <section className={styles.section} id="teams-guide">
           <h2 className={styles.sectionTitle}>
-            <span className={styles.sectionIndex}>5.</span>{" "}
+            <span className={styles.sectionIndex}>6.</span>{" "}
             {t.help?.teamsTitle || "Teams"}
           </h2>
           <p className={styles.sectionText}>
@@ -149,7 +170,7 @@ export default function Help() {
 
         <section className={styles.section} id="tournaments-guide">
           <h2 className={styles.sectionTitle}>
-            <span className={styles.sectionIndex}>6.</span>{" "}
+            <span className={styles.sectionIndex}>7.</span>{" "}
             {t.help?.tournamentsTitle || "Tournaments"}
           </h2>
           <p className={styles.sectionText}>
@@ -173,9 +194,39 @@ export default function Help() {
           )}
         </section>
 
+        <section className={styles.section} id="glossary">
+          <h2 className={styles.sectionTitle}>
+            <span className={styles.sectionIndex}>8.</span>{" "}
+            {t.help?.glossaryTitle || "Glossary"}
+          </h2>
+          <p className={styles.sectionText}>
+            {t.help?.glossaryBody || "Key terms used in stats, teams, and tournaments."}
+          </p>
+          {((Array.isArray(t.help?.glossaryItems) && t.help.glossaryItems.length) ||
+            (typeof t.help?.glossaryItemsText === "string" && t.help.glossaryItemsText.trim())) && (
+            <p className={styles.sectionText}>
+              {paragraphOrJoin("glossaryItemsText", "glossaryItems")}
+            </p>
+          )}
+        </section>
+
+        <section className={styles.section} id="privacy-simple">
+          <h2 className={styles.sectionTitle}>
+            <span className={styles.sectionIndex}>9.</span>{" "}
+            {t.help?.privacySimpleTitle || "Privacy in plain words"}
+          </h2>
+          <p className={styles.sectionText}>
+            {t.help?.privacySimpleBody ||
+              "A short plain-language explanation of what data is visible and why."}
+          </p>
+          {typeof t.help?.privacySimpleText === "string" && t.help.privacySimpleText.trim() && (
+            <p className={styles.sectionText}>{t.help.privacySimpleText}</p>
+          )}
+        </section>
+
         <section className={styles.section} id="elo-rating">
           <h2 className={styles.sectionTitle}>
-            <span className={styles.sectionIndex}>7.</span>{" "}
+            <span className={styles.sectionIndex}>10.</span>{" "}
             {t.help?.eloTitle || "ELO rating"}
           </h2>
           <p className={styles.sectionText}>
@@ -198,7 +249,7 @@ export default function Help() {
 
         <section className={styles.section} id="player-profile-guide">
           <h2 className={styles.sectionTitle}>
-            <span className={styles.sectionIndex}>8.</span>{" "}
+            <span className={styles.sectionIndex}>11.</span>{" "}
             {t.help?.playerProfileTitle || "Player profile"}
           </h2>
           <p className={styles.sectionText}>
@@ -231,7 +282,7 @@ export default function Help() {
 
         <section className={styles.section} id="bug-report">
           <h2 className={styles.sectionTitle}>
-            <span className={styles.sectionIndex}>9.</span>{" "}
+            <span className={styles.sectionIndex}>12.</span>{" "}
             {t.help?.bugReportTitle || "How to report a bug"}
           </h2>
           <p className={styles.sectionText}>

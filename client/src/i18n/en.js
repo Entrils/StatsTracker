@@ -487,6 +487,17 @@
     title: "Help",
     tocTitle: "Contents",
     subtitle: "Quick guide to the key parts of the site.",
+    quickStartTitle: "Quick start in 2 minutes",
+    quickStartBody:
+      "A short path that unlocks the main tracker features immediately.",
+    quickStartSteps: [
+      "Open Settings and set a valid FragPunk ID in nickname#tag format.",
+      "In Upload, submit a match screenshot and wait for the “OK” status.",
+      "Open My Profile and verify that the match appears in history and charts.",
+      "For team mode, create a team, finalize roster, and register for a tournament.",
+    ],
+    quickStartStepsText:
+      "Start by setting your FragPunk ID in Settings, then upload a match screenshot and wait for an “OK” result. After that, check My Profile to confirm the match appears in history and stats. If you play competitively, create a team, lock your roster, and register for a fitting tournament format.",
     eloTitle: "ELO rating",
     eloBody:
       "ELO is your current skill estimate. It blends your ranks with your average match stats.",
@@ -569,6 +580,24 @@
       "Your captain invites the opposing captain to the in-game lobby.",
       "After the match, both captains confirm result; for disputes, attach screenshots.",
     ],
+    glossaryTitle: "Glossary",
+    glossaryBody:
+      "Short explanations for key terms used across stats, teams, and tournaments.",
+    glossaryItems: [
+      "KDA: (kills + assists) divided by deaths; higher usually means cleaner impact.",
+      "Winrate: percentage of wins in a selected sample of matches.",
+      "Hidden ELO: internal skill estimate based on ranks and match metrics.",
+      "Bo1 / Bo3 / Bo5: series format (first to 1, 2, or 3 map wins).",
+      "Seed: initial team placement in tournament bracket.",
+      "Veto (ban/pick): map elimination/selection phase by team captains.",
+    ],
+    glossaryItemsText:
+      "KDA reflects combat efficiency, Winrate shows consistency in results, and Hidden ELO is an internal estimate of current level. Bo formats define series length, Seed defines starting bracket position, and Veto is the ban/pick map flow before match start.",
+    privacySimpleTitle: "Privacy in plain words",
+    privacySimpleBody:
+      "What other users can see and how platform data is used.",
+    privacySimpleText:
+      "The tracker stores and displays only the data needed for profile stats, leaderboards, teams, and tournaments. Some information is public (for example nickname, match metrics, achievements) because those features require public comparison. Technical data is processed to keep the service stable, prevent abuse, and improve quality. If you need to report incorrect data or content issues, use the Support page.",
     playerProfileTitle: "Player profile",
     playerProfileBody:
       "What to check first on a player profile.",
@@ -597,7 +626,7 @@
 
   roadmap: {
     title: "Project Roadmap",
-    subtitle: "Updates focused on clear, practical player experience gains",
+    subtitle: "Current plan after major UX and stability milestones already shipped",
     feedbackTitle: "We value your feedback",
     feedbackLine1:
       "The plan below is based on what players request most often.",
@@ -612,47 +641,36 @@
     wishlist: "WISHLIST",
     wishlistHint: "Wishlist",
     soonItems: [
-      "Better OCR accuracy for low-quality screenshots",
-      "Clear upload error messages with direct fix tips",
-      "Auto hints for which screenshot area works best",
-      "Faster upload page response on low-end devices",
-      "Detailed history of successful and failed uploads",
-      "Smarter player search for similar nicknames",
-      "More visible weekly progress block in profile",
-      "Instant personal record notification after upload",
-      "First-time user onboarding with clear steps",
-      "More visual achievements progress to next unlock",
+      "Stabilize SEO indexing flow: sitemap/robots + Googlebot crawl checks",
+      "Show recent updates directly in product (compact changelog panel)",
+      "Clearer tournament match-step notifications (ready, lobby, score confirm)",
+      "Invite/friend anti-spam rate limits with human-readable errors",
+      "Reduce Firestore reads on hot screens (profile, leaderboard, friends)",
+      "Unify tournament API error contract for stricter clients",
     ],
     inProgressItems: [
-      "What’s new page with short release notes",
-      "Compare with friends by recent 10 matches",
-      "More flexible leaderboard filters",
-      "Quick social links in player rows",
-      "Improved mobile profile and table layouts",
-      "Better Help section with screenshot examples",
-      "Weekly goals block in profile",
-      "Faster navigation between player profiles",
-      "Activity indicator for 7/30/90 days",
+      "Admin UX metrics charts with daily trends",
+      "Clearer community moderation UX (bans, rank verification, statuses)",
+      "Mobile UX polish for tables and match cards",
+      "Onboarding and checklist flow for new team captains",
+      "Smarter empty states and retry flows in critical pages",
+      "Player activity indicator for 7/30/90 days",
     ],
     inFutureItems: [
-      "Weekly growth leaderboard",
-      "Season recap with personal summary cards",
-      "Expanded achievements with rare rewards",
-      "Role-based improvement recommendations",
-      "One-click beautiful match share card",
-      "Comparison with players of similar level",
-      "Multi-season rank history graph",
-      "Quick profile overview mode for mobile",
-      "New social mini-competitions for friends",
+      "Weekly growth leaderboard for players and teams",
+      "Season recap with personal achievement cards",
+      "Multi-season rank history in a single timeline",
+      "Advanced social compare vs similar-skill players",
+      "One-click share card for match and profile highlights",
+      "Role-based recommendations to improve stats",
     ],
     wishlistItems: [
-      "Team/clan pages with shared stats",
-      "Community mini-tournament events",
-      "Custom personal dashboard widgets",
-      "Weekly/monthly in-app challenges",
-      "More public profile customization",
-      "Mobile app with progress notifications",
-      "Follow specific players for updates",
+      "Team/clan pages with deeper roster analytics",
+      "Community mini-events and in-product challenges",
+      "Public stats API for integrations",
+      "Personal dashboard with configurable widgets",
+      "Mobile app with push notifications",
+      "Follow players/teams with alert subscriptions",
     ],
   },
 
@@ -943,16 +961,101 @@
 
   policy: {
     title: "Policy of use",
-    p1:
-      "By using FragPunk Tracker, you accept that the service is provided “as is” and may be unavailable or inaccurate at times.",
-    p2:
-      "Do not attempt to hack, scrape at scale, or automate requests in a way that impacts stability.",
-    p3:
-      "We may change features, limits, or availability without notice.",
-    p4:
-      "<strong>UNOFFICIAL PRODUCT</strong>. FragPunk Tracker is a fan-made project and is not affiliated with or endorsed by FragPunk or its publishers.",
-    p5:
-      "This application does not use or access official game code, servers, or networks.",
+    intro:
+      "By using FragPunk Tracker, you agree to the terms below. This page defines acceptable use, data scope, moderation rules, and liability limits.",
+    importantTitle:
+      "<strong>IMPORTANT: UNOFFICIAL PROJECT</strong>",
+    importantText:
+      "<strong>FragPunk Tracker is not an official FragPunk product, is not affiliated with game developers/publishers, does not represent them, and does not affect gameplay, matchmaking, rank progression, player accounts, or game servers in any way.</strong>",
+    lastUpdatedLabel: "Last updated",
+    lastUpdatedDate: "2026-02-23",
+    sections: [
+      {
+        title: "Service scope",
+        body:
+          "FragPunk Tracker is a fan-made informational service for stats, leaderboards, teams, and tournament data. The platform helps users analyze performance, but it should not be treated as an official game authority source.",
+      },
+      {
+        title: "Who this service is for",
+        body:
+          "The platform is built for players, team captains, and organizers who need a clear and practical view of stats and tournament flow. It is designed to complement game interfaces, not replace them.",
+      },
+      {
+        title: "Data sources and accuracy",
+        body:
+          "We work to keep data useful and timely, but some values may be delayed, incomplete, or inaccurate due to ingestion and recognition limitations. Some records depend on user submissions and automated processing.",
+      },
+      {
+        title: "Data refresh and delays",
+        body:
+          "Some metrics are recalculated in batches and may not update instantly. If you see temporary mismatch after a new match, it is usually related to processing queues, cache windows, or validation steps.",
+      },
+      {
+        title: "Allowed use",
+        body:
+          "You may use the service for normal profile browsing, performance analysis, comparison, and tournament workflows. Sharing links to public pages is allowed as long as it does not violate law or third-party rights.",
+      },
+      {
+        title: "Account and access",
+        body:
+          "Some features require authentication. You are responsible for the security of your account and for actions performed under your credentials.",
+      },
+      {
+        title: "Prohibited actions",
+        body:
+          "You must not perform actions that harm platform stability or user safety, including hacking attempts, token abuse, bypassing restrictions, DDoS, abusive scraping, unauthorized bot activity, or illegal and malicious content submission.",
+      },
+      {
+        title: "Automation and rate limits",
+        body:
+          "Automated access is only acceptable within limits that do not create abnormal load. Requests that exceed limits may be throttled, blocked, or restricted to protect platform stability.",
+      },
+      {
+        title: "Teams, tournaments, and user-provided content",
+        body:
+          "You are responsible for data you submit, including team naming, tournament actions, and result confirmations. In disputed match cases, we may request supporting evidence such as screenshots.",
+      },
+      {
+        title: "Moderation and enforcement",
+        body:
+          "We may edit, hide, or remove data and actions that violate platform rules or create risk for the community. In serious cases, access can be partially or fully restricted.",
+      },
+      {
+        title: "Intellectual property and trademarks",
+        body:
+          "Game trademarks, logos, and third-party assets belong to their respective owners. Brand references on this platform are used for identification and informational context only.",
+      },
+      {
+        title: "Third-party links",
+        body:
+          "The service may contain links to external websites and platforms. We do not control their content, security, or privacy practices.",
+      },
+      {
+        title: "Personal data and privacy",
+        body:
+          "Technical and user-related data may be processed as needed for feature operation, abuse prevention, and service quality improvements. By using the platform, you agree to such processing within this scope.",
+      },
+      {
+        title: "Liability limitation",
+        body:
+          "The service is provided “as is” and “as available”, without guarantees of uninterrupted operation or perfect data accuracy. We are not liable for indirect damages, lost profits, lost data, or reputational losses related to platform use.",
+      },
+      {
+        title: "Changes to service and policy",
+        body:
+          "We may update features, limits, and this policy without individual notice to each user. The latest version is always available on this page, and continued use means acceptance of updated terms.",
+      },
+      {
+        title: "Applicable law and disputes",
+        body:
+          "If a dispute appears, both sides should first attempt to resolve it through support communication. If no resolution is reached, applicable law and procedures of the service owner jurisdiction apply.",
+      },
+      {
+        title: "Contact",
+        body:
+          "For moderation, legal requests, or rights-holder claims, use the Support page.",
+      },
+    ],
   },
 
   ads: {

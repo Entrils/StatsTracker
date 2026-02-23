@@ -484,6 +484,17 @@
     title: "Aide",
     tocTitle: "Sommaire",
     subtitle: "Le plus important, explique simplement.",
+    quickStartTitle: "Demarrage rapide en 2 minutes",
+    quickStartBody:
+      "Un chemin court pour activer rapidement les fonctions principales du tracker.",
+    quickStartSteps: [
+      "Ouvre Parametres et renseigne un FragPunk ID valide au format nickname#tag.",
+      "Dans Upload, envoie une capture de match et attends le statut « OK ».",
+      "Ouvre Mon profil et verifie que le match apparait dans l'historique et les graphes.",
+      "Pour le mode equipe, cree ton equipe, fixe le roster et inscris-la au tournoi.",
+    ],
+    quickStartStepsText:
+      "Commence par configurer ton FragPunk ID dans les Parametres, puis envoie une capture de match et attends « OK ». Ensuite, verifie dans Mon profil que le match est bien pris en compte. Si tu joues en equipe, cree ton roster actif puis inscris l'equipe au bon format de tournoi.",
     eloTitle: "Classement ELO",
     eloBody:
       "L'ELO reflete ton niveau actuel. Il combine les rangs et les stats moyennes de tes matchs.",
@@ -566,6 +577,24 @@
       "Le capitaine invite le capitaine adverse dans le lobby en jeu.",
       "Apres le match, les deux capitaines valident le resultat ; en cas de litige, joignez des captures.",
     ],
+    glossaryTitle: "Glossaire",
+    glossaryBody:
+      "Definitions rapides des termes utilises dans les stats, equipes et tournois.",
+    glossaryItems: [
+      "KDA : (kills + assists) divise par les morts ; plus c'est haut, plus l'impact est propre.",
+      "Winrate : pourcentage de victoires sur un echantillon de matchs.",
+      "Hidden ELO : estimation interne du niveau basee sur rangs et stats de match.",
+      "Bo1 / Bo3 / Bo5 : format de serie (premier a 1, 2 ou 3 victoires de cartes).",
+      "Seed : position de depart d'une equipe dans le bracket.",
+      "Veto (ban/pick) : phase de bannissement et selection des cartes par les capitaines.",
+    ],
+    glossaryItemsText:
+      "Le KDA mesure l'efficacite en combat, le Winrate la regularite des resultats, et le Hidden ELO une estimation interne du niveau actuel. Les formats Bo definissent la longueur de serie, le Seed la place initiale dans le bracket, et le Veto la sequence ban/pick avant le match.",
+    privacySimpleTitle: "Confidentialite en mots simples",
+    privacySimpleBody:
+      "Ce que les autres voient et comment les donnees sont utilisees par la plateforme.",
+    privacySimpleText:
+      "Le service traite uniquement les donnees necessaires aux profils, classements, equipes et tournois. Une partie des informations est publique (pseudo, metriques de match, succes) pour permettre le leaderboard et la comparaison. Les donnees techniques servent a maintenir la stabilite, prevenir les abus et ameliorer la qualite globale. En cas d'erreur de donnees ou de contenu, contacte le support.",
     playerProfileTitle: "Profil du joueur",
     playerProfileBody:
       "Les elements importants a lire sur un profil joueur.",
@@ -594,7 +623,7 @@
 
   roadmap: {
     title: "Roadmap du projet",
-    subtitle: "Plan des prochaines mises a jour",
+    subtitle: "Plan actuel apres les grosses mises a niveau UX et stabilite deja livrees",
     soon: "SOON",
     soonHint: "Bientot",
     inProgress: "IN PROGRESS",
@@ -604,24 +633,36 @@
     wishlist: "WISHLIST",
     wishlistHint: "Liste d'envies",
     soonItems: [
-      "Correction des problemes d'encodage du texte",
-      "Erreurs OCR plus claires + conseils",
-      "Smoke tests pour les API critiques",
+      "Stabiliser l’indexation SEO : sitemap/robots + verification du crawl Googlebot",
+      "Afficher les dernieres updates dans le produit (mini changelog)",
+      "Rendre les etapes de match tournoi plus claires (ready, lobby, score)",
+      "Limiter le spam sur invites/amis avec messages d’erreur lisibles",
+      "Reduire les Firestore reads sur les ecrans les plus consultes",
+      "Uniformiser le contrat d’erreurs API tournoi pour les clients stricts",
     ],
     inProgressItems: [
-      "Extension Help/FAQ",
-      "Nouveaux empty states avec CTA",
-      "Page de release notes",
+      "Graphiques UX metrics admin avec tendance journaliere",
+      "Moderation communaute plus lisible (bans, verification de rang, statuts)",
+      "Polish UX mobile pour tableaux et cartes de match",
+      "Onboarding + checklist pour nouveaux capitaines",
+      "Empty states plus utiles avec retry sur les pages critiques",
+      "Indicateur d’activite joueurs sur 7/30/90 jours",
     ],
     inFutureItems: [
-      "Classement de progression hebdomadaire",
-      "Nouvelles categories d'exploits",
-      "File OCR pour les pics de charge",
+      "Classement hebdomadaire de progression joueurs/equipes",
+      "Recap de saison avec cartes perso d’accomplissements",
+      "Historique multi-saisons des rangs sur une timeline",
+      "Comparaison sociale avancee avec joueurs de niveau proche",
+      "Partage one-click de carte match/profil",
+      "Recommandations d’amelioration par role",
     ],
     wishlistItems: [
-      "Pages equipes/clans",
-      "Rapports de bilan de saison",
-      "API publique de statistiques",
+      "Pages equipes/clans avec analytics de roster avancees",
+      "Mini-events communaute et challenges in-app",
+      "API publique de stats pour integrations",
+      "Dashboard perso avec widgets configurables",
+      "Application mobile avec notifications push",
+      "Abonnement a des joueurs/equipes avec alertes",
     ],
   },
 
@@ -867,16 +908,101 @@
 
   policy: {
     title: "Politique d'utilisation",
-    p1:
-      "En utilisant FragPunk Tracker, vous acceptez que le service soit fourni « tel quel » et puisse parfois etre indisponible ou imprecis.",
-    p2:
-      "Toute tentative de piratage, de scraping a grande echelle ou d'automatisation nuisible est interdite.",
-    p3:
-      "Nous pouvons modifier les fonctionnalites, les limites ou la disponibilite sans preavis.",
-    p4:
-      "<strong>PRODUIT NON OFFICIEL</strong>. FragPunk Tracker est un projet communautaire et n'est pas affilie a FragPunk ni a ses editeurs.",
-    p5:
-      "Cette application n'utilise ni n'accede au code, aux serveurs ou aux reseaux officiels du jeu.",
+    intro:
+      "En utilisant FragPunk Tracker, vous acceptez les conditions ci-dessous. Cette page definit les regles d'utilisation, la portee des donnees, la moderation et les limites de responsabilite.",
+    importantTitle:
+      "<strong>IMPORTANT : PROJET NON OFFICIEL</strong>",
+    importantText:
+      "<strong>FragPunk Tracker n'est pas un produit officiel FragPunk, n'est pas affilie aux developpeurs/editeurs du jeu, ne les represente pas et n'influence en aucun cas le gameplay, le matchmaking, les rangs, les comptes joueurs ou les serveurs du jeu.</strong>",
+    lastUpdatedLabel: "Derniere mise a jour",
+    lastUpdatedDate: "23.02.2026",
+    sections: [
+      {
+        title: "Portee du service",
+        body:
+          "FragPunk Tracker est un service communautaire d'information pour les statistiques, le leaderboard, les equipes et les donnees de tournois. La plateforme aide a analyser les performances, mais ne constitue pas une source officielle du jeu.",
+      },
+      {
+        title: "Pour qui est ce service",
+        body:
+          "Le service est concu pour les joueurs, capitaines et organisateurs qui ont besoin d'une lecture claire des performances et du flux tournoi. Il complete l'interface du jeu, sans la remplacer.",
+      },
+      {
+        title: "Sources et precision des donnees",
+        body:
+          "Nous faisons le maximum pour garder des donnees utiles et a jour, mais certaines valeurs peuvent etre retardees, incompletes ou inexactes. Une partie des informations depend d'uploads utilisateurs et de traitements automatiques.",
+      },
+      {
+        title: "Mise a jour et delais",
+        body:
+          "Certaines metriques sont recalculees par lots et ne s'actualisent pas instantanement. Un ecart temporaire apres un match recent peut venir de la file de traitement, du cache ou des etapes de validation.",
+      },
+      {
+        title: "Utilisation autorisee",
+        body:
+          "Vous pouvez utiliser la plateforme pour la consultation de profils, l'analyse personnelle ou d'equipe, la comparaison de stats et les flux tournoi. Le partage de liens vers des pages publiques est autorise dans le respect de la loi et des droits des tiers.",
+      },
+      {
+        title: "Compte et acces",
+        body:
+          "Certaines fonctionnalites exigent une connexion. L'utilisateur est responsable de la securite de son compte et des actions effectuees avec ses identifiants.",
+      },
+      {
+        title: "Actions interdites",
+        body:
+          "Sont interdits : piratage, contournement de limites, attaques de disponibilite, scraping agressif, automatisation non autorisee et tout contenu illegal, malveillant ou abusif.",
+      },
+      {
+        title: "Automatisation et limites",
+        body:
+          "L'automatisation n'est acceptable que dans des limites qui ne degradent pas la stabilite de la plateforme. En cas de charge anormale, les requetes peuvent etre limitees ou bloquees.",
+      },
+      {
+        title: "Equipes, tournois et contenu utilisateur",
+        body:
+          "Vous etes responsable des donnees soumises, y compris les noms d'equipe, les actions tournoi et la validation des resultats. En cas de litige, des preuves peuvent etre demandees (captures, elements contextuels).",
+      },
+      {
+        title: "Moderation et mesures",
+        body:
+          "Nous pouvons modifier, masquer ou supprimer des donnees/actions qui enfreignent les regles ou mettent la communaute en risque. Dans les cas graves, l'acces peut etre restreint partiellement ou totalement.",
+      },
+      {
+        title: "Propriete intellectuelle et marques",
+        body:
+          "Les marques, logos et contenus tiers appartiennent a leurs titulaires. Les references de marque sur le site sont utilisees a titre informatif et d'identification.",
+      },
+      {
+        title: "Liens vers des services tiers",
+        body:
+          "La plateforme peut contenir des liens externes. Nous ne controlons pas leur contenu, leur securite ni leurs pratiques de confidentialite.",
+      },
+      {
+        title: "Donnees personnelles et confidentialite",
+        body:
+          "Des donnees techniques et utilisateur peuvent etre traitees pour faire fonctionner les fonctionnalites, prevenir les abus et ameliorer la qualite du service. En utilisant la plateforme, vous acceptez ce traitement dans ce cadre.",
+      },
+      {
+        title: "Limitation de responsabilite",
+        body:
+          "Le service est fourni « tel quel » et « selon disponibilite », sans garantie de continuite ni d'exactitude absolue. Nous ne sommes pas responsables des dommages indirects, pertes de donnees, pertes de profit ou atteintes reputatoires liees a l'utilisation du service.",
+      },
+      {
+        title: "Modification du service et de la politique",
+        body:
+          "Nous pouvons mettre a jour les fonctionnalites, les limites et cette politique sans notification individuelle. La version en vigueur est publiee sur cette page ; l'utilisation continue vaut acceptation de la version mise a jour.",
+      },
+      {
+        title: "Droit applicable et litiges",
+        body:
+          "En cas de litige, les parties cherchent d'abord une resolution amiable via le support. A defaut d'accord, le droit applicable et les procedures de la juridiction du proprietaire du service s'appliquent.",
+      },
+      {
+        title: "Contact",
+        body:
+          "Pour moderation, demandes juridiques ou reclamations de titulaires de droits, utilisez la page Support.",
+      },
+    ],
   },
 
   ads: {
