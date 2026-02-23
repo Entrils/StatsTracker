@@ -5,16 +5,12 @@ export function createStatsHelpers({
   CACHE_COLLECTION,
   GLOBAL_CACHE_TTL_MS,
   getActiveBansSet,
-  LEADERBOARD_CACHE_TTL_MS = 30000,
+  LEADERBOARD_CACHE_TTL_MS: _LEADERBOARD_CACHE_TTL_MS = 30000,
 }) {
   let globalCache = {
     updatedAt: 0,
     distributions: null,
     countPlayers: 0,
-  };
-  let leaderboardCache = {
-    updatedAt: 0,
-    bySort: new Map(),
   };
   const normalizeSettingsPayload = (value) => {
     const candidates = [value, value?.settings, value?.socials];
@@ -30,6 +26,17 @@ export function createStatsHelpers({
       if (Object.keys(out).length) return out;
     }
     return null;
+  };
+  const canOrderByDocumentId =
+    typeof admin?.firestore?.FieldPath?.documentId === "function";
+  const isMissingIndexError = (err) => {
+    const code = String(err?.code || "").toLowerCase();
+    const msg = String(err?.message || "").toLowerCase();
+    return code.includes("failed-precondition")
+      || msg.includes("failed_precondition")
+      || msg.includes("failed precondition")
+      || msg.includes("requires an index")
+      || msg.includes("create index");
   };
 
   async function readCacheDoc(id, ttlMs) {
@@ -293,93 +300,178 @@ export function createStatsHelpers({
     return 0;
   };
 
-  async function buildLeaderboardRows() {
-    const bannedSet = getActiveBansSet ? await getActiveBansSet() : null;
-    const rows = [];
+  const getSortOrderField = (sortBy) => {
+    if (sortBy === "elo") return "hiddenElo";
+    if (["matches", "winrate", "avgScore", "kda"].includes(sortBy)) return sortBy;
+    return "matches";
+  };
 
-    let lastDoc = null;
-    const baseQuery = db
-      .collection("leaderboard_users")
-      .orderBy(admin.firestore.FieldPath.documentId())
-      .limit(1000);
+  const toSortableNumber = (value, fallback = 0) => {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : fallback;
+  };
 
-    while (true) {
-      const query = lastDoc ? baseQuery.startAfter(lastDoc) : baseQuery;
-      const snap = await query.get();
-      if (snap.empty) break;
-
-      snap.docs.forEach((doc) => {
-        const p = doc.data() || {};
-        const uid = doc.id;
-        if (!uid) return;
-        if (bannedSet && bannedSet.has(uid)) return;
-        const matches = Number(p.matches || 0);
-        const avgScore = matches ? (p.score || 0) / matches : 0;
-        const avgKills = matches ? (p.kills || 0) / matches : 0;
-        const avgDeaths = matches ? (p.deaths || 0) / matches : 0;
-        const avgAssists = matches ? (p.assists || 0) / matches : 0;
-        const kda = (p.kills + p.assists) / Math.max(1, p.deaths || 0);
-        const winrate = (p.wins / Math.max(1, matches)) * 100 || 0;
-
-        rows.push({
-          uid,
-          name: p.name || "Unknown",
-          elo: Number.isFinite(Number(p.hiddenElo)) ? Number(p.hiddenElo) : 500,
-          settings:
-            normalizeSettingsPayload(p.settings) ||
-            normalizeSettingsPayload(p.socials) ||
-            null,
-          score: p.score || 0,
-          kills: p.kills || 0,
-          deaths: p.deaths || 0,
-          assists: p.assists || 0,
-          damage: p.damage || 0,
-          damageShare: p.damageShare || 0,
-          wins: p.wins || 0,
-          losses: p.losses || 0,
-          matches,
-          avgScore,
-          avgKills,
-          avgDeaths,
-          avgAssists,
-          kda,
-          winrate,
-          createdAt: p.createdAt || p.firstMatchAt || p.updatedAt || null,
-          lastRank_matches: p.lastRank_matches || null,
-          lastRankAt_matches: p.lastRankAt_matches || null,
-          lastRank_winrate: p.lastRank_winrate || null,
-          lastRankAt_winrate: p.lastRankAt_winrate || null,
-          lastRank_avgScore: p.lastRank_avgScore || null,
-          lastRankAt_avgScore: p.lastRankAt_avgScore || null,
-          lastRank_kda: p.lastRank_kda || null,
-          lastRankAt_kda: p.lastRankAt_kda || null,
-        });
-      });
-
-      lastDoc = snap.docs[snap.docs.length - 1];
-    }
-
-    return rows;
-  }
-
-  async function getLeaderboardPage(limit, offset, sortBy = "matches") {
+  async function getLeaderboardPage(limit, offset, sortBy = "matches", cursor = null) {
     const now = Date.now();
     const windowMs = 7 * 24 * 60 * 60 * 1000;
     const { sortKey, lastRankField, lastRankAtField } = getSortFields(sortBy);
+    const sortField = getSortOrderField(sortKey);
+    const bannedSet = getActiveBansSet ? await getActiveBansSet() : null;
+    const desiredCount = Math.max(1, limit) + 1;
+    const scanChunk = Math.max(50, Math.min(400, limit * 2));
+    const scanLimit = Math.max(500, limit * 20);
+    const collectedDocs = [];
+    let scanned = 0;
+    let nextAfterValue = Number.isFinite(Number(cursor?.afterValue))
+      ? Number(cursor.afterValue)
+      : null;
+    let nextAfterUid = String(cursor?.afterUid || "").trim() || null;
 
-    if (!leaderboardCache.updatedAt || now - leaderboardCache.updatedAt > LEADERBOARD_CACHE_TTL_MS) {
-      const rows = await buildLeaderboardRows();
-      const bySort = new Map();
-      Object.keys(SORT_FIELDS).forEach((key) => {
-        const sorted = [...rows].sort((a, b) => (b[key] || 0) - (a[key] || 0));
-        bySort.set(key, sorted);
-      });
-      leaderboardCache = { updatedAt: now, bySort };
+    let useDocIdTieBreak = canOrderByDocumentId;
+    while (collectedDocs.length < desiredCount && scanned < scanLimit) {
+      let query = db
+        .collection("leaderboard_users")
+        .orderBy(sortField, "desc");
+      if (useDocIdTieBreak) {
+        query = query.orderBy(admin.firestore.FieldPath.documentId(), "asc");
+      }
+      query = query.limit(scanChunk);
+      if (Number.isFinite(nextAfterValue) && typeof query.startAfter === "function") {
+        query = useDocIdTieBreak && nextAfterUid
+          ? query.startAfter(nextAfterValue, nextAfterUid)
+          : query.startAfter(nextAfterValue);
+      }
+      let snap;
+      try {
+        snap = await query.get();
+      } catch (err) {
+        if (useDocIdTieBreak && isMissingIndexError(err)) {
+          logger?.warn?.(
+            "LEADERBOARD QUERY FALLBACK (NO COMPOSITE INDEX FOR DOCID TIEBREAK):",
+            err?.message || err
+          );
+          useDocIdTieBreak = false;
+          // Reset cursor to safest point for degraded query mode.
+          if (!Number.isFinite(nextAfterValue) && Number.isFinite(Number(cursor?.afterValue))) {
+            nextAfterValue = Number(cursor.afterValue);
+          }
+          nextAfterUid = null;
+          continue;
+        }
+        throw err;
+      }
+      const docs = Array.isArray(snap?.docs) ? snap.docs : [];
+      if (!docs.length) break;
+      scanned += docs.length;
+      for (const doc of docs) {
+        const uid = String(doc?.id || "");
+        if (!uid) continue;
+        if (bannedSet && bannedSet.has(uid)) continue;
+        collectedDocs.push(doc);
+        if (collectedDocs.length >= desiredCount) break;
+      }
+      const lastScanned = docs[docs.length - 1];
+      const lastScannedData = lastScanned?.data?.() || {};
+      nextAfterUid = useDocIdTieBreak ? (String(lastScanned?.id || "").trim() || null) : null;
+      nextAfterValue = toSortableNumber(lastScannedData?.[sortField], 0);
+      if (docs.length < scanChunk) break;
     }
 
-    const source = leaderboardCache.bySort.get(sortKey) || [];
-    const total = source.length;
-    const pageRows = source.slice(offset, offset + limit);
+    const shouldSupplementMissingMatches =
+      sortField === "matches" &&
+      !cursor &&
+      Math.max(0, Number(offset) || 0) === 0 &&
+      collectedDocs.length < desiredCount &&
+      canOrderByDocumentId;
+    if (shouldSupplementMissingMatches) {
+      const missingNeeded = desiredCount - collectedDocs.length;
+      const seen = new Set(collectedDocs.map((doc) => String(doc?.id || "")).filter(Boolean));
+      let fallbackLastDoc = null;
+      let fallbackScanned = 0;
+      const fallbackScanLimit = Math.max(300, missingNeeded * 30);
+      while (collectedDocs.length < desiredCount && fallbackScanned < fallbackScanLimit) {
+        let query = db
+          .collection("leaderboard_users")
+          .orderBy(admin.firestore.FieldPath.documentId(), "asc")
+          .limit(scanChunk);
+        if (fallbackLastDoc && typeof query.startAfter === "function") {
+          query = query.startAfter(fallbackLastDoc);
+        }
+        const snap = await query.get();
+        const docs = Array.isArray(snap?.docs) ? snap.docs : [];
+        if (!docs.length) break;
+        fallbackScanned += docs.length;
+        for (const doc of docs) {
+          const uid = String(doc?.id || "");
+          if (!uid || seen.has(uid)) continue;
+          if (bannedSet && bannedSet.has(uid)) continue;
+          const raw = doc.data() || {};
+          const hasMatches = Number.isFinite(Number(raw.matches));
+          if (hasMatches) continue;
+          seen.add(uid);
+          collectedDocs.push(doc);
+          if (collectedDocs.length >= desiredCount) break;
+        }
+        fallbackLastDoc = docs[docs.length - 1] || null;
+        if (docs.length < scanChunk) break;
+      }
+    }
+
+    const pageDocs = collectedDocs.slice(0, limit);
+    const hasMore = collectedDocs.length > limit;
+    const pageRows = pageDocs.map((doc) => {
+      const p = doc.data() || {};
+      const uid = doc.id;
+      const matches = Number(p.matches || 0);
+      const avgScore = Number.isFinite(Number(p.avgScore))
+        ? Number(p.avgScore)
+        : matches
+          ? (p.score || 0) / matches
+          : 0;
+      const avgKills = matches ? (p.kills || 0) / matches : 0;
+      const avgDeaths = matches ? (p.deaths || 0) / matches : 0;
+      const avgAssists = matches ? (p.assists || 0) / matches : 0;
+      const kda = Number.isFinite(Number(p.kda))
+        ? Number(p.kda)
+        : (p.kills + p.assists) / Math.max(1, p.deaths || 0);
+      const winrate = Number.isFinite(Number(p.winrate))
+        ? Number(p.winrate)
+        : (p.wins / Math.max(1, matches)) * 100 || 0;
+
+      return {
+        uid,
+        name: p.name || "Unknown",
+        elo: Number.isFinite(Number(p.hiddenElo)) ? Number(p.hiddenElo) : 500,
+        settings:
+          normalizeSettingsPayload(p.settings) ||
+          normalizeSettingsPayload(p.socials) ||
+          null,
+        score: p.score || 0,
+        kills: p.kills || 0,
+        deaths: p.deaths || 0,
+        assists: p.assists || 0,
+        damage: p.damage || 0,
+        damageShare: p.damageShare || 0,
+        wins: p.wins || 0,
+        losses: p.losses || 0,
+        matches,
+        avgScore,
+        avgKills,
+        avgDeaths,
+        avgAssists,
+        kda,
+        winrate,
+        createdAt: p.createdAt || p.firstMatchAt || p.updatedAt || null,
+        lastRank_matches: p.lastRank_matches || null,
+        lastRankAt_matches: p.lastRankAt_matches || null,
+        lastRank_winrate: p.lastRank_winrate || null,
+        lastRankAt_winrate: p.lastRankAt_winrate || null,
+        lastRank_avgScore: p.lastRank_avgScore || null,
+        lastRankAt_avgScore: p.lastRankAt_avgScore || null,
+        lastRank_kda: p.lastRank_kda || null,
+        lastRankAt_kda: p.lastRankAt_kda || null,
+      };
+    });
     const rowsWithoutSettings = pageRows.filter((row) => !normalizeSettingsPayload(row?.settings));
     if (rowsWithoutSettings.length) {
       const uidList = [...new Set(rowsWithoutSettings.map((row) => String(row?.uid || "")).filter(Boolean))];
@@ -428,7 +520,7 @@ export function createStatsHelpers({
     let hasUpdates = false;
 
     pageRows.forEach((row, idx) => {
-      const currentRank = offset + idx + 1;
+      const currentRank = Math.max(0, Number(offset) || 0) + idx + 1;
       row.rank = currentRank;
 
       const lastRankAtMs = toMs(row[lastRankAtField]);
@@ -451,8 +543,16 @@ export function createStatsHelpers({
     if (hasUpdates) {
       await batch.commit();
     }
-
-    return { rows: pageRows, total };
+    const lastPageDoc = pageDocs[pageDocs.length - 1] || null;
+    const lastPageData = lastPageDoc?.data?.() || {};
+    const nextCursor =
+      hasMore && lastPageDoc
+        ? {
+            afterUid: String(lastPageDoc.id || ""),
+            afterValue: toSortableNumber(lastPageData?.[sortField], 0),
+          }
+        : null;
+    return { rows: pageRows, hasMore, nextCursor };
   }
 
   return { getDistributions, getLeaderboardPage, topPercent };

@@ -91,6 +91,39 @@ describe("tournament registration routes", () => {
     expect(db._store.get("tournaments/t1/registrations/u1")).toBeUndefined();
   });
 
+  it("registers solo player when FragPunk ID exists in users profile settings fallback", async () => {
+    const now = Date.now();
+    const db = createFakeFirestore({
+      "tournaments/t1": {
+        title: "Solo Cup",
+        teamFormat: "1x1",
+        startsAt: now + 60_000,
+        maxTeams: 8,
+        registeredTeams: 0,
+      },
+      "leaderboard_users/u1": {
+        name: "Solo",
+        hiddenElo: 1200,
+        matches: 10,
+      },
+      "users/u1/profile/settings": {
+        settings: { fragpunkId: "Solo#EU1" },
+      },
+    });
+    const app = createApp(makeDeps(db));
+
+    const res = await request(app)
+      .post("/tournaments/t1/register-team")
+      .set("x-user-uid", "u1")
+      .send({});
+
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+    expect((db._store.get("tournaments/t1/registrations/u1") || {}).fragpunkIdSnapshot).toBe(
+      "Solo#EU1"
+    );
+  });
+
   it("rejects team registration when team format does not match tournament format", async () => {
     const now = Date.now();
     const db = createFakeFirestore({
@@ -232,6 +265,53 @@ describe("tournament registration routes", () => {
     expect((db._store.get("tournaments/t1") || {}).registeredTeams).toBe(1);
     expect((db._store.get("teams/team1") || {}).activeTournamentIds).toContain("t1");
     expect((db._store.get("team_public_stats/team1") || {}).stale).toBe(true);
+  });
+
+  it("registers team when one member has FragPunk ID only in users doc fallback", async () => {
+    const now = Date.now();
+    const db = createFakeFirestore({
+      "tournaments/t1": {
+        title: "Duo Cup",
+        teamFormat: "2x2",
+        startsAt: now + 60_000,
+        maxTeams: 8,
+        registeredTeams: 0,
+        requirements: { minElo: 500, minMatches: 0 },
+      },
+      "teams/team1": {
+        name: "Alpha",
+        captainUid: "u1",
+        memberUids: ["u1", "u2"],
+        maxMembers: 3,
+        teamFormat: "2x2",
+      },
+      "leaderboard_users/u1": {
+        name: "P1",
+        hiddenElo: 700,
+        matches: 9,
+        settings: { fragpunkId: "P1#EU1" },
+      },
+      "leaderboard_users/u2": {
+        name: "P2",
+        hiddenElo: 800,
+        matches: 11,
+      },
+      "users/u2": {
+        settings: { fragpunkId: "P2#EU1" },
+      },
+    });
+    const app = createApp(makeDeps(db));
+
+    const res = await request(app)
+      .post("/tournaments/t1/register-team")
+      .set("x-user-uid", "u1")
+      .send({ teamId: "team1" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+    const reg = db._store.get("tournaments/t1/registrations/team1") || {};
+    expect(Array.isArray(reg.membersSnapshot)).toBe(true);
+    expect(reg.membersSnapshot.find((m) => m.uid === "u2")?.fragpunkId).toBe("P2#EU1");
   });
 
   it("blocks registration when tournament is already full", async () => {

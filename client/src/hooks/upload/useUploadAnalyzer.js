@@ -80,6 +80,7 @@ export default function useUploadAnalyzer({
           const item = {
             name: mock?.name || file?.name || `${t.upload.fileLabel || "File"} ${index + 1}`,
             status,
+            code: String(mock?.code || "").trim() || status,
             message,
           };
           const suffix = queue.length > 1 ? ` (${index + 1}/${queue.length})` : "";
@@ -288,6 +289,7 @@ export default function useUploadAnalyzer({
           {
             name: t.upload.fileLabel || "File",
             status: "error",
+            code: "unknown_error",
             message: t.upload.statusOtherFailed || "Other error",
           },
         ]);

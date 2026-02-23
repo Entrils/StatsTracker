@@ -251,6 +251,47 @@
   opacity: 0.78;
 }
 
+.timelineCard {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(5, 8, 15, 0.45);
+}
+
+.timelineTitle {
+  margin: 0;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #d9e8ff;
+}
+
+.timelineList {
+  display: grid;
+  gap: 6px;
+}
+
+.timelineRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.timelineLabel {
+  font-size: 0.74rem;
+  color: #9ab0d8;
+}
+
+.timelineValue {
+  text-align: right;
+  font-size: 0.76rem;
+  color: #e7f0ff;
+  font-weight: 700;
+}
+
 .chatToggle {
   justify-self: center;
   display: inline-flex;
@@ -286,6 +327,12 @@
 }
 
 .readyCard {
+  background: rgba(8, 12, 22, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+}
+.viewerSummaryCard {
   background: rgba(8, 12, 22, 0.55);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: var(--radius-md);

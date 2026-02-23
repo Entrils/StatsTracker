@@ -277,6 +277,8 @@ export default function UploadTab() {
           batchResults={batchResults}
           ocrRemaining={ocrRemaining}
           lastMatch={lastMatch}
+          onRetry={handleAnalyze}
+          canRetry={Boolean(!loading && selectedFiles.length)}
         />
       </UploadDropzoneCard>
 

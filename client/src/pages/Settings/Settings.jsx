@@ -7,6 +7,14 @@ import Button from "@/components/ui/Button";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 const FRAGPUNK_ID_REGEX = /^[A-Za-z0-9._-]{2,24}#[A-Za-z0-9]{2,8}$/;
+const FRAGPUNK_ZERO_WIDTH_REGEX = /[\u200B-\u200D\u2060\uFEFF]/g;
+
+function normalizeFragpunkIdInput(value) {
+  return String(value || "")
+    .replace(FRAGPUNK_ZERO_WIDTH_REGEX, "")
+    .trim()
+    .replace(/\s*#\s*/, "#");
+}
 
 export default function Settings() {
   const { user } = useAuth();
@@ -80,7 +88,7 @@ export default function Settings() {
   };
 
   const validateSocial = (type, value) => {
-    const v = value.trim();
+    const v = type === "fragpunkId" ? normalizeFragpunkIdInput(value) : value.trim();
     if (!v) return "";
     if (type === "fragpunkId") {
       return FRAGPUNK_ID_REGEX.test(v) ? "" : "format";
@@ -295,6 +303,10 @@ export default function Settings() {
 
   const saveFragpunkId = async () => {
     if (!user) return;
+    const normalizedFragpunkId = normalizeFragpunkIdInput(socials.fragpunkId);
+    if (normalizedFragpunkId !== socials.fragpunkId) {
+      setSocials((prev) => ({ ...prev, fragpunkId: normalizedFragpunkId }));
+    }
     if (!validateFragpunkId()) {
       setFragStatus(t.me?.saveError || "Save failed");
       setFragTone("bad");
@@ -313,16 +325,19 @@ export default function Settings() {
         },
         body: JSON.stringify({
           settings: {
-            fragpunkId: socials.fragpunkId,
+            fragpunkId: normalizedFragpunkId,
           },
         }),
       });
-      if (!res.ok) throw new Error("Failed");
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        throw new Error(data?.error || "Failed");
+      }
       setFragStatus(t.me?.saved || "Saved");
       setFragTone("good");
       setEditing((prev) => ({ ...prev, fragpunkId: false }));
-    } catch {
-      setFragStatus(t.me?.saveError || "Save failed");
+    } catch (err) {
+      setFragStatus(err?.message || t.me?.saveError || "Save failed");
       setFragTone("bad");
     } finally {
       setFragSaving(false);
@@ -697,4 +712,3 @@ export default function Settings() {
     </div>
   );
 }
-

@@ -284,7 +284,7 @@ export default function TournamentMatchPage() {
     if (!shouldPollMatch) return undefined;
     const timer = window.setInterval(() => {
       load({ silent: true });
-    }, 5000);
+    }, 15000);
     return () => window.clearInterval(timer);
   }, [load, shouldPollMatch]);
 
@@ -292,7 +292,7 @@ export default function TournamentMatchPage() {
     if (!user || !chatOpen || !isPageVisible || chatAccessDenied) return undefined;
     const timer = window.setInterval(() => {
       loadChat({ silent: true });
-    }, 8000);
+    }, 20000);
     return () => window.clearInterval(timer);
   }, [user, chatOpen, isPageVisible, chatAccessDenied, loadChat]);
 
@@ -334,6 +334,7 @@ export default function TournamentMatchPage() {
   const myTeamId = isCaptainA ? teamA.teamId : isCaptainB ? teamB.teamId : "";
   const isCaptain = isCaptainA || isCaptainB;
   const isAdmin = claims?.admin === true || claims?.role === "admin";
+  const isOperator = isCaptain || isAdmin;
 
   const veto = match?.veto || null;
   const readyCheck = match?.readyCheck || null;
@@ -576,6 +577,96 @@ export default function TournamentMatchPage() {
     }));
   }, [tm.stepReady, tm.stepVeto, tm.stepLive, tm.stepResult, isMatchCompleted, vetoUnlocked, vetoDone]);
 
+  const keyMoments = useMemo(() => {
+    const items = [];
+    if (hasSchedule) {
+      items.push({
+        key: "schedule",
+        label: tm.timelineSchedule || "Scheduled",
+        value: formatMatchDate(scheduledAt, lang),
+      });
+    } else {
+      items.push({
+        key: "schedule",
+        label: tm.timelineSchedule || "Scheduled",
+        value: td?.bracket?.notScheduled || "Not scheduled",
+      });
+    }
+    items.push({
+      key: "ready",
+      label: tm.readyCheck || "Ready check",
+      value: bothReady
+        ? tm.readyCompleted || "Both captains confirmed readiness"
+        : readyExpired
+          ? tm.readyExpired || "Ready check expired"
+          : tm.readyInProgress || "In progress",
+    });
+    items.push({
+      key: "veto",
+      label: tm.veto || "Ban/Pick",
+      value: vetoDone
+        ? tm.timelineVetoDone || "Completed"
+        : vetoUnlocked
+          ? tm.timelineVetoActive || "In progress"
+          : tm.timelineVetoLocked || "Locked",
+    });
+
+    if (bestOfValue > 1) {
+      items.push({
+        key: "maps",
+        label: tm.seriesMaps || "Series maps",
+        value:
+          seriesMaps.length > 0
+            ? seriesMaps.join(", ")
+            : tm.timelineMapsPending || "Pending",
+      });
+    } else {
+      items.push({
+        key: "map",
+        label: tm.picked || "Picked map",
+        value: String(veto?.pick || tm.timelineMapPending || "Pending"),
+      });
+    }
+
+    if (isMatchCompleted) {
+      items.push({
+        key: "result",
+        label: tm.stepResult || "Result",
+        value: `${match?.teamAScore ?? 0}:${match?.teamBScore ?? 0}`,
+      });
+    }
+    return items;
+  }, [
+    hasSchedule,
+    scheduledAt,
+    lang,
+    td?.bracket?.notScheduled,
+    tm.timelineSchedule,
+    tm.readyCheck,
+    bothReady,
+    tm.readyCompleted,
+    readyExpired,
+    tm.readyExpired,
+    tm.readyInProgress,
+    tm.veto,
+    tm.timelineVetoDone,
+    vetoDone,
+    vetoUnlocked,
+    tm.timelineVetoActive,
+    tm.timelineVetoLocked,
+    bestOfValue,
+    tm.seriesMaps,
+    seriesMaps,
+    tm.timelineMapsPending,
+    tm.picked,
+    veto?.pick,
+    tm.timelineMapPending,
+    isMatchCompleted,
+    tm.stepResult,
+    match?.teamAScore,
+    match?.teamBScore,
+  ]);
+
   const pageError =
     error ||
     (!loading && (!payload || !match || !tournament)
@@ -659,6 +750,19 @@ export default function TournamentMatchPage() {
               </div>
             ))}
           </div>
+          <div className={styles.timelineCard}>
+            <h3 className={styles.timelineTitle}>
+              {tm.timelineTitle || "Key moments"}
+            </h3>
+            <div className={styles.timelineList}>
+              {keyMoments.map((item) => (
+                <div key={item.key} className={styles.timelineRow}>
+                  <span className={styles.timelineLabel}>{item.label}</span>
+                  <span className={styles.timelineValue}>{item.value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
           {hasSchedule ? <p className={styles.schedule}>{formatMatchDate(scheduledAt, lang)}</p> : null}
           {canShowChat ? (
             <button
@@ -673,7 +777,56 @@ export default function TournamentMatchPage() {
               {chatUnread > 0 ? <span className={styles.chatUnread}>{chatUnread}</span> : null}
             </button>
           ) : null}
-          {!vetoUnlocked ? (
+          {!isOperator ? (
+            <div className={styles.viewerSummaryCard}>
+              <h3 className={styles.blockTitle}>
+                {tm.viewerSummaryTitle || "Viewer summary"}
+              </h3>
+              {!hasSchedule ? (
+                <p className={styles.hint}>
+                  {tm.noScheduleForReady || "Set match time to start ready check"}
+                </p>
+              ) : null}
+              {hasSchedule && !hasStarted ? (
+                <p className={styles.hint}>
+                  {tm.readyLocked || "Ready check opens at match start time"}
+                </p>
+              ) : null}
+              {hasSchedule && hasStarted && !bothReady && !readyExpired ? (
+                <p className={styles.hint}>
+                  {(tm.readyTimeLeft || "Time to confirm")}:{" "}
+                  {formatCountdown(Math.max(0, readyDeadlineAt - nowMs))}
+                </p>
+              ) : null}
+              {hasSchedule && hasStarted && bothReady && !vetoUnlocked ? (
+                <p className={styles.hint}>
+                  {(tm.vetoStartsIn || "Ban/Pick starts in")}:{" "}
+                  {formatCountdown(Math.max(0, vetoStartsIn))}
+                </p>
+              ) : null}
+              {readyExpired ? (
+                <p className={styles.hint}>
+                  {tm.readyExpired || "Ready check expired"}
+                </p>
+              ) : null}
+              {vetoUnlocked && !vetoDone ? (
+                <p className={styles.hint}>
+                  {tm.viewerHintVeto || "Captains are currently running Ban/Pick"}
+                </p>
+              ) : null}
+              <div className={styles.readyRows}>
+                <div className={styles.readyRow}>
+                  <span>{isSolo ? soloA.name : teamA.teamName}</span>
+                  <strong>{teamAReady ? (tm.readyYes || "Ready") : (tm.readyNo || "Not ready")}</strong>
+                </div>
+                <div className={styles.readyRow}>
+                  <span>{isSolo ? soloB.name : teamB.teamName}</span>
+                  <strong>{teamBReady ? (tm.readyYes || "Ready") : (tm.readyNo || "Not ready")}</strong>
+                </div>
+              </div>
+            </div>
+          ) : null}
+          {!vetoUnlocked && isOperator ? (
             <div className={styles.readyCard}>
               <h3 className={styles.blockTitle}>{tm.readyCheck || "Ready check"}</h3>
               {!hasSchedule ? (
@@ -718,21 +871,15 @@ export default function TournamentMatchPage() {
                   {submittingReady ? (tm.confirming || "Confirming...") : (tm.confirmReady || "Confirm readiness")}
                 </button>
               ) : null}
-              {hasSchedule && hasStarted && !bothReady && !isCaptain ? (
-                <p className={styles.hint}>{tm.viewerHintReady || "Waiting for captains to confirm readiness"}</p>
-              ) : null}
               {hasSchedule && hasStarted && !bothReady && isCaptain && !myTeamId ? (
                 <p className={styles.hint}>{tm.readyCaptainsOnly || "Only captains can confirm readiness"}</p>
               ) : null}
             </div>
           ) : null}
 
-          {vetoUnlocked && !vetoDone ? (
+          {vetoUnlocked && !vetoDone && isOperator ? (
             <div className={styles.vetoCard}>
               <h3 className={styles.blockTitle}>{tm.veto || "Ban/Pick"}</h3>
-              {!isCaptain ? (
-                <p className={styles.hint}>{tm.viewerHintVeto || "Captains are currently running Ban/Pick"}</p>
-              ) : null}
               {hasStarted && bothReady && isCaptain && !canUseVeto ? (
                 <p className={styles.hint}>{tm.captainsOnly || "Only captains can use veto"}</p>
               ) : null}

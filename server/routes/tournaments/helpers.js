@@ -22,6 +22,7 @@ const DEFAULT_MAP_POOL = [
 const VETO_READY_DELAY_MS = 30 * 1000;
 const VETO_TURN_MS = 30 * 1000;
 const FRAGPUNK_ID_REGEX = /^[A-Za-z0-9._-]{2,24}#[A-Za-z0-9]{2,8}$/;
+const FRAGPUNK_ZERO_WIDTH_REGEX = /[\u200B-\u200D\u2060\uFEFF]/g;
 
 function toInt(value, fallback = 0) {
   const n = Number.parseInt(value, 10);
@@ -122,7 +123,10 @@ function normalizeTeamCountry(value) {
 }
 
 function normalizeFragpunkId(value) {
-  const clean = String(value || "").trim();
+  const clean = String(value || "")
+    .replace(FRAGPUNK_ZERO_WIDTH_REGEX, "")
+    .trim()
+    .replace(/\s*#\s*/, "#");
   if (!clean) return "";
   return FRAGPUNK_ID_REGEX.test(clean) ? clean : "";
 }

@@ -3,6 +3,13 @@ const ALLOWED_EVENTS = new Set([
   "time_to_value_insight",
   "upload_completion",
   "tournament_register_conversion",
+  "friend_compare_prompt_click",
+  "saved_view_deleted",
+  "goal_engine_impression",
+  "goal_engine_click",
+  "goal_engine_completed",
+  "weekly_digest_open",
+  "weekly_digest_click",
 ]);
 
 function sanitizeString(value, maxLen = 200) {

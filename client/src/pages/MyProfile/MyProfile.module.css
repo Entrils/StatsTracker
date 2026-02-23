@@ -17,6 +17,168 @@
   box-shadow: none;
 }
 
+.goalCard {
+  margin: 6px 0 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(163, 255, 18, 0.28);
+  background: linear-gradient(
+    120deg,
+    rgba(163, 255, 18, 0.08),
+    rgba(0, 245, 212, 0.08)
+  );
+}
+
+.goalMeta {
+  display: grid;
+  gap: 2px;
+}
+
+.goalTitle {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #d8ffa0;
+}
+
+.goalHeadline {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: #f2fbff;
+}
+
+.goalText {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #dde9ff;
+}
+
+.goalCta {
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(163, 255, 18, 0.38);
+  background: rgba(7, 10, 18, 0.76);
+  color: #f4feff;
+  font-size: 0.73rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.goalCta:hover {
+  border-color: rgba(163, 255, 18, 0.62);
+  color: #ffffff;
+}
+
+.weeklyDigestCard {
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(0, 245, 212, 0.22);
+  background: linear-gradient(
+    140deg,
+    rgba(0, 245, 212, 0.07),
+    rgba(43, 230, 203, 0.04)
+  );
+  display: grid;
+  gap: 10px;
+}
+
+.weeklyDigestHeader {
+  display: grid;
+  gap: 2px;
+}
+
+.weeklyDigestTitle {
+  margin: 0;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #c6fff4;
+}
+
+.weeklyDigestHint {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #dde9ff;
+}
+
+.weeklyDigestCta {
+  margin-top: 4px;
+  justify-self: start;
+  border: 1px solid rgba(0, 245, 212, 0.35);
+  background: rgba(8, 12, 22, 0.72);
+  color: #f3fbff;
+  border-radius: 10px;
+  padding: 6px 10px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+.weeklyDigestCta:hover {
+  border-color: rgba(0, 245, 212, 0.55);
+}
+
+.weeklyDigestGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.weeklyDigestCell {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  background: rgba(6, 10, 20, 0.66);
+  padding: 8px 10px;
+  display: grid;
+  gap: 2px;
+}
+
+.weeklyDigestLabel {
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(199, 214, 241, 0.84);
+}
+
+.weeklyDigestValue {
+  font-size: 0.84rem;
+  color: #f2fbff;
+  font-weight: 700;
+}
+
+.weeklyDigestSub {
+  font-size: 0.76rem;
+  color: rgba(199, 214, 241, 0.86);
+}
+
+.weeklyDigestDelta {
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.weeklyDigestDeltaUp {
+  color: #a3ff12;
+}
+
+.weeklyDigestDeltaDown {
+  color: #ff7fa2;
+}
+
 .trustMeta {
   margin: 14px 0 0;
   font-size: 0.76rem;
@@ -1655,6 +1817,10 @@
   }
 
   .sectionGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .weeklyDigestGrid {
     grid-template-columns: 1fr;
   }
 

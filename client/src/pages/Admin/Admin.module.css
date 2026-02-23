@@ -1,513 +1,859 @@
 .wrapper {
-  max-width: 1120px;
+  max-width: 1280px;
   margin: 0 auto;
-  padding: var(--space-6) var(--space-4);
-  text-align: center;
+  padding: 22px 18px 36px;
+  color: #eef4ff;
 }
 
 .wrapperWide {
   max-width: none;
   width: 100%;
-  padding-left: 0;
-  padding-right: 0;
+}
+
+.hero {
+  border-radius: 18px;
+  padding: 18px 20px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(11, 16, 30, 0.92);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.22);
 }
 
 .title {
-  font-size: var(--text-xl);
-  font-weight: 800;
-  margin-bottom: 0.5rem;
-  text-transform: uppercase;
+  margin: 0;
+  font-size: clamp(1.4rem, 1.1rem + 1.5vw, 2rem);
+  font-weight: 900;
   letter-spacing: 0.04em;
-  background: linear-gradient(90deg, #00f5d4, #ff2d95, #ffb703);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  text-transform: uppercase;
+  color: #f4f7ff;
 }
 
-.hint {
-  color: var(--text-muted);
-  margin-bottom: var(--space-5);
+.heroSubtitle {
+  margin: 8px 0 0;
+  color: rgba(216, 229, 255, 0.86);
+  font-size: 0.95rem;
+  max-width: 900px;
 }
 
-.button {
-  display: inline-block;
-  padding: 0.85rem var(--space-6);
-  border-radius: var(--radius-md);
+.snapshotGrid {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.snapshotCard {
+  border-radius: 14px;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: rgba(11, 16, 30, 0.88);
+}
+
+.snapshotLabel {
+  margin: 0;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(186, 202, 233, 0.86);
   font-weight: 800;
-  background: var(--btn-primary-bg);
-  color: var(--btn-primary-fg);
-  border: 1px solid rgba(163, 255, 18, 0.35);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.24);
-  transition: box-shadow 0.2s ease, filter 0.2s ease;
 }
 
-.button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  box-shadow: none;
+.snapshotValue {
+  margin: 8px 0 0;
+  font-size: 1.45rem;
+  line-height: 1;
+  font-weight: 900;
+  color: #f7fbff;
 }
 
-.button:hover:not(:disabled) {
-  filter: brightness(1.03);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.28);
-}
-
-.status {
-  margin-top: 1rem;
-  color: var(--text-muted);
-}
-
-.statusOk {
-  color: #9bff2e;
-  text-shadow: 0 0 6px rgba(163, 255, 18, 0.2);
-}
-
-.statusBad {
-  color: #ff4d6d;
-  text-shadow: 0 0 6px rgba(255, 77, 109, 0.2);
-}
-
-.sectionGrid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-5);
-  margin-top: var(--space-6);
-}
-
-.sectionGridSingle {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--space-5);
-  margin-top: var(--space-6);
-  width: 100%;
-}
-
-@media (max-width: 900px) {
-  .sectionGrid {
-    grid-template-columns: 1fr;
-  }
+.snapshotMeta {
+  margin: 6px 0 0;
+  font-size: 0.76rem;
+  color: rgba(186, 202, 233, 0.74);
 }
 
 .tabBar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.6rem;
-  margin-top: var(--space-5);
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
 }
 
 .tabButton {
-  padding: 0.45rem 0.8rem;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  background: rgba(8, 12, 22, 0.6);
-  color: #f3f6ff;
-  font-weight: 700;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(8, 12, 22, 0.78);
+  color: #e7f0ff;
+  padding: 10px 12px;
+  display: grid;
+  gap: 4px;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.18s ease, transform 0.18s ease, background-color 0.18s ease;
+}
+
+.tabButton:hover {
+  border-color: rgba(143, 249, 230, 0.54);
+  transform: translateY(-1px);
 }
 
 .tabButtonActive {
-  border-color: rgba(0, 245, 212, 0.6);
-  background: rgba(0, 245, 212, 0.12);
-  color: #d1fff7;
+  border-color: rgba(143, 249, 230, 0.7);
+  background: rgba(18, 28, 44, 0.95);
+}
+
+.tabLabel {
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 900;
+}
+
+.tabHint {
+  font-size: 0.76rem;
+  color: rgba(188, 205, 237, 0.82);
+}
+
+.focusBlock {
+  margin-top: 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(140deg, rgba(9, 14, 27, 0.98), rgba(13, 20, 38, 0.94));
+  padding: 14px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.24);
+}
+
+.focusBlockgood {
+  border-color: rgba(34, 197, 94, 0.45);
+}
+
+.focusBlockwarn {
+  border-color: rgba(245, 158, 11, 0.48);
+}
+
+.focusBlockbad {
+  border-color: rgba(248, 113, 113, 0.5);
+}
+
+.focusHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.focusEyebrow {
+  margin: 0;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(186, 202, 233, 0.84);
+  font-weight: 800;
+}
+
+.focusTitle {
+  margin: 4px 0 0;
+  font-size: 1.08rem;
+  color: #f5fbff;
+}
+
+.focusBadge {
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.focusBadgegood {
+  color: #c7f9cc;
+  border: 1px solid rgba(34, 197, 94, 0.45);
+  background: rgba(34, 197, 94, 0.2);
+}
+
+.focusBadgewarn {
+  color: #fde68a;
+  border: 1px solid rgba(245, 158, 11, 0.5);
+  background: rgba(245, 158, 11, 0.2);
+}
+
+.focusBadgebad {
+  color: #fecaca;
+  border: 1px solid rgba(248, 113, 113, 0.5);
+  background: rgba(248, 113, 113, 0.2);
+}
+
+.focusMetrics {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.focusMetric {
+  border-radius: 10px;
+  padding: 9px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(8, 12, 23, 0.86);
+  display: grid;
+  gap: 5px;
+}
+
+.focusMetricgood {
+  border-color: rgba(34, 197, 94, 0.42);
+}
+
+.focusMetricwarn {
+  border-color: rgba(245, 158, 11, 0.46);
+}
+
+.focusMetricbad {
+  border-color: rgba(248, 113, 113, 0.5);
+}
+
+.focusMetricLabel {
+  font-size: 0.69rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(190, 210, 240, 0.82);
+  font-weight: 800;
+}
+
+.focusMetricValue {
+  font-size: 1.12rem;
+  line-height: 1;
+  color: #f7fbff;
+}
+
+.focusBody {
+  margin-top: 11px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.focusColumn {
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(7, 11, 22, 0.8);
+  padding: 10px;
+}
+
+.focusColumnTitle {
+  margin: 0 0 7px;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(197, 218, 249, 0.92);
+}
+
+.focusList {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: rgba(230, 239, 255, 0.9);
+}
+
+.focusMuted {
+  margin: 0;
+  font-size: 0.8rem;
+  color: rgba(182, 202, 236, 0.8);
+}
+
+.sectionGrid,
+.sectionGridSingle {
+  margin-top: 14px;
+  display: grid;
+  gap: 12px;
+}
+
+.sectionGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.sectionGridSingle {
+  grid-template-columns: 1fr;
 }
 
 .section {
-  text-align: left;
-  background: rgba(8, 12, 22, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: var(--radius-lg);
-  padding: var(--space-5);
-}
-
-.uxFullWidthSection {
-  width: 100%;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: rgba(10, 15, 29, 0.94);
+  padding: 14px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
 }
 
 .sectionHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 1rem;
-}
-
-.actionsRow {
-  display: inline-flex;
-  gap: 0.5rem;
-  align-items: center;
-}
-
-.periodRow {
-  display: inline-flex;
-  gap: 0.35rem;
-}
-
-.periodButton {
-  padding: 0.22rem 0.52rem;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  background: rgba(8, 12, 22, 0.6);
-  color: #d7def0;
-  font-size: 0.72rem;
-  font-weight: 700;
-}
-
-.periodButtonActive {
-  border-color: rgba(0, 245, 212, 0.6);
-  background: rgba(0, 245, 212, 0.16);
-  color: #d1fff7;
+  gap: 10px;
+  margin-bottom: 8px;
 }
 
 .sectionTitle {
-  font-size: var(--text-md);
-  font-weight: 700;
-  color: #f8fafc;
   margin: 0;
+  font-size: 1rem;
+  color: #f5fbff;
+  font-weight: 800;
+}
+
+.hint {
+  margin: 0 0 10px;
+  color: rgba(187, 205, 236, 0.84);
+  font-size: 0.84rem;
+}
+
+.button,
+.smallButton,
+.rankApprove,
+.rankReject,
+.banButton,
+.banUnban,
+.periodButton {
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(12, 18, 34, 0.86);
+  color: #f2f8ff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.button {
+  padding: 9px 14px;
 }
 
 .smallButton {
-  padding: var(--space-1) var(--space-3);
-  border-radius: var(--radius-sm);
-  font-weight: 700;
-  background: var(--btn-secondary-bg);
-  color: var(--btn-secondary-fg);
-  border: 1px solid var(--btn-secondary-border);
-}
-
-.smallButton:disabled {
-  opacity: 0.6;
-}
-
-.errorList {
-  display: flex;
-  flex-direction: column;
-  gap: 0.9rem;
-}
-
-.errorItem {
-  padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-md);
-  background: rgba(6, 10, 20, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.errorMessage {
-  font-weight: 700;
-  color: #ffb4c4;
-}
-
-.errorMeta {
-  margin-top: 0.35rem;
+  padding: 7px 10px;
   font-size: 0.78rem;
-  color: #9aa4c1;
 }
 
-.errorStack {
-  margin-top: 0.5rem;
-  font-size: 0.72rem;
-  color: #cbd5f5;
-  white-space: pre-wrap;
+.smallButton:disabled,
+.button:disabled,
+.periodButton:disabled {
+  opacity: 0.58;
+  cursor: not-allowed;
 }
 
-.rankList {
-  display: grid;
-  gap: 1rem;
-}
-
-.eloList {
-  display: grid;
-  gap: 0.5rem;
-}
-
-.eloItem {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding: 8px 10px;
-  border-radius: var(--radius-md);
-  background: rgba(6, 10, 20, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.eloLeft {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.7rem;
-  min-width: 0;
-}
-
-.eloRank {
-  font-weight: 800;
-  color: #c7d2ee;
-  min-width: 28px;
+.status {
+  margin: 9px 0 0;
   font-size: 0.82rem;
 }
 
-.eloName {
-  font-weight: 700;
-  color: #f3f6ff;
-  font-size: 0.88rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.statusOk {
+  color: #a3ff12;
 }
 
-.eloRight {
+.statusBad {
+  color: #ff7f97;
+}
+
+.errorList,
+.rankList,
+.banList,
+.uxList {
   display: grid;
-  justify-items: end;
-  gap: 2px;
+  gap: 8px;
 }
 
-.eloValue {
-  font-weight: 900;
-  color: #9bff2e;
-  font-size: 0.9rem;
-  line-height: 1;
-  text-shadow: 0 0 8px rgba(163, 255, 18, 0.2);
+.errorItem,
+.rankItem,
+.banItem,
+.uxItem {
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: rgba(10, 15, 29, 0.86);
+  padding: 10px 12px;
 }
 
-.eloMeta {
-  font-size: 0.7rem;
-  line-height: 1.1;
-  color: #9aa4c1;
+.errorMessage {
+  font-weight: 800;
+  color: #ffd2db;
 }
 
-.hiddenEloSection {
-  padding: var(--space-4);
+.errorMeta {
+  margin-top: 4px;
+  color: rgba(182, 202, 236, 0.82);
+  font-size: 0.76rem;
 }
 
-.hiddenEloSection .sectionHeader {
-  margin-bottom: 0.6rem;
-}
-
-.hiddenEloSection .smallButton {
-  padding: 0.2rem 0.55rem;
-  font-size: 0.72rem;
-}
-
-.hiddenEloSection .status {
-  margin-top: 0.45rem;
-  margin-bottom: 0.5rem;
-  font-size: 0.78rem;
-}
-
-.rankItem {
-  padding: var(--space-4);
-  border-radius: var(--radius-md);
-  background: rgba(6, 10, 20, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+.errorStack {
+  margin-top: 6px;
+  white-space: pre-wrap;
+  color: #cbd7f5;
+  font-size: 0.74rem;
 }
 
 .rankMeta {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  margin-bottom: 0.75rem;
+  display: grid;
+  gap: 4px;
 }
 
 .rankTitleLine {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 6px;
   flex-wrap: wrap;
 }
 
 .rankName {
-  font-weight: 700;
-  color: #f3f6ff;
+  font-weight: 800;
+}
+
+.rankBadge,
+.rankBadgeAlt {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 800;
 }
 
 .rankBadge {
-  padding: 0.2rem 0.5rem;
-  border-radius: 999px;
-  font-size: 0.7rem;
-  background: rgba(0, 245, 212, 0.15);
-  color: #7fffe7;
+  background: rgba(0, 245, 212, 0.16);
   border: 1px solid rgba(0, 245, 212, 0.35);
+  color: #8ff9e6;
 }
 
 .rankBadgeAlt {
-  padding: 0.2rem 0.5rem;
-  border-radius: 999px;
-  font-size: 0.7rem;
-  background: rgba(255, 178, 0, 0.15);
-  color: #ffd37a;
-  border: 1px solid rgba(255, 178, 0, 0.35);
-  text-transform: capitalize;
+  background: rgba(255, 196, 66, 0.16);
+  border: 1px solid rgba(255, 196, 66, 0.35);
+  color: #ffd27a;
 }
 
 .rankSub {
-  font-size: 0.75rem;
-  color: #9aa4c1;
+  font-size: 0.74rem;
+  color: rgba(182, 202, 236, 0.78);
 }
 
 .rankPreview {
-  border-radius: var(--radius-md);
+  margin-top: 8px;
+  border-radius: 10px;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(8, 12, 22, 0.7);
-  margin-bottom: 0.8rem;
 }
 
 .rankPreview img {
-  display: block;
   width: 100%;
-  max-height: 280px;
+  max-height: 300px;
   object-fit: cover;
+  display: block;
 }
 
 .rankActions {
+  margin-top: 8px;
   display: flex;
-  gap: var(--space-2);
-}
-
-.rankApprove,
-.rankReject {
-  padding: var(--space-1) var(--space-3);
-  border-radius: var(--radius-sm);
-  font-weight: 700;
-  border: none;
-  cursor: pointer;
+  gap: 8px;
 }
 
 .rankApprove {
-  background: var(--btn-primary-bg);
-  color: var(--btn-primary-fg);
-  border: 1px solid rgba(163, 255, 18, 0.35);
+  background: rgba(163, 255, 18, 0.2);
+  border-color: rgba(163, 255, 18, 0.45);
+  color: #dfff9f;
+  padding: 6px 10px;
 }
 
 .rankReject {
-  background: var(--btn-danger-bg);
-  color: var(--btn-danger-fg);
-  border: 1px solid var(--btn-danger-border);
+  background: rgba(255, 77, 109, 0.2);
+  border-color: rgba(255, 77, 109, 0.45);
+  color: #ffc3cf;
+  padding: 6px 10px;
 }
 
 .banForm {
   display: grid;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
+  gap: 8px;
+  margin-bottom: 10px;
 }
 
 .banInput {
-  background: rgba(8, 12, 22, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: var(--radius-sm);
-  padding: 10px var(--space-3);
-  color: #f3f6ff;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(8, 12, 22, 0.86);
+  color: #eef4ff;
+  padding: 8px 10px;
   outline: none;
 }
 
 .banInput:focus {
-  border-color: rgba(255, 77, 109, 0.5);
-  box-shadow: 0 0 0 2px rgba(255, 77, 109, 0.2);
-}
-
-.banInput:focus-visible {
-  border-color: rgba(255, 77, 109, 0.62);
-  box-shadow: 0 0 0 3px rgba(255, 77, 109, 0.24);
+  border-color: rgba(255, 77, 109, 0.56);
+  box-shadow: 0 0 0 2px rgba(255, 77, 109, 0.18);
 }
 
 .banButton {
-  padding: var(--space-2) var(--space-4);
-  border-radius: var(--radius-sm);
-  font-weight: 800;
-  background: var(--btn-danger-bg);
-  color: var(--btn-danger-fg);
-  border: 1px solid var(--btn-danger-border);
-}
-
-.banList {
-  display: grid;
-  gap: 0.75rem;
+  padding: 8px 11px;
+  background: rgba(255, 77, 109, 0.2);
+  border-color: rgba(255, 77, 109, 0.45);
+  color: #ffc3cf;
 }
 
 .banItem {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
-  padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-md);
-  background: rgba(6, 10, 20, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  gap: 10px;
 }
 
 .banMeta {
   display: grid;
-  gap: 4px;
+  gap: 3px;
 }
 
 .banUid {
-  font-weight: 700;
-  color: #f3f6ff;
+  font-weight: 800;
 }
 
 .banReason {
-  font-size: 0.8rem;
-  color: rgba(154, 164, 193, 0.9);
+  font-size: 0.76rem;
+  color: rgba(182, 202, 236, 0.8);
 }
 
 .banActions {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 8px;
 }
 
 .banUnban {
-  padding: var(--space-1) var(--space-3);
-  border-radius: var(--radius-sm);
-  font-weight: 700;
-  background: var(--btn-secondary-bg);
-  color: var(--btn-secondary-fg);
-  border: 1px solid var(--btn-secondary-border);
+  padding: 6px 9px;
 }
 
 .banInactive {
-  font-size: 0.75rem;
-  color: rgba(154, 164, 193, 0.75);
+  font-size: 0.74rem;
+  color: rgba(182, 202, 236, 0.76);
 }
 
-.uxList {
-  display: grid;
-  gap: 0.6rem;
-}
-
-.uxItem {
-  padding: 16px 18px;
-  border-radius: var(--radius-md);
-  background: rgba(6, 10, 20, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.uxEvent {
-  font-weight: 700;
-  color: #f3f6ff;
-  font-size: 1rem;
-  margin-bottom: 0.25rem;
-}
-
-.uxHint {
-  font-size: 0.75rem;
-  color: #9aa4c1;
-  margin-bottom: 0.45rem;
-}
-
-.uxMeta {
+.actionsRow {
   display: inline-flex;
-  gap: 0.8rem;
-  font-size: 0.85rem;
-  color: #9aa4c1;
+  align-items: center;
+  gap: 8px;
 }
 
-.uxChart {
-  margin-top: 0.55rem;
-  height: 128px;
+.periodRow {
+  display: inline-flex;
+  gap: 5px;
+}
+
+.periodButton {
+  padding: 5px 8px;
+  font-size: 0.74rem;
+}
+
+.periodButtonActive {
+  border-color: rgba(143, 249, 230, 0.66);
+  background: rgba(143, 249, 230, 0.16);
+}
+
+.uxToolbar {
+  margin: 2px 0 10px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.uxToolbarLabel {
+  font-size: 0.74rem;
+  color: rgba(188, 205, 237, 0.82);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 800;
+}
+
+.uxSortGroup {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.uxSortButton {
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(12, 18, 34, 0.86);
+  color: #f2f8ff;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 5px 9px;
+  font-size: 0.74rem;
+}
+
+.uxSortButtonActive {
+  border-color: rgba(143, 249, 230, 0.66);
+  background: rgba(143, 249, 230, 0.16);
+}
+
+.uxFullWidthSection {
+  width: 100%;
+}
+
+.uxKpiGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.uxKpiCard {
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: rgba(12, 18, 34, 0.92);
+  padding: 12px;
+}
+
+.uxKpiCardgood {
+  border-color: rgba(34, 197, 94, 0.42);
+}
+
+.uxKpiCardwarn {
+  border-color: rgba(245, 158, 11, 0.44);
+}
+
+.uxKpiCardbad {
+  border-color: rgba(248, 113, 113, 0.5);
+}
+
+.uxKpiTitle {
+  margin: 0;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(194, 215, 245, 0.9);
+  font-weight: 800;
+}
+
+.uxKpiValue {
+  margin: 6px 0 0;
+  font-size: 1.35rem;
+  line-height: 1;
+  font-weight: 900;
+  color: #e8eefc;
+}
+
+.uxKpiMeta {
+  margin: 6px 0 0;
+  color: rgba(182, 202, 236, 0.82);
+  font-size: 0.76rem;
+}
+
+.uxMiniSection {
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: rgba(10, 15, 29, 0.9);
+  padding: 10px 12px;
+  margin-bottom: 10px;
+}
+
+.uxMiniTitle {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #f4faff;
+}
+
+.uxMiniLegend {
+  margin: 8px 0 6px;
+  display: inline-flex;
+  gap: 10px;
+  color: rgba(188, 205, 237, 0.86);
+  font-size: 0.74rem;
+}
+
+.uxMiniLegend span {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.uxMiniSwatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+.uxMiniSwatchOpen {
+  background: linear-gradient(180deg, #00f5d4, #22c55e);
+}
+
+.uxMiniSwatchClick {
+  background: linear-gradient(180deg, #a3ff12, #eab308);
+}
+
+.uxMiniSwatchCtr {
+  background: linear-gradient(180deg, #60a5fa, #3b82f6);
+}
+
+.uxDualChart,
+.uxChart,
+.uxCtrWrap {
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(4, 7, 15, 0.78);
+}
+
+.uxDualChart {
+  height: 130px;
   display: flex;
   align-items: flex-end;
   gap: 4px;
-  padding: 6px;
-  border-radius: var(--radius-sm);
-  background: rgba(3, 6, 14, 0.75);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 7px;
+}
+
+.uxDualBarWrap {
+  flex: 1 1 0;
+  min-width: 6px;
+  height: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  align-items: end;
+}
+
+.uxDualBar {
+  width: 100%;
+  border-radius: 3px 3px 0 0;
+}
+
+.uxDualBarOpen {
+  background: linear-gradient(180deg, #5ba3ff, #2f6fd6);
+}
+
+.uxDualBarClick {
+  background: linear-gradient(180deg, #7dd3fc, #0ea5e9);
+}
+
+.uxCtrWrap {
+  margin-top: 4px;
+  height: 82px;
+  padding: 7px;
+}
+
+.uxCtrSvg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.uxCtrLine {
+  fill: none;
+  stroke: #60a5fa;
+  stroke-width: 2.4;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.uxCtrDot {
+  fill: #93c5fd;
+  stroke: #1e3a8a;
+  stroke-width: 0.7;
+}
+
+.uxAxis {
+  margin-top: 6px;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.74rem;
+  color: rgba(188, 205, 237, 0.82);
+}
+
+.uxAxis span {
+  flex: 1 1 0;
+}
+
+.uxAxis span:nth-child(2) {
+  text-align: center;
+}
+
+.uxAxis span:last-child {
+  text-align: right;
+}
+
+.uxEventsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 8px;
+}
+
+.uxEventsGridCompact {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.uxItem {
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: rgba(10, 15, 29, 0.88);
+  padding: 10px 12px;
+}
+
+.uxItemCompact {
+  padding: 9px 10px;
+}
+
+.uxEventRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.uxEvent {
+  font-size: 0.9rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.uxPinnedTag {
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 900;
+  border-radius: 999px;
+  padding: 2px 7px;
+  background: rgba(163, 255, 18, 0.18);
+  border: 1px solid rgba(163, 255, 18, 0.4);
+  color: #dfff9f;
+}
+
+.uxHint {
+  margin-top: 4px;
+  font-size: 0.74rem;
+  color: rgba(182, 202, 236, 0.8);
+}
+
+.uxEventActions {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.uxEventAction {
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(12, 18, 34, 0.86);
+  color: #f2f8ff;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 4px 8px;
+  font-size: 0.72rem;
+}
+
+.uxMeta {
+  margin-top: 6px;
+  display: inline-flex;
+  gap: 8px;
+  color: rgba(182, 202, 236, 0.86);
+  font-size: 0.76rem;
+}
+
+.uxChart {
+  margin-top: 7px;
+  height: 134px;
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  padding: 7px;
 }
 
 .uxBarWrap {
@@ -521,26 +867,51 @@
 .uxBar {
   width: 100%;
   border-radius: 4px 4px 0 0;
-  background: linear-gradient(180deg, #00f5d4, #3b82f6);
+  background: linear-gradient(180deg, #7dd3fc, #3b82f6);
 }
 
-.uxAxis {
-  margin-top: 0.35rem;
-  display: flex;
-  justify-content: space-between;
-  gap: 0.5rem;
-  font-size: 0.78rem;
-  color: rgba(154, 164, 193, 0.88);
+@media (max-width: 1120px) {
+  .snapshotGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .focusMetrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
-.uxAxis span {
-  flex: 1 1 0;
+@media (max-width: 900px) {
+  .tabBar {
+    grid-template-columns: 1fr;
+  }
+
+  .sectionGrid {
+    grid-template-columns: 1fr;
+  }
 }
 
-.uxAxis span:nth-child(2) {
-  text-align: center;
-}
+@media (max-width: 640px) {
+  .wrapper {
+    padding: 16px 12px 28px;
+  }
 
-.uxAxis span:last-child {
-  text-align: right;
+  .snapshotGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .section {
+    padding: 12px;
+  }
+
+  .focusBody {
+    grid-template-columns: 1fr;
+  }
+
+  .focusMetrics {
+    grid-template-columns: 1fr;
+  }
+
+  .uxEventsGrid {
+    grid-template-columns: 1fr;
+  }
 }

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import styles from "@/pages/MyProfile/MyProfile.module.css";
 import { useLang } from "@/i18n/LanguageContext";
@@ -18,6 +18,7 @@ import useProfileMatches from "@/hooks/myProfile/useProfileMatches";
 import useProfileRemoteData from "@/hooks/myProfile/useProfileRemoteData";
 import useMyProfileViewModel from "@/hooks/myProfile/useMyProfileViewModel";
 import { buildSummary } from "@/utils/myProfile/derive";
+import { trackUxEvent } from "@/utils/analytics/trackUxEvent";
 import {
   diffAccent,
   round1,
@@ -30,6 +31,18 @@ const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 const ChartSection = lazy(() => import("./ChartSection"));
 const LastMatchesTable = lazy(() => import("./LastMatchesTable"));
 const MATCHES_STEP = 20;
+const GOAL_ENGINE_STATE_KEY = "myprofile_goal_engine_state_v1";
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+function toMillisSafe(value) {
+  if (!value) return 0;
+  if (typeof value === "number") return value;
+  if (typeof value === "string") return Date.parse(value);
+  if (typeof value?.toMillis === "function") return value.toMillis();
+  if (typeof value?.seconds === "number") return value.seconds * 1000;
+  if (typeof value?._seconds === "number") return value._seconds * 1000;
+  return 0;
+}
 
 export default function MyProfile() {
   const { t, lang } = useLang();
@@ -39,6 +52,8 @@ export default function MyProfile() {
   const [matchOutcomeFilter, setMatchOutcomeFilter] = useState("all");
   const [matchRange, setMatchRange] = useState(MATCHES_STEP);
   const [feedExpanded, setFeedExpanded] = useState(false);
+  const goalImpressionRef = useRef("");
+  const weeklyDigestImpressionRef = useRef(false);
 
   const uid = user?.uid;
   const { matches, loading, loadingMore, hasMore, fetchHistory } = useProfileMatches(uid);
@@ -65,6 +80,7 @@ export default function MyProfile() {
     user,
     summary,
     backendUrl: BACKEND_URL,
+    friendsView: activeTab === "friends" ? "full" : "compact",
   });
 
   const {
@@ -114,6 +130,93 @@ export default function MyProfile() {
     [filteredRecentMatches, currentVisibleLimit]
   );
   const canLoadMoreMatches = hasMore || currentVisibleLimit < filteredRecentMatches.length;
+  const nextGoal = useMemo(() => {
+    const safeMatches = Number(summary?.matchesCount || 0);
+    const safeWinrate = Number(summary?.winrate || 0);
+    const safeKda = Number(summary?.kda || 0);
+    const friendsCount = Array.isArray(friends) ? friends.length : 0;
+
+    if (safeMatches < 10) {
+      return {
+        key: "build_sample",
+        title: t.me?.goalTitleMatches || "Build stable sample",
+        text: (t.me?.goalTextMatches ||
+          "Play and upload {left} more matches to unlock more reliable trends.")
+          .replace("{left}", String(Math.max(0, 10 - safeMatches))),
+        cta: t.me?.goalCtaUpload || "Upload match",
+        href: "/upload",
+      };
+    }
+    if (friendsCount < 1) {
+      return {
+        key: "add_friend",
+        title: t.me?.goalTitleFriends || "Add comparison target",
+        text: t.me?.goalTextFriends || "Add at least one friend to unlock duel comparison and activity feed.",
+        cta: t.me?.goalCtaPlayers || "Find players",
+        href: "/players",
+      };
+    }
+    if (safeWinrate < 50) {
+      return {
+        key: "stabilize_winrate",
+        title: t.me?.goalTitleWinrate || "Stabilize winrate",
+        text: t.me?.goalTextWinrate || "Aim for 3+ wins in your next 5 matches to stabilize current form.",
+        cta: t.me?.goalCtaUpload || "Upload match",
+        href: "/upload",
+      };
+    }
+    if (safeKda < 2) {
+      return {
+        key: "raise_kda",
+        title: t.me?.goalTitleKda || "Raise KDA impact",
+        text: t.me?.goalTextKda || "Focus on cleaner fights and utility usage to push KDA above 2.0.",
+        cta: t.me?.goalCtaHelp || "View tips",
+        href: "/help#profile-layout",
+      };
+    }
+    return {
+      key: "tournament_ready",
+      title: t.me?.goalTitleTournament || "Ready for tournament",
+      text: t.me?.goalTextTournament || "Your baseline is stable. Join upcoming events and test your form in bracket games.",
+      cta: t.me?.goalCtaTournaments || "Open tournaments",
+      href: "/tournaments",
+    };
+  }, [friends, summary?.kda, summary?.matchesCount, summary?.winrate, t.me]);
+
+  const weeklyDigest = useMemo(() => {
+    const now = matches.reduce((max, row) => {
+      const ts = toMillisSafe(row?.createdAt);
+      return ts > max ? ts : max;
+    }, 0);
+    if (now <= 0) {
+      return {
+        current: { total: 0, wins: 0, winrate: 0 },
+        previous: { total: 0, wins: 0, winrate: 0 },
+        deltaWins: 0,
+      };
+    }
+    const thisWeekStart = now - WEEK_MS;
+    const prevWeekStart = now - WEEK_MS * 2;
+
+    const calc = (fromMs, toMs) => {
+      const scoped = matches.filter((row) => {
+        const ts = toMillisSafe(row?.createdAt);
+        return ts >= fromMs && ts < toMs;
+      });
+      const total = scoped.length;
+      const wins = scoped.filter((row) => String(row?.result || "") === "victory").length;
+      const winrate = total > 0 ? (wins / total) * 100 : 0;
+      return { total, wins, winrate };
+    };
+
+    const current = calc(thisWeekStart, now);
+    const previous = calc(prevWeekStart, thisWeekStart);
+    return {
+      current,
+      previous,
+      deltaWins: current.wins - previous.wins,
+    };
+  }, [matches]);
   const trustMeta = useMemo(() => {
     const toMs = (value) => {
       if (!value) return 0;
@@ -138,6 +241,52 @@ export default function MyProfile() {
       .replace("{time}", syncLabel);
     return `${sourceText} | ${coverageText} | ${syncedText}`;
   }, [matches, lang, t.me]);
+
+  useEffect(() => {
+    const goalKey = String(nextGoal?.key || "");
+    if (!uid || !goalKey) return;
+
+    if (goalImpressionRef.current !== goalKey) {
+      goalImpressionRef.current = goalKey;
+      trackUxEvent("goal_engine_impression", {
+        meta: {
+          source: "my_profile",
+          uid,
+          goalKey,
+        },
+      });
+    }
+
+    if (typeof window === "undefined") return;
+    try {
+      const raw = window.localStorage.getItem(GOAL_ENGINE_STATE_KEY);
+      const prev = raw ? JSON.parse(raw) : null;
+      const prevUid = String(prev?.uid || "");
+      const prevGoal = String(prev?.goalKey || "");
+
+      if (prevUid === String(uid) && prevGoal && prevGoal !== goalKey) {
+        trackUxEvent("goal_engine_completed", {
+          meta: {
+            source: "my_profile",
+            uid,
+            fromGoalKey: prevGoal,
+            toGoalKey: goalKey,
+          },
+        });
+      }
+
+      window.localStorage.setItem(
+        GOAL_ENGINE_STATE_KEY,
+        JSON.stringify({
+          uid: String(uid),
+          goalKey,
+          ts: Date.now(),
+        })
+      );
+    } catch {
+      // ignore storage errors
+    }
+  }, [nextGoal?.key, uid]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -215,6 +364,20 @@ export default function MyProfile() {
     if (activeTab !== "friends") setFeedExpanded(false);
     if (!friendsActivityFeed.length) setFeedExpanded(false);
   }, [activeTab, friendsActivityFeed.length]);
+
+  useEffect(() => {
+    if (activeTab !== "performance" || !uid) return;
+    if (weeklyDigestImpressionRef.current) return;
+    weeklyDigestImpressionRef.current = true;
+    trackUxEvent("weekly_digest_open", {
+      meta: {
+        source: "my_profile",
+        uid,
+        currentWeekMatches: Number(weeklyDigest?.current?.total || 0),
+        previousWeekMatches: Number(weeklyDigest?.previous?.total || 0),
+      },
+    });
+  }, [activeTab, uid, weeklyDigest]);
 
   if (!user) {
     return <p className={styles.wrapper}>{t.me?.loginRequired || "Login required"}</p>;
@@ -497,6 +660,72 @@ export default function MyProfile() {
 
   const renderPerformanceTab = () => (
     <>
+      <section className={styles.weeklyDigestCard}>
+        <div className={styles.weeklyDigestHeader}>
+          <p className={styles.weeklyDigestTitle}>
+            {t.me?.weeklyDigestTitle || "Weekly digest"}
+          </p>
+          <p className={styles.weeklyDigestHint}>
+            {t.me?.weeklyDigestSubtitle || "Last 7 days vs previous 7 days"}
+          </p>
+          <Link
+            to="/help#profile-layout"
+            className={styles.weeklyDigestCta}
+            onClick={() => {
+              if (!uid) return;
+              trackUxEvent("weekly_digest_click", {
+                meta: {
+                  source: "my_profile",
+                  uid,
+                },
+              });
+            }}
+          >
+            {t.me?.weeklyDigestCta || "How to improve"}
+          </Link>
+        </div>
+        <div className={styles.weeklyDigestGrid}>
+          <div className={styles.weeklyDigestCell}>
+            <span className={styles.weeklyDigestLabel}>
+              {t.me?.weeklyDigestThisWeek || "This week"}
+            </span>
+            <span className={styles.weeklyDigestValue}>
+              {(t.me?.weeklyDigestMatches || "Matches")}: {weeklyDigest.current.total}
+            </span>
+            <span className={styles.weeklyDigestSub}>
+              {(t.me?.weeklyDigestWinrate || "Winrate")}: {round1(weeklyDigest.current.winrate)}%
+            </span>
+          </div>
+          <div className={styles.weeklyDigestCell}>
+            <span className={styles.weeklyDigestLabel}>
+              {t.me?.weeklyDigestPrevWeek || "Prev week"}
+            </span>
+            <span className={styles.weeklyDigestValue}>
+              {(t.me?.weeklyDigestMatches || "Matches")}: {weeklyDigest.previous.total}
+            </span>
+            <span className={styles.weeklyDigestSub}>
+              {(t.me?.weeklyDigestWinrate || "Winrate")}: {round1(weeklyDigest.previous.winrate)}%
+            </span>
+          </div>
+          <div className={styles.weeklyDigestCell}>
+            <span className={styles.weeklyDigestLabel}>
+              {t.me?.weeklyDigestTrend || "Momentum"}
+            </span>
+            <span
+              className={`${styles.weeklyDigestDelta} ${
+                weeklyDigest.deltaWins >= 0 ? styles.weeklyDigestDeltaUp : styles.weeklyDigestDeltaDown
+              }`}
+            >
+              {(t.me?.weeklyDigestWinsDelta || "Wins delta")}: {sign(weeklyDigest.deltaWins)}{weeklyDigest.deltaWins}
+            </span>
+            <span className={styles.weeklyDigestSub}>
+              {weeklyDigest.deltaWins >= 0
+                ? (t.me?.weeklyDigestTrendUp || "You are climbing this week.")
+                : (t.me?.weeklyDigestTrendDown || "Focus on consistency this week.")}
+            </span>
+          </div>
+        </div>
+      </section>
       <div className={`${styles.card} ${styles.denseCard}`}>
         <h2 className={styles.cardTitle}>{t.me?.totals || "Totals"}</h2>
         <div className={styles.twoCol}>
@@ -564,6 +793,34 @@ export default function MyProfile() {
         shareStatus={shareStatus}
         banInfo={banInfo}
       />
+      {!!nextGoal && (
+        <section className={styles.goalCard}>
+          <div className={styles.goalMeta}>
+            <p className={styles.goalTitle}>
+              {t.me?.goalSectionTitle || "Next best action"}
+            </p>
+            <p className={styles.goalHeadline}>{nextGoal.title}</p>
+            <p className={styles.goalText}>{nextGoal.text}</p>
+          </div>
+          <Link
+            to={nextGoal.href}
+            className={styles.goalCta}
+            onClick={() => {
+              if (!uid || !nextGoal?.key) return;
+              trackUxEvent("goal_engine_click", {
+                meta: {
+                  source: "my_profile",
+                  uid,
+                  goalKey: String(nextGoal.key),
+                  href: String(nextGoal.href || ""),
+                },
+              });
+            }}
+          >
+            {nextGoal.cta}
+          </Link>
+        </section>
+      )}
       <div className={styles.tabsRow}>
         {[
           { id: "overview", label: t.me?.tabOverview || "Overview" },

@@ -19,6 +19,7 @@ const SORTS = {
 };
 const PAGE_SIZE = 300;
 const SKELETON_ROWS = 8;
+const LAST_FILTER_STORAGE_KEY = "players_last_filter_v1";
 
 export default function PlayersTab() {
   const { t } = useLang();
@@ -31,6 +32,7 @@ export default function PlayersTab() {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
+  const [nextCursor, setNextCursor] = useState(null);
   const [error, setError] = useState("");
   const [refreshing, setRefreshing] = useState(false);
   const [steamOnline, setSteamOnline] = useState(null);
@@ -42,11 +44,28 @@ export default function PlayersTab() {
     rawRowsRef.current = rawRows;
   }, [rawRows]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = window.localStorage.getItem(LAST_FILTER_STORAGE_KEY);
+      const parsed = raw ? JSON.parse(raw) : null;
+      const nextSearch = String(parsed?.search || "");
+      const nextSort = String(parsed?.sortBy || SORTS.MATCHES);
+      setSearch(nextSearch);
+      if (Object.values(SORTS).includes(nextSort)) {
+        setSortBy(nextSort);
+      }
+    } catch {
+      // ignore read errors
+    }
+  }, []);
+
   const fetchPage = useCallback(async (reset = false) => {
     if (reset) {
       setRefreshing(rawRowsRef.current.length > 0);
       setLoading(true);
       setHasMore(true);
+      setNextCursor(null);
       setRawRows([]);
       setError("");
     } else {
@@ -59,7 +78,16 @@ export default function PlayersTab() {
       }
 
       const offset = reset ? 0 : rawRowsRef.current.length;
-      const url = `${backendUrl}/leaderboard?limit=${PAGE_SIZE}&offset=${offset}&sort=${sortBy}`;
+      const params = new URLSearchParams({
+        limit: String(PAGE_SIZE),
+        offset: String(offset),
+        sort: String(sortBy),
+      });
+      if (!reset && nextCursor?.afterUid && Number.isFinite(Number(nextCursor?.afterValue))) {
+        params.set("afterUid", String(nextCursor.afterUid));
+        params.set("afterValue", String(Number(nextCursor.afterValue)));
+      }
+      const url = `${backendUrl}/leaderboard?${params.toString()}`;
       const payload = await dedupedJsonRequest(
         `leaderboard:${url}`,
         async () => {
@@ -75,12 +103,22 @@ export default function PlayersTab() {
         2500
       );
       const data = Array.isArray(payload.rows) ? payload.rows : [];
-      const total = Number.isFinite(payload.total) ? payload.total : data.length;
       const onlineRaw = Number(payload.steamOnline);
       setSteamOnline(Number.isFinite(onlineRaw) && onlineRaw >= 0 ? onlineRaw : null);
 
       setRawRows((prev) => (reset ? data : [...prev, ...data]));
-      setHasMore(offset + data.length < total);
+      const hasMoreValue =
+        typeof payload?.hasMore === "boolean"
+          ? payload.hasMore
+          : data.length === PAGE_SIZE;
+      setHasMore(Boolean(hasMoreValue));
+      setNextCursor(
+        payload?.nextCursor &&
+          typeof payload.nextCursor === "object" &&
+          payload.nextCursor.afterUid
+          ? payload.nextCursor
+          : null
+      );
       setLastSyncedAt(Date.now());
     } catch (err) {
       setError(
@@ -91,7 +129,7 @@ export default function PlayersTab() {
       setLoadingMore(false);
       setRefreshing(false);
     }
-  }, [backendUrl, sortBy, t.leaderboard?.error]);
+  }, [backendUrl, nextCursor, sortBy, t.leaderboard?.error]);
 
   useEffect(() => {
     fetchPage(true);
@@ -259,6 +297,39 @@ export default function PlayersTab() {
     return `${sourceText} | ${coverageText} | ${syncedText}`;
   }, [lastSyncedAt, t.leaderboard]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(LAST_FILTER_STORAGE_KEY, JSON.stringify({
+        sortBy,
+        search,
+      }));
+    } catch {
+      // ignore write errors
+    }
+  }, [sortBy, search]);
+
+  const clearFilter = useCallback(() => {
+    setSearch("");
+    setSortBy(SORTS.MATCHES);
+    if (typeof window !== "undefined") {
+      try {
+        window.localStorage.removeItem(LAST_FILTER_STORAGE_KEY);
+      } catch {
+        // ignore storage errors
+      }
+    }
+    trackUxEvent("saved_view_deleted", {
+      meta: {
+        source: "players_tab",
+        id: "last_filter",
+        name: "last_filter",
+        search,
+        sortBy,
+      },
+    });
+  }, [search, sortBy]);
+
   return (
     <div className={styles.wrapper}>
       <div className={styles.header}>
@@ -368,6 +439,13 @@ export default function PlayersTab() {
               {t.leaderboard.kda || "KDA"}
             </Button>
           </div>
+          <button
+            type="button"
+            className={styles.savedViewsBtn}
+            onClick={clearFilter}
+          >
+            {t.leaderboard?.resetFilter || "Reset filter"}
+          </button>
 
           <div className={styles.refreshWrap}>
             <Button

@@ -326,20 +326,33 @@ export function registerLeaderboardRoutes(app, deps) {
       }
       const limit = Math.min(Math.max(limitRaw, 1), 1000);
       const offset = Math.max(offsetRaw, 0);
+      const afterUid = String(req.query.afterUid || "").trim();
+      const afterValueRaw = Number(req.query.afterValue);
+      const cursor =
+        Number.isFinite(afterValueRaw)
+          ? { afterUid: afterUid || null, afterValue: afterValueRaw }
+          : null;
       const sort = String(req.query.sort || "matches");
       const allowedSorts = new Set(["matches", "winrate", "avgScore", "kda", "elo"]);
       const sortBy = allowedSorts.has(sort) ? sort : "matches";
 
       const now = Date.now();
-      const { rows, total } = await getLeaderboardPage(limit, offset, sortBy);
+      const { rows, total, hasMore, nextCursor } = await getLeaderboardPage(
+        limit,
+        offset,
+        sortBy,
+        cursor
+      );
       const steamOnline = getSteamOnline ? await getSteamOnline() : null;
       return res.json({
         updatedAt: now,
-        total,
+        total: Number.isFinite(Number(total)) ? Number(total) : null,
         sortBy,
         steamOnline,
         steamAppId: steamAppId || null,
         rows,
+        hasMore: Boolean(hasMore),
+        nextCursor: nextCursor || null,
       });
     } catch (err) {
       logger.error("LEADERBOARD ERROR:", err);

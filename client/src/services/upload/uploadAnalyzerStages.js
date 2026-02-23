@@ -118,6 +118,7 @@ export async function runSingleUploadStage({
       return {
         name: displayName,
         status: "skip",
+        code: "manual_skipped",
         message: t.upload.statusManualSkipped || "Result not selected",
       };
     }
@@ -155,6 +156,7 @@ export async function runSingleUploadStage({
     return {
       name: displayName,
       status: "error",
+      code: "match_id_missing",
       message: t.upload.statusMatchIdFailed || "Match ID not found",
     };
   }
@@ -184,6 +186,7 @@ export async function runSingleUploadStage({
     return {
       name: displayName,
       status: "error",
+      code: "backend_unavailable",
       message: t.upload.backendUnavailable || "Backend unavailable / network error",
     };
   }
@@ -195,6 +198,7 @@ export async function runSingleUploadStage({
         return {
           name: displayName,
           status: "error",
+          code: "banned",
           message: t.upload.statusBanned || "Banned",
         };
       }
@@ -203,6 +207,7 @@ export async function runSingleUploadStage({
       return {
         name: displayName,
         status: "error",
+        code: "too_large",
         message: t.upload.statusTooLarge || "File too large",
       };
     }
@@ -211,6 +216,7 @@ export async function runSingleUploadStage({
     return {
       name: displayName,
       status: "error",
+      code: "ocr_failed",
       message: t.upload.statusOcrFailed || "OCR failed",
     };
   }
@@ -221,6 +227,7 @@ export async function runSingleUploadStage({
     return {
       name: displayName,
       status: "error",
+      code: "ocr_failed",
       message: t.upload.statusOcrFailed || "OCR failed",
     };
   }
@@ -236,6 +243,7 @@ export async function runSingleUploadStage({
     return {
       name: displayName,
       status: "error",
+      code: "player_not_recognized",
       message: t.upload.statusPlayerFailed || "Player row not recognized",
     };
   }
@@ -246,6 +254,7 @@ export async function runSingleUploadStage({
       return {
         name: displayName,
         status: "skip",
+        code: "manual_skipped",
         message: t.upload.statusManualSkipped || "Result not selected",
       };
     }
@@ -256,6 +265,7 @@ export async function runSingleUploadStage({
     return {
       name: displayName,
       status: "skip",
+      code: "already_uploaded",
       message: t.upload.statusAlready || "Already uploaded",
     };
   }
@@ -270,6 +280,7 @@ export async function runSingleUploadStage({
   return {
     name: displayName,
     status: "ok",
+    code: "ok",
     message: t.upload.statusOk || "Uploaded",
     finalMatch,
   };

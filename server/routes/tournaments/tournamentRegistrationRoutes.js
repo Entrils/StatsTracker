@@ -32,6 +32,31 @@ export function registerTournamentRegistrationRoutes(app, ctx) {
       const tournamentRef = db.collection("tournaments").doc(tournamentId);
 
       const outcome = await db.runTransaction(async (tx) => {
+        const fragpunkCache = new Map();
+        const resolveFragpunkIdForUid = async (memberUid, baseProfile = {}) => {
+          const safeUid = String(memberUid || "").trim();
+          if (!safeUid) return "";
+          if (fragpunkCache.has(safeUid)) return fragpunkCache.get(safeUid);
+
+          // Primary source: leaderboard profile snapshot used by tournament stats.
+          let resolved = getProfileFragpunkId(baseProfile);
+          if (resolved) {
+            fragpunkCache.set(safeUid, resolved);
+            return resolved;
+          }
+
+          // Fallback sources: users/{uid}.settings and users/{uid}/profile/settings.
+          const userRef = db.collection("users").doc(safeUid);
+          const settingsRef = userRef.collection("profile").doc("settings");
+          const [userSnap, settingsSnap] = await Promise.all([tx.get(userRef), tx.get(settingsRef)]);
+          const userData = userSnap?.exists ? userSnap.data() || {} : {};
+          const settingsData = settingsSnap?.exists ? settingsSnap.data() || {} : {};
+
+          resolved = getProfileFragpunkId(userData) || getProfileFragpunkId(settingsData) || "";
+          fragpunkCache.set(safeUid, resolved);
+          return resolved;
+        };
+
         const tournamentSnap = await tx.get(tournamentRef);
 
         if (!tournamentSnap.exists) return { status: 404, error: "Tournament not found" };
@@ -59,7 +84,7 @@ export function registerTournamentRegistrationRoutes(app, ctx) {
           const p = profileSnap.exists ? profileSnap.data() || {} : {};
           const elo = toInt(p.hiddenElo ?? p.elo, 500);
           const matches = toInt(p.matches, 0);
-          const fragpunkId = getProfileFragpunkId(p);
+          const fragpunkId = await resolveFragpunkIdForUid(uid, p);
           if (!fragpunkId) {
             return { status: 409, error: "FragPunk ID is required. Set it in profile settings." };
           }
@@ -137,18 +162,19 @@ export function registerTournamentRegistrationRoutes(app, ctx) {
 
         const profileRefs = memberUids.map((id) => db.collection("leaderboard_users").doc(id));
         const profileSnaps = await tx.getAll(...profileRefs);
-        const stats = profileSnaps.map((snap, idx) => {
+        const stats = await Promise.all(profileSnaps.map(async (snap, idx) => {
           const p = snap.exists ? snap.data() || {} : {};
           const memberUid = memberUids[idx];
+          const fragpunkId = await resolveFragpunkIdForUid(memberUid, p);
           return {
             uid: memberUid,
             name: String(p.name || memberUid || "Player"),
             avatarUrl: resolveProfileAvatarUrl(p, memberUid),
             elo: toInt(p.hiddenElo ?? p.elo, 500),
             matches: toInt(p.matches, 0),
-            fragpunkId: getProfileFragpunkId(p),
+            fragpunkId,
           };
-        });
+        }));
         const totalElo = stats.reduce((acc, s) => acc + s.elo, 0);
         const totalMatches = stats.reduce((acc, s) => acc + s.matches, 0);
         const avgElo = Math.round(totalElo / Math.max(1, memberUids.length));

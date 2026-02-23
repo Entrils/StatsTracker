@@ -120,6 +120,111 @@ describe("profile routes", () => {
     expect(validTwoChars.body.ok).toBe(true);
   });
 
+  it("normalizes fragpunkId and writes updates to all profile storages", async () => {
+    const lbSet = vi.fn().mockResolvedValue();
+    const lbUpdate = vi.fn().mockResolvedValue();
+    const userSet = vi.fn().mockResolvedValue();
+    const userUpdate = vi.fn().mockResolvedValue();
+    const profileSet = vi.fn().mockResolvedValue();
+    const profileUpdate = vi.fn().mockResolvedValue();
+
+    const deps = {
+      ...baseDeps,
+      db: {
+        collection: (name) => {
+          if (name === "leaderboard_users") {
+            return { doc: () => ({ set: lbSet, update: lbUpdate }) };
+          }
+          if (name === "users") {
+            return {
+              doc: () => ({
+                set: userSet,
+                update: userUpdate,
+                collection: (sub) => {
+                  if (sub === "profile") {
+                    return { doc: () => ({ set: profileSet, update: profileUpdate }) };
+                  }
+                  return { doc: () => ({ set: vi.fn(), update: vi.fn() }) };
+                },
+              }),
+            };
+          }
+          return { doc: () => ({ set: vi.fn(), update: vi.fn(), get: async () => ({ exists: false }) }) };
+        },
+      },
+    };
+    const app = createApp(deps);
+
+    const res = await request(app)
+      .post("/profile/settings")
+      .send({ settings: { fragpunkId: "ab\u200B # EU1" } });
+
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+
+    expect(lbSet).toHaveBeenCalled();
+    expect(userSet).toHaveBeenCalled();
+    expect(profileSet).toHaveBeenCalled();
+
+    expect(lbUpdate).toHaveBeenCalledWith({ "settings.fragpunkId": "ab#EU1" });
+    expect(userUpdate).toHaveBeenCalledWith({ "settings.fragpunkId": "ab#EU1" });
+    expect(profileUpdate).toHaveBeenCalledWith({ "settings.fragpunkId": "ab#EU1" });
+  });
+
+  it("deletes fragpunkId in all storages when cleared", async () => {
+    const delMarker = "__DELETE__";
+    const lbUpdate = vi.fn().mockResolvedValue();
+    const userUpdate = vi.fn().mockResolvedValue();
+    const profileUpdate = vi.fn().mockResolvedValue();
+    const lbSet = vi.fn().mockResolvedValue();
+    const userSet = vi.fn().mockResolvedValue();
+    const profileSet = vi.fn().mockResolvedValue();
+    const deps = {
+      ...baseDeps,
+      admin: {
+        firestore: {
+          FieldValue: {
+            delete: () => delMarker,
+            serverTimestamp: () => 1,
+          },
+        },
+      },
+      db: {
+        collection: (name) => {
+          if (name === "leaderboard_users") {
+            return { doc: () => ({ set: lbSet, update: lbUpdate }) };
+          }
+          if (name === "users") {
+            return {
+              doc: () => ({
+                set: userSet,
+                update: userUpdate,
+                collection: (sub) => ({
+                  doc: () =>
+                    sub === "profile"
+                      ? { set: profileSet, update: profileUpdate }
+                      : { set: vi.fn(), update: vi.fn() },
+                }),
+              }),
+            };
+          }
+          return { doc: () => ({ set: vi.fn(), update: vi.fn() }) };
+        },
+      },
+    };
+    const app = createApp(deps);
+
+    const res = await request(app)
+      .post("/profile/settings")
+      .send({ settings: { fragpunkId: "   " } });
+
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+    expect(lbUpdate).toHaveBeenCalledWith({ "settings.fragpunkId": delMarker });
+    expect(userUpdate).toHaveBeenCalledWith({ "settings.fragpunkId": delMarker });
+    expect(profileUpdate).toHaveBeenCalledWith({ "settings.fragpunkId": delMarker });
+  });
+
   it("forbids hidden elo endpoint for non-admin", async () => {
     const deps = {
       ...baseDeps,

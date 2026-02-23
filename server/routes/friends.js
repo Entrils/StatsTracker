@@ -325,12 +325,20 @@ export function registerFriendsRoutes(app, deps) {
       if (view === "compact") {
         const rows = ids.map((id, i) => {
           const profile = profileSnaps[i]?.data() || {};
+          const stats = buildStatsFromProfile(profile);
           return {
             uid: id,
             name: profile.name || id,
             avatar: profile.avatar || null,
             provider: profile.provider || null,
             matches: toNumber(profile.matches, 0),
+            avgScore: toNumber(stats.avgScore, 0),
+            avgKills: toNumber(stats.avgKills, 0),
+            avgDeaths: toNumber(stats.avgDeaths, 0),
+            avgAssists: toNumber(stats.avgAssists, 0),
+            avgDamage: toNumber(stats.avgDamage, 0),
+            kda: toNumber(stats.kda, 0),
+            winrate: toNumber(stats.winrate, 0),
             createdAt: createdAtMap.get(id) || null,
           };
         });

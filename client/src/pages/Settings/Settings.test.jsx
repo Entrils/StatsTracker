@@ -122,4 +122,58 @@ describe("Settings", () => {
     const payload = JSON.parse(String(saveCall?.[1]?.body || "{}"));
     expect(payload.settings.fragpunkId).toBe("ab#EU1");
   });
+
+  it("normalizes fragpunk id before save", async () => {
+    authState.user = {
+      uid: "discord:4",
+      getIdToken: vi.fn().mockResolvedValue("token-4"),
+    };
+
+    const user = userEvent.setup();
+    render(<Settings />);
+
+    await screen.findByRole("heading", { name: "FragPunk ID" });
+    await user.type(screen.getByPlaceholderText("nickname#tag"), "ab\u200B # EU1");
+    const fragSection = screen
+      .getByRole("heading", { name: "FragPunk ID" })
+      .closest("div");
+    await user.click(within(fragSection).getByRole("button", { name: "Save" }));
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledTimes(2);
+    });
+    const saveCall = global.fetch.mock.calls.find((call) =>
+      String(call?.[0] || "").includes("/profile/settings")
+    );
+    const payload = JSON.parse(String(saveCall?.[1]?.body || "{}"));
+    expect(payload.settings.fragpunkId).toBe("ab#EU1");
+  });
+
+  it("shows backend error text when fragpunk save fails", async () => {
+    authState.user = {
+      uid: "discord:5",
+      getIdToken: vi.fn().mockResolvedValue("token-5"),
+    };
+    global.fetch = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ settings: {} }) })
+      .mockResolvedValueOnce({
+        ok: false,
+        json: async () => ({ error: "Invalid fragpunkId" }),
+      });
+
+    const user = userEvent.setup();
+    render(<Settings />);
+
+    await screen.findByRole("heading", { name: "FragPunk ID" });
+    await user.type(screen.getByPlaceholderText("nickname#tag"), "ab#EU1");
+    const fragSection = screen
+      .getByRole("heading", { name: "FragPunk ID" })
+      .closest("div");
+    await user.click(within(fragSection).getByRole("button", { name: "Save" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Invalid fragpunkId")).toBeInTheDocument();
+    });
+  });
 });

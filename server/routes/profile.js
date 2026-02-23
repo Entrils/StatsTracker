@@ -7,6 +7,14 @@ import { fileURLToPath } from "url";
 import { computeHiddenElo } from "../helpers/elo.js";
 
 const FRAGPUNK_ID_REGEX = /^[A-Za-z0-9._-]{2,24}#[A-Za-z0-9]{2,8}$/;
+const FRAGPUNK_ZERO_WIDTH_REGEX = /[\u200B-\u200D\u2060\uFEFF]/g;
+
+function normalizeFragpunkIdInput(value) {
+  return String(value || "")
+    .replace(FRAGPUNK_ZERO_WIDTH_REGEX, "")
+    .trim()
+    .replace(/\s*#\s*/, "#");
+}
 
 export function registerProfileRoutes(app, deps) {
     const {
@@ -948,7 +956,12 @@ export function registerProfileRoutes(app, deps) {
 
       for (const key of allowed) {
         if (!Object.prototype.hasOwnProperty.call(settings, key)) continue;
-        const raw = typeof settings[key] === "string" ? settings[key].trim() : "";
+        const raw =
+          key === "fragpunkId"
+            ? normalizeFragpunkIdInput(settings[key])
+            : typeof settings[key] === "string"
+              ? settings[key].trim()
+              : "";
         if (!raw) {
           updates[`settings.${key}`] = admin.firestore.FieldValue.delete();
         } else if (key === "fragpunkId" && !FRAGPUNK_ID_REGEX.test(raw)) {
@@ -960,17 +973,39 @@ export function registerProfileRoutes(app, deps) {
         }
       }
 
-      await db
-        .collection("leaderboard_users")
+      const leaderboardRef = db.collection("leaderboard_users").doc(uid);
+      const userRef = db.collection("users").doc(uid);
+      const userProfileSettingsRef = db
+        .collection("users")
         .doc(uid)
-        .set(
-          {
-            uid,
-            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-            ...updates,
-          },
-          { merge: true }
-        );
+        .collection("profile")
+        .doc("settings");
+
+      const basePayload = {
+        uid,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      };
+
+      await Promise.all([
+        leaderboardRef.set(basePayload, { merge: true }),
+        userRef.set(basePayload, { merge: true }),
+        userProfileSettingsRef.set(basePayload, { merge: true }),
+      ]);
+
+      const applyUpdates = async (ref, patch) => {
+        if (!patch || !Object.keys(patch).length) return;
+        if (typeof ref.update === "function") {
+          await ref.update(patch);
+          return;
+        }
+        await ref.set(patch, { merge: true });
+      };
+
+      await Promise.all([
+        applyUpdates(leaderboardRef, updates),
+        applyUpdates(userRef, updates),
+        applyUpdates(userProfileSettingsRef, updates),
+      ]);
 
       return res.json({ ok: true });
     } catch (err) {

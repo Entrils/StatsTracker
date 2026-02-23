@@ -34,7 +34,7 @@ export function loadConfig(env = process.env) {
     cacheCollection: "stats_cache",
     globalCacheTtlMs: toInt(env.GLOBAL_CACHE_TTL_MS, 15 * 60 * 1000),
     banCacheTtlMs: toInt(env.BAN_CACHE_TTL_MS, 30 * 1000),
-    leaderboardCacheTtlMs: toInt(env.LEADERBOARD_CACHE_TTL_MS, 30 * 1000),
+    leaderboardCacheTtlMs: toInt(env.LEADERBOARD_CACHE_TTL_MS, 10 * 60 * 1000),
     percentilesCacheTtlMs: toInt(env.PERCENTILES_CACHE_TTL_MS, 60 * 1000),
     ocrDailyLimit: toInt(env.OCR_DAILY_LIMIT, 15),
     rankSubmitDailyLimit: toInt(env.RANK_SUBMIT_DAILY_LIMIT, 1),

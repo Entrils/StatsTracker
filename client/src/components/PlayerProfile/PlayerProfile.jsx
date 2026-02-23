@@ -14,6 +14,7 @@ import { useLang } from "@/i18n/LanguageContext";
 import { useAuth } from "@/auth/AuthContext";
 import Achievements from "@/components/Achievements/Achievements";
 import TrustMetaBar from "@/components/TrustMetaBar/TrustMetaBar";
+import PageState from "@/components/StateMessage/PageState";
 import { trackUxEvent } from "@/utils/analytics/trackUxEvent";
 
 const backend = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
@@ -319,12 +320,19 @@ export default function PlayerProfile() {
     return `${sourceText} | ${coverageText} | ${syncedText}`;
   }, [lastSyncedAt, t.profile]);
 
-  if (loading) {
-    return <p className={styles.wrapper}>{t.profile.loading}</p>;
-  }
-
-  if (!matches.length || !summary) {
-    return <p className={styles.wrapper}>{error || t.profile.empty}</p>;
+  if (loading || error || !matches.length || !summary) {
+    return (
+      <div className={styles.wrapper}>
+        <PageState
+          loading={loading}
+          error={error}
+          empty={!loading && !error && (!matches.length || !summary)}
+          loadingText={t.profile?.loading || "Loading profile..."}
+          errorText={error || t.profile?.empty || "No match history"}
+          emptyText={t.profile?.empty || "No match history"}
+        />
+      </div>
+    );
   }
 
   return (

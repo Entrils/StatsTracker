@@ -1,10 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/firebase";
 import { round1 } from "@/utils/myProfile/math";
 import { dedupedJsonRequest } from "@/utils/network/dedupedFetch";
 
-export default function useProfileRemoteData({ uid, user, summary, backendUrl }) {
+export default function useProfileRemoteData({
+  uid,
+  user,
+  summary,
+  backendUrl,
+  friendsView = "compact",
+}) {
   const [profileRanks, setProfileRanks] = useState(null);
   const [profileElo, setProfileElo] = useState(0);
   const [banInfo, setBanInfo] = useState(null);
@@ -17,6 +23,7 @@ export default function useProfileRemoteData({ uid, user, summary, backendUrl })
   const [friends, setFriends] = useState([]);
   const [friendsLoading, setFriendsLoading] = useState(false);
   const [friendId, setFriendId] = useState("");
+  const loadedFriendsViewRef = useRef("");
 
   useEffect(() => {
     if (!uid) return;
@@ -158,15 +165,18 @@ export default function useProfileRemoteData({ uid, user, summary, backendUrl })
 
   useEffect(() => {
     if (!user) return;
+    const normalizedView = friendsView === "full" ? "full" : "compact";
+    // "full" is a superset of "compact"; do not downgrade-fetch on tab switch back.
+    if (loadedFriendsViewRef.current === "full" && normalizedView === "compact") return;
     let alive = true;
     const loadFriends = async () => {
       setFriendsLoading(true);
       try {
         const token = await user.getIdToken();
         const data = await dedupedJsonRequest(
-          `friends-list:full:${user.uid}`,
+          `friends-list:${normalizedView}:${user.uid}`,
           async () => {
-            const res = await fetch(`${backendUrl}/friends/list?view=full`, {
+            const res = await fetch(`${backendUrl}/friends/list?view=${normalizedView}`, {
               headers: { Authorization: `Bearer ${token}` },
             });
             if (!res.ok) {
@@ -180,6 +190,7 @@ export default function useProfileRemoteData({ uid, user, summary, backendUrl })
         );
         if (!alive) return;
         setFriends(Array.isArray(data?.rows) ? data.rows : []);
+        loadedFriendsViewRef.current = normalizedView;
       } catch {
         if (alive) setFriends([]);
       } finally {
@@ -190,7 +201,7 @@ export default function useProfileRemoteData({ uid, user, summary, backendUrl })
     return () => {
       alive = false;
     };
-  }, [user, backendUrl]);
+  }, [user, backendUrl, friendsView]);
 
   useEffect(() => {
     if (!friends.length) return;
