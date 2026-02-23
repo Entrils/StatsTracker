@@ -159,6 +159,18 @@ export default function Help() {
           {typeof t.help?.tournamentsText === "string" && t.help.tournamentsText.trim() && (
             <p className={styles.sectionText}>{t.help.tournamentsText}</p>
           )}
+          {Array.isArray(t.help?.tournamentsChecklist) && t.help.tournamentsChecklist.length > 0 && (
+            <>
+              <p className={styles.sectionText}>
+                <strong>{t.help?.tournamentsChecklistTitle || "Pre-match checklist"}</strong>
+              </p>
+              <ul className={styles.list}>
+                {t.help.tournamentsChecklist.map((item, idx) => (
+                  <li key={`tournaments-check-${idx}`}>{item}</li>
+                ))}
+              </ul>
+            </>
+          )}
         </section>
 
         <section className={styles.section} id="elo-rating">

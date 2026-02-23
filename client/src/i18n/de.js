@@ -548,14 +548,22 @@
       "Du kannst Spieler im Profil oder auf der Freundeseite hinzufugen. Nach Annahme erscheint der Spieler in deiner Freundesliste. Der Vergleich ist in „Mein Profil“ verfugbar: dort wahlst du einen Freund aus und siehst die Unterschiede bei Score, KDA, Schaden, Winrate und weiteren Kennzahlen.",
     teamsTitle: "Teams",
     teamsBody:
-      "Grundregeln fur Teams: Roster-Format, Ersatzslot, Einladungen und Rollen.",
+      "Kompletter Team-Flow: Erstellung, Roster-Setup, Rollen und Vorbereitung vor Turnieren.",
     teamsText:
-      "Ein Team wird vom Kapitan erstellt und auf ein Format gesetzt (z. B. 2x2/3x3/5x5). Das Roster besteht aus der Hauptaufstellung passend zum Format plus 1 Ersatzspieler-Slot. Auf der Teamseite kann der Kapitan Spieler einladen, Einladungen zuruckziehen, zwischen Stamm/Ersatz wechseln und das Kapitansamt ubertragen.",
+      "Ein Team wird vom Kapitan erstellt und auf ein Format gesetzt (2x2/3x3/5x5). Das Roster besteht aus der Hauptaufstellung passend zum Format plus einem Ersatzspieler-Slot. Vor der Turnieranmeldung sollte jeder aktive Spieler eine gultige FragPunk ID und die richtige Teamrolle haben. Auf der Teamseite kann der Kapitan Einladungen senden/abbrechen, Spieler zwischen Stamm und Ersatz verschieben, Mitglieder entfernen und das Kapitansamt ubergeben. Fur einen reibungslosen Start solltest du die aktive Aufstellung fruhzeitig festlegen.",
     tournamentsTitle: "Turniere",
     tournamentsBody:
-      "So nimmst du teil und verwaltest Turnier-Matches.",
+      "Schritt fur Schritt: Anmeldung, Match-Room, Abstimmung mit Gegner und Ergebnis-Bestatigung.",
     tournamentsText:
-      "Im Turnierbereich gibt es die Filter bevorstehend/laufend/beendet. Zur Teilnahme registrierst du ein Team im passenden Format. Im Turnier findest du Bracket-Ansicht, Match-Raume, Match-Chat (bis Matchende) und Ergebnis-Eintragung.",
+      "Im Turnierbereich nutzt du die Filter bevorstehend/laufend/beendet und registrierst ein Team im passenden Format. Nach der Bracket-Erstellung offnest du deinen Match-Room mit Ready-Status, Match-Chat und Ergebnis-Bestatigung. WICHTIG: Vor Spielstart muss euer Kapitan den gegnerischen Kapitan in FragPunk als Freund hinzufugen und ihn in die Ingame-Lobby einladen. Das ist der verpflichtende Ablauf, um Matches ohne Verzogerung zu starten. Nach der Serie bestatigen beide Kapitane das Ergebnis; bei Streitfallen Screenshots sichern und den Turnier-Admin kontaktieren.",
+    tournamentsChecklistTitle: "Checkliste vor dem Match",
+    tournamentsChecklist: [
+      "Prufe, dass alle aktiven Spieler eine gultige FragPunk ID in den Einstellungen haben.",
+      "Offne die Match-Karte und bestatige, dass du im richtigen Turnier-Room bist.",
+      "Euer Kapitan fugt den gegnerischen Kapitan in FragPunk als Freund hinzu.",
+      "Euer Kapitan ladt den gegnerischen Kapitan in die Ingame-Lobby ein.",
+      "Nach dem Match bestatigen beide Kapitane das Ergebnis; bei Streitfallen Screenshots anhangen.",
+    ],
     playerProfileTitle: "Spielerprofil",
     playerProfileBody:
       "Was im Spielerprofil wichtig ist und wo du es findest.",

@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect } from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
 import Navbar from "@/components/NavBar/Navbar";
 import Footer from "@/components/Footer/Footer";
 
@@ -25,6 +25,121 @@ const MyTeams = lazy(() => import("@/pages/MyTeams/MyTeams"));
 const MyTeamCreate = lazy(() => import("@/pages/MyTeamCreate/MyTeamCreate"));
 const MyTeamDetails = lazy(() => import("@/pages/MyTeamDetails/MyTeamDetails"));
 const TeamDetails = lazy(() => import("@/pages/TeamDetails/TeamDetails"));
+
+const SITE_URL = "https://fragpunktracker.fun";
+const DEFAULT_IMAGE = `${SITE_URL}/PlayerProfileGuide.png`;
+const DEFAULT_TITLE = "FragPunk Tracker - Stats, Teams & Tournaments";
+const DEFAULT_DESC =
+  "FragPunk Tracker: leaderboard, player profiles, match stats, team management, and tournament brackets for FragPunk.";
+
+function resolveSeo(pathname) {
+  const path = String(pathname || "/");
+
+  if (path === "/" || path === "/players") {
+    return {
+      title: "FragPunk Leaderboard - Players, ELO & Match Stats",
+      description:
+        "Live FragPunk leaderboard with player ELO, winrate, KDA, and match performance.",
+    };
+  }
+  if (path.startsWith("/player/")) {
+    return {
+      title: "FragPunk Player Profile - Stats & Match History",
+      description:
+        "View FragPunk player profile, recent match history, verified ranks, and performance trends.",
+    };
+  }
+  if (path.startsWith("/tournaments")) {
+    return {
+      title: "FragPunk Tournaments - Brackets, Matches & Teams",
+      description:
+        "Browse FragPunk tournaments, follow brackets, open match rooms, and track tournament progress.",
+    };
+  }
+  if (path.startsWith("/my-teams") || path.startsWith("/teams/")) {
+    return {
+      title: "FragPunk Teams - Roster, Invites & Roles",
+      description:
+        "Manage FragPunk teams: roster format, captain controls, invites, and tournament-ready lineup.",
+    };
+  }
+  if (path === "/help") {
+    return {
+      title: "FragPunk Tracker Help - Teams, Tournaments, Upload",
+      description:
+        "Step-by-step help for screenshot upload, teams, tournaments, and match result workflow.",
+    };
+  }
+  return { title: DEFAULT_TITLE, description: DEFAULT_DESC };
+}
+
+function upsertNamedMeta(name, value) {
+  if (!value) return;
+  let node = document.head.querySelector(`meta[name="${name}"]`);
+  if (!node) {
+    node = document.createElement("meta");
+    node.setAttribute("name", name);
+    document.head.appendChild(node);
+  }
+  node.setAttribute("content", value);
+}
+
+function upsertPropertyMeta(property, value) {
+  if (!value) return;
+  let node = document.head.querySelector(`meta[property="${property}"]`);
+  if (!node) {
+    node = document.createElement("meta");
+    node.setAttribute("property", property);
+    document.head.appendChild(node);
+  }
+  node.setAttribute("content", value);
+}
+
+function upsertCanonical(url) {
+  let node = document.head.querySelector('link[rel="canonical"]');
+  if (!node) {
+    node = document.createElement("link");
+    node.setAttribute("rel", "canonical");
+    document.head.appendChild(node);
+  }
+  node.setAttribute("href", url);
+}
+
+function RouteSeoSync() {
+  const location = useLocation();
+
+  useEffect(() => {
+    const pathname = location?.pathname || "/";
+    const { title, description } = resolveSeo(pathname);
+    const canonicalUrl = `${SITE_URL}${pathname}`;
+    const isPrivatePath =
+      pathname.startsWith("/admin") ||
+      pathname.startsWith("/settings") ||
+      pathname.startsWith("/me") ||
+      pathname.startsWith("/upload") ||
+      pathname.startsWith("/auth/");
+
+    document.title = title || DEFAULT_TITLE;
+    upsertCanonical(canonicalUrl);
+    upsertNamedMeta("description", description || DEFAULT_DESC);
+    upsertNamedMeta(
+      "robots",
+      isPrivatePath
+        ? "noindex, nofollow, noarchive"
+        : "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    );
+    upsertPropertyMeta("og:title", title || DEFAULT_TITLE);
+    upsertPropertyMeta("og:description", description || DEFAULT_DESC);
+    upsertPropertyMeta("og:url", canonicalUrl);
+    upsertPropertyMeta("og:image", DEFAULT_IMAGE);
+    upsertNamedMeta("twitter:title", title || DEFAULT_TITLE);
+    upsertNamedMeta("twitter:description", description || DEFAULT_DESC);
+    upsertNamedMeta("twitter:image", DEFAULT_IMAGE);
+    upsertNamedMeta("twitter:card", "summary_large_image");
+  }, [location.pathname]);
+
+  return null;
+}
 
 export default function App() {
   useEffect(() => {
@@ -54,6 +169,7 @@ export default function App() {
 
   return (
     <Router>
+      <RouteSeoSync />
       <Navbar />
       <main className="app-main">
         <Suspense fallback={<div aria-live="polite">Loading...</div>}>

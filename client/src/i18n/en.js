@@ -553,14 +553,22 @@
       "You can add someone from their player profile or from the Friends page. Once they accept, they appear in your friends list. Comparison is available in My Profile, where you can select a friend and see stat differences across score, KDA, damage, winrate, and other key metrics.",
     teamsTitle: "Teams",
     teamsBody:
-      "Core team rules: roster format, reserve slot, invites, and roles.",
+      "Full team flow: creation, roster setup, roles, and pre-tournament management.",
     teamsText:
-      "A team is created by the captain with a selected format (for example 2x2/3x3/5x5). The roster includes the main lineup by format plus one reserve slot. In team details, the captain can invite players, cancel invites, switch players between main and reserve, and transfer captain role.",
+      "The captain creates a team and selects its format (2x2/3x3/5x5). The roster includes the main lineup by format plus one reserve slot. Before tournament registration, make sure every member has a valid FragPunk ID and correct role assignment. In team details, the captain can send/cancel invites, move players between main and reserve, remove players, and transfer captain rights. For smoother tournament starts, lock your active lineup in advance instead of changing it right before match time.",
     tournamentsTitle: "Tournaments",
     tournamentsBody:
-      "How to participate and where to manage tournament matches.",
+      "Step-by-step: registration, match room workflow, opponent coordination, and result confirmation.",
     tournamentsText:
-      "Tournament tabs provide filters for upcoming, ongoing, and past events. To join, register a team that matches the required format. Inside a tournament you get bracket view, match rooms, match chat (until the match is completed), and result submission.",
+      "Use tournament tabs (upcoming/ongoing/past), then register a team that matches the required format. After bracket generation, open your match room to track readiness, use match chat, and submit result confirmation. IMPORTANT: before the game starts, your team captain must add the opposing captain as a friend in FragPunk and invite them to the game lobby. This is the required practical flow to start matches without delays. After the series ends, captains confirm the score in the match room; if there is a dispute, keep screenshots and contact tournament admins.",
+    tournamentsChecklistTitle: "Pre-match checklist",
+    tournamentsChecklist: [
+      "Make sure every active player has a valid FragPunk ID in Settings.",
+      "Open your match card and confirm you are in the correct tournament room.",
+      "Your captain adds the opposing captain as a friend in FragPunk.",
+      "Your captain invites the opposing captain to the in-game lobby.",
+      "After the match, both captains confirm result; for disputes, attach screenshots.",
+    ],
     playerProfileTitle: "Player profile",
     playerProfileBody:
       "What to check first on a player profile.",

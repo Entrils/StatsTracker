@@ -550,14 +550,22 @@
       "Tu peux ajouter un joueur depuis son profil ou depuis la page Amis. Une fois la demande acceptee, il apparait dans ta liste. La comparaison est disponible dans Mon profil : tu choisis un ami et tu vois les ecarts sur le score, le KDA, les degats, le winrate et les autres metriques importantes.",
     teamsTitle: "Equipes",
     teamsBody:
-      "Regles essentielles des equipes : format du roster, remplacant, invitations et roles.",
+      "Cycle complet des equipes : creation, roster, roles et gestion avant tournoi.",
     teamsText:
-      "Le capitaine cree l’equipe et choisit un format (par exemple 2x2/3x3/5x5). Le roster contient la composition principale selon le format, plus 1 slot remplacant. Dans la page d’equipe, le capitaine peut inviter des joueurs, annuler des invitations, passer un joueur en titulaire/remplacant et transferer le role de capitaine.",
+      "Le capitaine cree l’equipe et choisit un format (2x2/3x3/5x5). Le roster comprend la line-up principale selon le format, plus un slot remplacant. Avant l’inscription a un tournoi, verifie que chaque joueur actif a un FragPunk ID valide et un role correct dans l’equipe. Dans la page d’equipe, le capitaine peut inviter/annuler, passer un joueur titulaire ou remplacant, exclure un membre et transferer le role de capitaine. Pour eviter les retards le jour J, verrouille ta line-up active a l’avance.",
     tournamentsTitle: "Tournois",
     tournamentsBody:
-      "Comment participer et gerer les matchs du tournoi.",
+      "Etapes claires : inscription, room de match, coordination avec l’adversaire et validation du score.",
     tournamentsText:
-      "Dans l’onglet Tournois, tu as les filtres a venir/en cours/termines. Pour rejoindre, inscris une equipe avec le bon format. Dans le tournoi, tu peux ouvrir le bracket, entrer dans les rooms de match, utiliser le chat de match (jusqu’a la fin du match) et soumettre le resultat.",
+      "Dans l’onglet Tournois, utilise les filtres a venir/en cours/termines puis inscris une equipe au bon format. Une fois le bracket genere, ouvre la room de ton match : tu y retrouves l’etat de preparation, le chat de match et la validation du resultat. IMPORTANT : avant le debut de la game, le capitaine de ton equipe doit ajouter le capitaine adverse en ami dans FragPunk puis l’inviter dans le lobby en jeu. C’est le process obligatoire pour demarrer vite sans blocage technique. A la fin de la serie, les capitaines confirment le score ; en cas de litige, joins des captures et contacte l’admin du tournoi.",
+    tournamentsChecklistTitle: "Checklist avant match",
+    tournamentsChecklist: [
+      "Verifie que tous les joueurs actifs ont un FragPunk ID valide dans les Parametres.",
+      "Ouvre la carte du match et confirme que tu es dans la bonne room du tournoi.",
+      "Le capitaine ajoute le capitaine adverse en ami dans FragPunk.",
+      "Le capitaine invite le capitaine adverse dans le lobby en jeu.",
+      "Apres le match, les deux capitaines valident le resultat ; en cas de litige, joignez des captures.",
+    ],
     playerProfileTitle: "Profil du joueur",
     playerProfileBody:
       "Les elements importants a lire sur un profil joueur.",
