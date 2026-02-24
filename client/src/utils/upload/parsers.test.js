@@ -13,6 +13,8 @@ describe("upload parsers", () => {
   it("parses victory/defeat match result", () => {
     expect(parseMatchResult("VICTORY")).toBe("victory");
     expect(parseMatchResult("defeat")).toBe("defeat");
+    expect(parseMatchResult("Victoire")).toBe("victory");
+    expect(parseMatchResult("Verlust")).toBe("defeat");
   });
 
   it("parses fragpunk row", () => {
@@ -35,5 +37,16 @@ describe("upload parsers", () => {
 
   it("returns null on invalid fragpunk row", () => {
     expect(parseFragpunkText("broken data", "u1", "Player")).toBeNull();
+  });
+
+  it("extracts fallback numeric match id and normalizes damage share >100", () => {
+    expect(extractMatchId("random text 1234567890 random")).toBe("1234567890");
+
+    const parsed = parseFragpunkText("1234\n12/8/3\n4567\n335%", "u1", "Player");
+    expect(parsed?.damageShare).toBe(33.5);
+  });
+
+  it("rejects impossible damage share values", () => {
+    expect(parseFragpunkText("1234\n12/8/3\n4567\n1500%", "u1", "Player")).toBeNull();
   });
 });
