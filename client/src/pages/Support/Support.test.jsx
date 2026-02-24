@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import Support from "@/pages/Support/Support";
 
@@ -41,7 +41,7 @@ describe("Support page", () => {
     render(<Support />);
 
     await user.type(screen.getByPlaceholderText("you@example.com"), "user@test.com");
-    await user.type(screen.getByRole("textbox"), "This is a valid support message.");
+    await user.type(screen.getByLabelText("Message"), "This is a valid support message.");
     await user.click(screen.getByRole("button", { name: "Complete captcha" }));
     await user.click(screen.getByRole("button", { name: "Send" }));
 
@@ -53,10 +53,11 @@ describe("Support page", () => {
 
   it("shows validation errors when form is invalid", async () => {
     const user = userEvent.setup();
-    render(<Support />);
+    const { container } = render(<Support />);
 
     await user.click(screen.getByRole("button", { name: "Complete captcha" }));
-    await user.click(screen.getByRole("button", { name: "Send" }));
+    const form = container.querySelector("form");
+    fireEvent.submit(form);
 
     expect(screen.getByText("Enter a valid email")).toBeInTheDocument();
     expect(screen.getByText("Message must be 10-2000 characters")).toBeInTheDocument();
@@ -68,7 +69,7 @@ describe("Support page", () => {
     render(<Support />);
 
     await user.type(screen.getByPlaceholderText("you@example.com"), "user@test.com");
-    await user.type(screen.getByRole("textbox"), "This is a valid support message.");
+    await user.type(screen.getByLabelText("Message"), "This is a valid support message.");
     await user.click(screen.getByRole("button", { name: "Complete captcha" }));
     await user.type(screen.getByLabelText("Website"), "bot");
     await user.click(screen.getByRole("button", { name: "Send" }));

@@ -127,7 +127,9 @@ describe("stats helpers", () => {
     });
 
     const page = await getLeaderboardPage(2, 0, "matches");
-    expect(page.total).toBe(2);
+    expect(page.rows).toHaveLength(2);
+    expect(page.hasMore).toBe(false);
+    expect(page.nextCursor).toBeNull();
     expect(page.rows[0].uid).toBe("u1");
     expect(page.rows[0].rank).toBe(1);
     expect(batchSet).toHaveBeenCalled();

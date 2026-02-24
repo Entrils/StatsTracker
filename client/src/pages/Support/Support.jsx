@@ -105,10 +105,11 @@ export default function Support() {
       </p>
 
       <form className={styles.form} onSubmit={onSubmit} noValidate>
-        <label className={styles.label}>
+        <label className={styles.label} htmlFor="support-email">
           {t.support?.emailLabel || "Your email"}
         </label>
         <input
+          id="support-email"
           className={styles.input}
           type="email"
           placeholder="you@example.com"
@@ -122,10 +123,11 @@ export default function Support() {
           </div>
         )}
 
-        <label className={styles.label}>
+        <label className={styles.label} htmlFor="support-message">
           {t.support?.messageLabel || "Message"}
         </label>
         <textarea
+          id="support-message"
           className={styles.textarea}
           rows={6}
           value={messageValue}

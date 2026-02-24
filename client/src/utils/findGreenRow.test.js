@@ -22,12 +22,24 @@ describe("findGreenRow", () => {
     const cv = {
       Mat: vi
         .fn()
-        .mockImplementationOnce(() => hsv)
-        .mockImplementationOnce(() => lower)
-        .mockImplementationOnce(() => upper)
-        .mockImplementationOnce(() => mask)
-        .mockImplementationOnce(() => hierarchy),
-      MatVector: vi.fn(() => contours),
+        .mockImplementationOnce(function Mat1() {
+          return hsv;
+        })
+        .mockImplementationOnce(function Mat2() {
+          return lower;
+        })
+        .mockImplementationOnce(function Mat3() {
+          return upper;
+        })
+        .mockImplementationOnce(function Mat4() {
+          return mask;
+        })
+        .mockImplementationOnce(function Mat5() {
+          return hierarchy;
+        }),
+      MatVector: vi.fn(function MatVector() {
+        return contours;
+      }),
       COLOR_RGBA2RGB: 1,
       COLOR_RGB2HSV: 2,
       RETR_EXTERNAL: 3,
@@ -60,8 +72,12 @@ describe("findGreenRow", () => {
       delete: vi.fn(),
     };
     const cv = {
-      Mat: vi.fn(() => createMat()),
-      MatVector: vi.fn(() => contours),
+      Mat: vi.fn(function Mat() {
+        return createMat();
+      }),
+      MatVector: vi.fn(function MatVector() {
+        return contours;
+      }),
       COLOR_RGBA2RGB: 1,
       COLOR_RGB2HSV: 2,
       RETR_EXTERNAL: 3,
