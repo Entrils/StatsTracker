@@ -4,24 +4,24 @@
 /* GLOBAL BASE STYLES */
 @layer base {
   :root {
-    --bg-void: #05070b;
-    --bg-deep: #0a0f1e;
-    --bg-card: rgba(9, 12, 24, 0.78);
-    --bg-glass: rgba(12, 16, 30, 0.64);
+    --bg-void: #060911;
+    --bg-deep: #0d1424;
+    --bg-card: rgba(11, 18, 31, 0.84);
+    --bg-glass: rgba(14, 22, 36, 0.72);
 
-    --surface-1: rgba(9, 12, 24, 0.82);
-    --surface-2: rgba(12, 16, 30, 0.74);
-    --surface-3: rgba(16, 22, 38, 0.68);
+    --surface-1: rgba(11, 18, 31, 0.86);
+    --surface-2: rgba(15, 24, 40, 0.8);
+    --surface-3: rgba(20, 30, 49, 0.74);
 
     --border-soft: rgba(255, 255, 255, 0.08);
-    --border-strong: rgba(0, 245, 212, 0.24);
+    --border-strong: rgba(51, 208, 255, 0.34);
     --border-muted: rgba(255, 255, 255, 0.12);
 
-    --text-main: #f3f6ff;
-    --text-muted: #a9b4cd;
-    --text-1: #f3f6ff;
-    --text-2: #c7d3ea;
-    --text-3: #93a1be;
+    --text-main: #eef4ff;
+    --text-muted: #a8b6d0;
+    --text-1: #eef4ff;
+    --text-2: #c5d3ea;
+    --text-3: #90a2c2;
     --content-max: 1160px;
     --content-max-narrow: 960px;
 
@@ -46,29 +46,29 @@
     --heading-2: clamp(1.2rem, 1.7vw, 1.5rem);
     --heading-3: clamp(1.02rem, 1.2vw, 1.15rem);
 
-    --btn-primary-bg: linear-gradient(135deg, #a3ff12, #2be6cb);
-    --btn-primary-fg: #081016;
+    --btn-primary-bg: linear-gradient(135deg, #ff9f1a, #ffd166);
+    --btn-primary-fg: #101521;
     --btn-secondary-bg: var(--surface-2);
     --btn-secondary-fg: var(--text-1);
     --btn-secondary-border: var(--border-muted);
     --btn-danger-bg: rgba(255, 77, 109, 0.16);
     --btn-danger-fg: #ff7f97;
     --btn-danger-border: rgba(255, 77, 109, 0.42);
-    --btn-focus-ring: 0 0 0 2px rgba(43, 230, 203, 0.22);
+    --btn-focus-ring: 0 0 0 2px rgba(51, 208, 255, 0.26);
 
-    --accent-data: #2be6cb;
-    --accent-success: #9eea38;
+    --accent-data: #33d0ff;
+    --accent-success: #68e09d;
     --accent-danger: #ff4d6d;
-    --accent-warning: #f1b34a;
+    --accent-warning: #ffb347;
 
-    --neon-cyan: #2be6cb;
-    --neon-lime: #9eea38;
-    --neon-pink: #ff4aa0;
-    --neon-amber: #f1b34a;
-    --neon-blue: #4cc9f0;
+    --neon-cyan: #33d0ff;
+    --neon-lime: #9de16f;
+    --neon-pink: #ff5f8f;
+    --neon-amber: #ffb347;
+    --neon-blue: #66a3ff;
 
     --shadow-strong: 0 14px 34px rgba(0, 0, 0, 0.45);
-    --shadow-glow: 0 0 10px rgba(0, 245, 212, 0.1);
+    --shadow-glow: 0 0 10px rgba(51, 208, 255, 0.12);
     --shadow-card: 0 10px 24px rgba(0, 0, 0, 0.34);
 
     --control-size-sm: 32px;
@@ -93,19 +93,19 @@
     background-color: var(--bg-void);
     background-image:
       radial-gradient(
-        900px 500px at 10% -10%,
-        rgba(255, 74, 160, 0.13),
-        transparent 60%
+        820px 460px at 0% -8%,
+        rgba(102, 163, 255, 0.16),
+        transparent 62%
       ),
       radial-gradient(
-        800px 520px at 90% 0%,
-        rgba(43, 230, 203, 0.12),
-        transparent 60%
+        740px 460px at 100% 0%,
+        rgba(255, 179, 71, 0.15),
+        transparent 64%
       ),
-      radial-gradient(
-        700px 620px at 50% 100%,
-        rgba(241, 179, 74, 0.08),
-        transparent 68%
+      linear-gradient(
+        115deg,
+        rgba(255, 255, 255, 0.025) 0%,
+        rgba(255, 255, 255, 0) 56%
       );
     color: var(--text-main);
     font-family:
@@ -123,19 +123,19 @@
     position: fixed;
     inset: 0;
     background:
-      radial-gradient(
-        600px 260px at 15% 20%,
-        rgba(158, 234, 56, 0.05),
-        transparent 70%
+      linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0.028) 1px,
+        transparent 1px
       ),
-      radial-gradient(
-        520px 240px at 85% 70%,
-        rgba(76, 201, 240, 0.08),
-        transparent 75%
+      linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.02) 1px,
+        transparent 1px
       );
+    background-size: 38px 38px;
     pointer-events: none;
-    mix-blend-mode: screen;
-    opacity: 0.55;
+    opacity: 0.3;
     z-index: 0;
   }
 
@@ -202,7 +202,7 @@
 
   a:hover {
     text-decoration: none;
-    color: var(--neon-lime);
+    color: #8ee3ff;
   }
 
   button,
@@ -289,8 +289,8 @@ html[data-lang="ru"] body * {
 ::-webkit-scrollbar-thumb {
   background: linear-gradient(
     180deg,
-    rgba(43, 230, 203, 0.75),
-    rgba(255, 74, 160, 0.7)
+    rgba(51, 208, 255, 0.75),
+    rgba(255, 179, 71, 0.72)
   );
   border-radius: 999px;
 }

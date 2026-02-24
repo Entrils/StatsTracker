@@ -1,4 +1,4 @@
-.wrapper {
+﻿.wrapper {
   max-width: var(--content-max-narrow);
   margin: 0 auto;
   padding: var(--space-6) var(--space-4);
@@ -86,7 +86,7 @@
   padding: 10px var(--space-4);
   border-radius: var(--radius-md);
   border: none;
-  background: linear-gradient(135deg, #a3ff12, #00f5d4);
+  background: linear-gradient(135deg, #68e09d, #33d0ff);
   color: #081016;
   font-weight: 800;
   cursor: pointer;
@@ -151,3 +151,4 @@
   font-weight: 700;
   color: #f3f6ff;
 }
+

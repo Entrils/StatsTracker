@@ -1,4 +1,4 @@
-.wrapper {
+﻿.wrapper {
   padding: var(--space-6) var(--space-5);
 }
 
@@ -164,7 +164,7 @@
 }
 
 .teamTitleLink:hover {
-  color: #9fffea;
+  color: #9fdfff;
 }
 
 .teamCountryFlag {
@@ -478,7 +478,7 @@
 }
 
 .inviteTeamLink:hover {
-  color: #9fffea;
+  color: #9fdfff;
   text-decoration: underline;
 }
 
@@ -507,8 +507,8 @@
 }
 
 .tabActive {
-  border-color: rgba(0, 245, 212, 0.52);
-  background: rgba(0, 245, 212, 0.16);
+  border-color: rgba(51, 208, 255, 0.52);
+  background: rgba(51, 208, 255, 0.16);
   color: #f0fffb;
 }
 
@@ -653,7 +653,7 @@
 }
 
 .tournamentLink:hover {
-  color: #9fffea;
+  color: #9fdfff;
 }
 
 .rowSubText {
@@ -962,7 +962,7 @@
 }
 
 .detailsLink {
-  color: #9fffea;
+  color: #9fdfff;
   text-decoration: none;
   font-size: var(--text-sm);
 }
@@ -1280,8 +1280,8 @@
 }
 
 .matchEditBtn:hover:not(:disabled) {
-  background: rgba(0, 245, 212, 0.16);
-  border-color: rgba(0, 245, 212, 0.45);
+  background: rgba(51, 208, 255, 0.16);
+  border-color: rgba(51, 208, 255, 0.45);
   color: #d6fff6;
 }
 
@@ -1379,3 +1379,4 @@
     min-width: 1040px;
   }
 }
+

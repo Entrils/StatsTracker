@@ -1,4 +1,4 @@
-.wrapper {
+﻿.wrapper {
   max-width: var(--content-max);
   margin: 0 auto;
   padding: var(--space-6) var(--space-4) calc(var(--space-6) * 2);
@@ -61,9 +61,9 @@
 
 .tabActive {
   color: #f8fafc;
-  background: rgba(0, 245, 212, 0.12);
-  border-color: rgba(0, 245, 212, 0.35);
-  box-shadow: 0 0 6px rgba(0, 245, 212, 0.16);
+  background: rgba(51, 208, 255, 0.12);
+  border-color: rgba(51, 208, 255, 0.35);
+  box-shadow: 0 0 6px rgba(51, 208, 255, 0.16);
 }
 
 .mobileQuickActions {
@@ -97,11 +97,11 @@
   margin-bottom: var(--space-3);
   padding: 12px;
   border-radius: var(--radius-md);
-  border: 1px solid rgba(0, 245, 212, 0.2);
+  border: 1px solid rgba(51, 208, 255, 0.2);
   background: linear-gradient(
     135deg,
-    rgba(0, 245, 212, 0.08),
-    rgba(255, 45, 149, 0.08)
+    rgba(51, 208, 255, 0.08),
+    rgba(255, 95, 143, 0.08)
   );
   display: grid;
   gap: 10px;
@@ -132,7 +132,7 @@
 }
 
 .feedToggle:hover {
-  border-color: rgba(0, 245, 212, 0.42);
+  border-color: rgba(51, 208, 255, 0.42);
 }
 
 .feedPreview {
@@ -181,7 +181,7 @@
 .feedCta {
   padding: 6px 10px;
   border-radius: var(--radius-sm);
-  border: 1px solid rgba(0, 245, 212, 0.35);
+  border: 1px solid rgba(51, 208, 255, 0.35);
   background: rgba(7, 10, 18, 0.74);
   color: #f4feff;
   font-size: 0.7rem;
@@ -193,7 +193,7 @@
 }
 
 .feedCta:hover {
-  border-color: rgba(0, 245, 212, 0.58);
+  border-color: rgba(51, 208, 255, 0.58);
   color: #fff;
 }
 
@@ -226,8 +226,8 @@
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  border: 2px solid rgba(0, 245, 212, 0.35);
-  box-shadow: 0 0 8px rgba(0, 245, 212, 0.14);
+  border: 2px solid rgba(51, 208, 255, 0.35);
+  box-shadow: 0 0 8px rgba(51, 208, 255, 0.14);
   object-fit: cover;
 }
 
@@ -235,13 +235,13 @@
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: rgba(0, 245, 212, 0.12);
+  background: rgba(51, 208, 255, 0.12);
   color: #bffcf0;
   display: grid;
   place-items: center;
   font-weight: 700;
   text-transform: uppercase;
-  border: 1px solid rgba(0, 245, 212, 0.35);
+  border: 1px solid rgba(51, 208, 255, 0.35);
 }
 
 .info {
@@ -283,7 +283,7 @@
   margin-top: 4px;
   padding: 5px 9px;
   border-radius: var(--radius-sm);
-  border: 1px solid rgba(0, 245, 212, 0.35);
+  border: 1px solid rgba(51, 208, 255, 0.35);
   background: rgba(7, 10, 18, 0.62);
   color: #d9fff8;
   font-size: 0.68rem;
@@ -294,7 +294,7 @@
 }
 
 .compareCta:hover {
-  border-color: rgba(0, 245, 212, 0.58);
+  border-color: rgba(51, 208, 255, 0.58);
   color: #ffffff;
 }
 
@@ -307,7 +307,7 @@
 }
 
 .streakWin {
-  color: #9bff2e;
+  color: #7ce3ab;
 }
 
 .streakLoss {
@@ -344,8 +344,8 @@
 
 .socialIcon:hover {
   transform: translateY(-1px);
-  box-shadow: 0 0 8px rgba(0, 245, 212, 0.2);
-  border-color: rgba(0, 245, 212, 0.45);
+  box-shadow: 0 0 8px rgba(51, 208, 255, 0.2);
+  border-color: rgba(51, 208, 255, 0.45);
 }
 
 .socialTwitch:hover {
@@ -359,8 +359,8 @@
 }
 
 .socialTikTok:hover {
-  box-shadow: 0 0 8px rgba(0, 245, 212, 0.3);
-  border-color: rgba(0, 245, 212, 0.65);
+  box-shadow: 0 0 8px rgba(51, 208, 255, 0.3);
+  border-color: rgba(51, 208, 255, 0.65);
 }
 
 .rankRow {
@@ -373,7 +373,7 @@
   width: 26px;
   height: 26px;
   object-fit: contain;
-  filter: drop-shadow(0 0 4px rgba(0, 245, 212, 0.16));
+  filter: drop-shadow(0 0 4px rgba(51, 208, 255, 0.16));
 }
 
 .rankCol {
@@ -388,7 +388,7 @@
   width: 36px;
   height: 36px;
   object-fit: contain;
-  filter: drop-shadow(0 0 5px rgba(0, 245, 212, 0.18));
+  filter: drop-shadow(0 0 5px rgba(51, 208, 255, 0.18));
   opacity: 0.92;
 }
 
@@ -420,7 +420,7 @@
 }
 
 .accept {
-  background: linear-gradient(135deg, #9bff2e, #00f5d4);
+  background: linear-gradient(135deg, #7ce3ab, #33d0ff);
   color: #081016;
 }
 
@@ -464,4 +464,5 @@
     width: 100%;
   }
 }
+
 

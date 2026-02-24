@@ -1,4 +1,4 @@
-.wrapper {
+﻿.wrapper {
   max-width: 1280px;
   margin: 0 auto;
   padding: 22px 18px 36px;
@@ -343,7 +343,7 @@
 }
 
 .statusOk {
-  color: #a3ff12;
+  color: #68e09d;
 }
 
 .statusBad {
@@ -411,8 +411,8 @@
 }
 
 .rankBadge {
-  background: rgba(0, 245, 212, 0.16);
-  border: 1px solid rgba(0, 245, 212, 0.35);
+  background: rgba(51, 208, 255, 0.16);
+  border: 1px solid rgba(51, 208, 255, 0.35);
   color: #8ff9e6;
 }
 
@@ -448,8 +448,8 @@
 }
 
 .rankApprove {
-  background: rgba(163, 255, 18, 0.2);
-  border-color: rgba(163, 255, 18, 0.45);
+  background: rgba(104, 224, 157, 0.2);
+  border-color: rgba(104, 224, 157, 0.45);
   color: #dfff9f;
   padding: 6px 10px;
 }
@@ -672,11 +672,11 @@
 }
 
 .uxMiniSwatchOpen {
-  background: linear-gradient(180deg, #00f5d4, #22c55e);
+  background: linear-gradient(180deg, #33d0ff, #68e09d);
 }
 
 .uxMiniSwatchClick {
-  background: linear-gradient(180deg, #a3ff12, #eab308);
+  background: linear-gradient(180deg, #68e09d, #eab308);
 }
 
 .uxMiniSwatchCtr {
@@ -812,8 +812,8 @@
   font-weight: 900;
   border-radius: 999px;
   padding: 2px 7px;
-  background: rgba(163, 255, 18, 0.18);
-  border: 1px solid rgba(163, 255, 18, 0.4);
+  background: rgba(104, 224, 157, 0.18);
+  border: 1px solid rgba(104, 224, 157, 0.4);
   color: #dfff9f;
 }
 
@@ -915,3 +915,4 @@
     grid-template-columns: 1fr;
   }
 }
+

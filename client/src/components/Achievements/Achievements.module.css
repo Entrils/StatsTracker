@@ -1,4 +1,4 @@
-.wrapper {
+﻿.wrapper {
   display: grid;
   gap: 16px;
 }
@@ -114,10 +114,11 @@
 .barFill {
   height: 100%;
   border-radius: 999px;
-  background: linear-gradient(90deg, #00f5d4, #9bff2e);
+  background: linear-gradient(90deg, #33d0ff, #7ce3ab);
 }
 
 .progressText {
   font-size: 11px;
   color: #9aa4c1;
 }
+

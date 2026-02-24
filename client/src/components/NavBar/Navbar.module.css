@@ -1,4 +1,4 @@
-.navbar {
+﻿.navbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -8,16 +8,12 @@
   overflow: visible;
   width: 100%;
 
-  background: linear-gradient(
-    120deg,
-    rgba(7, 10, 18, 0.95),
-    rgba(16, 22, 36, 0.95)
-  );
-
-  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, rgba(12, 18, 31, 0.95), rgba(15, 23, 40, 0.95));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
   box-shadow:
-    0 10px 26px rgba(0, 0, 0, 0.34),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+    0 12px 28px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .navInner {
@@ -34,15 +30,14 @@
   content: "";
   position: absolute;
   inset: 0;
-  background:
-    linear-gradient(
-      110deg,
-      rgba(0, 245, 212, 0.12) 0%,
-      rgba(0, 245, 212, 0) 35%,
-      rgba(255, 45, 149, 0.14) 70%,
-      rgba(255, 45, 149, 0) 100%
-    );
-  opacity: 0.28;
+  background: linear-gradient(
+    110deg,
+    rgba(51, 208, 255, 0.12) 0%,
+    rgba(51, 208, 255, 0) 40%,
+    rgba(255, 179, 71, 0.14) 78%,
+    rgba(255, 179, 71, 0) 100%
+  );
+  opacity: 0.34;
   pointer-events: none;
   z-index: 0;
   border-radius: inherit;
@@ -51,11 +46,11 @@
 .logo {
   position: relative;
   z-index: 1;
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 800;
   letter-spacing: 1.2px;
   color: #f8fafc;
-  text-transform: uppercase;
+  text-transform: none;
   display: inline-flex;
   align-items: center;
   gap: 10px;
@@ -63,33 +58,40 @@
   border-radius: 0;
   background: none;
   border: none;
-  text-shadow: 0 0 6px rgba(0, 245, 212, 0.18);
+  text-shadow: 0 0 8px rgba(102, 163, 255, 0.16);
 }
 
 .logo span {
-  color: #0b0f1a;
-  padding: 6px 12px;
-  border-radius: 4px;
-  background: linear-gradient(135deg, #ff2d95, #ffb200);
+  color: #101521;
+  padding: 5px 10px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #33d0ff, #ffb347);
   text-shadow: none;
-  box-shadow: 0 0 6px rgba(255, 45, 149, 0.16);
-  transform: skewX(-10deg);
+  box-shadow: 0 0 8px rgba(51, 208, 255, 0.18);
+  transform: skewX(-8deg);
 }
 
 .links {
   display: flex;
-  gap: var(--space-5);
+  gap: 8px;
   position: relative;
   z-index: 1;
+  padding: 5px;
+  border-radius: 10px;
+  background: rgba(8, 12, 22, 0.56);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .link {
   position: relative;
-  font-size: var(--text-md);
-  font-weight: 600;
-  color: #a3acc5;
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: #b2bfda;
   text-decoration: none;
-  transition: color 0.25s ease;
+  transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid transparent;
 }
 
 .linkStack {
@@ -111,20 +113,24 @@
 .link::after {
   content: "";
   position: absolute;
-  left: 0;
-  bottom: -6px;
-  width: 0%;
-  height: 2px;
-  background: linear-gradient(90deg, #00f5d4, #ff2d95);
-  transition: width 0.25s ease;
+  left: 8px;
+  right: 8px;
+  bottom: 4px;
+  width: auto;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(51, 208, 255, 0), rgba(51, 208, 255, 0.7), rgba(255, 179, 71, 0));
+  opacity: 0;
+  transition: opacity 0.2s ease;
 }
 
 .link:hover {
   color: #f8fafc;
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.12);
 }
 
 .link:hover::after {
-  width: 100%;
+  opacity: 1;
 }
 
 .linkLocked {
@@ -139,11 +145,13 @@
 
 .active {
   color: #ffffff;
-  text-shadow: 0 0 6px rgba(0, 245, 212, 0.22);
+  background: rgba(51, 208, 255, 0.16);
+  border-color: rgba(51, 208, 255, 0.34);
+  text-shadow: none;
 }
 
 .active::after {
-  width: 100%;
+  opacity: 1;
 }
 
 .right {
@@ -169,8 +177,8 @@
   gap: 8px;
   padding: 6px 12px;
   border-radius: var(--radius-md);
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(8, 12, 22, 0.66);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   color: #f2f4ff;
   cursor: pointer;
   font-size: var(--text-xs);
@@ -179,8 +187,8 @@
 }
 
 .langToggle:hover {
-  border-color: rgba(0, 245, 212, 0.4);
-  box-shadow: 0 0 8px rgba(0, 245, 212, 0.18);
+  border-color: rgba(51, 208, 255, 0.44);
+  box-shadow: 0 0 8px rgba(51, 208, 255, 0.16);
 }
 
 .langFlagImg {
@@ -247,12 +255,12 @@
 }
 
 .langOption:hover {
-  background: rgba(0, 245, 212, 0.1);
+  background: rgba(51, 208, 255, 0.1);
 }
 
 .langOptionActive {
-  background: rgba(0, 245, 212, 0.16);
-  color: #00f5d4;
+  background: rgba(51, 208, 255, 0.18);
+  color: #7fdfff;
 }
 
 .langLabel {
@@ -346,7 +354,7 @@
 }
 
 .dropdownItem:hover {
-  background: rgba(0, 245, 212, 0.08);
+  background: rgba(51, 208, 255, 0.08);
 }
 
 .burger {
@@ -368,13 +376,13 @@
   display: block;
   width: 18px;
   height: 2px;
-  background: linear-gradient(90deg, #a3ff12, #00f5d4);
-  box-shadow: 0 0 3px rgba(0, 245, 212, 0.14);
+  background: linear-gradient(90deg, #33d0ff, #ffb347);
+  box-shadow: 0 0 3px rgba(51, 208, 255, 0.14);
 }
 
 .burger:hover {
-  border-color: rgba(0, 245, 212, 0.5);
-  box-shadow: 0 0 6px rgba(0, 245, 212, 0.14);
+  border-color: rgba(51, 208, 255, 0.5);
+  box-shadow: 0 0 6px rgba(51, 208, 255, 0.14);
 }
 
 .mobileOverlay {
@@ -465,16 +473,16 @@
   height: 22px;
   padding: 0 6px;
   border-radius: 999px;
-  background: linear-gradient(135deg, #ff2d95, #ffb703);
+  background: linear-gradient(135deg, #ff5f8f, #ffb347);
   color: #080c16;
   font-size: 0.75rem;
   font-weight: 800;
-  box-shadow: 0 0 6px rgba(255, 45, 149, 0.22);
+  box-shadow: 0 0 6px rgba(255, 95, 143, 0.22);
 }
 
 .offcanvasLink:hover {
-  border-color: rgba(0, 245, 212, 0.5);
-  box-shadow: 0 0 8px rgba(0, 245, 212, 0.18);
+  border-color: rgba(51, 208, 255, 0.5);
+  box-shadow: 0 0 8px rgba(51, 208, 255, 0.18);
 }
 
 .offcanvasLocked {
@@ -503,7 +511,7 @@
 }
 
 .offcanvasMoreToggle:hover {
-  border-color: rgba(0, 245, 212, 0.5);
+  border-color: rgba(51, 208, 255, 0.5);
 }
 
 .offcanvasMoreChevron {
@@ -540,8 +548,8 @@
   padding: 10px 12px;
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  background: linear-gradient(135deg, #a3ff12, #00f5d4);
-  color: #081016;
+  background: linear-gradient(135deg, #33d0ff, #ffb347);
+  color: #101521;
   font-weight: 800;
   cursor: pointer;
 }
@@ -615,8 +623,8 @@
 
   .quickLinkActive {
     color: #ffffff;
-    border-color: rgba(0, 245, 212, 0.55);
-    box-shadow: 0 0 10px rgba(0, 245, 212, 0.2);
+    border-color: rgba(51, 208, 255, 0.55);
+    box-shadow: 0 0 10px rgba(51, 208, 255, 0.2);
   }
 
   .quickLabel {
@@ -634,14 +642,14 @@
     height: 18px;
     padding: 0 5px;
     border-radius: 999px;
-    background: linear-gradient(135deg, #ff2d95, #ffb703);
+    background: linear-gradient(135deg, #ff5f8f, #ffb347);
     color: #080c16;
     font-size: 0.62rem;
     font-weight: 800;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 0 6px rgba(255, 45, 149, 0.22);
+    box-shadow: 0 0 6px rgba(255, 95, 143, 0.22);
   }
 }
 
@@ -655,3 +663,4 @@
     letter-spacing: 0.4px;
   }
 }
+

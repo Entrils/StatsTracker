@@ -1,4 +1,4 @@
-.wrapper {
+﻿.wrapper {
   max-width: none;
   width: 100%;
   margin: 0 auto;
@@ -25,11 +25,11 @@
   gap: 10px;
   padding: 10px 12px;
   border-radius: var(--radius-md);
-  border: 1px solid rgba(163, 255, 18, 0.28);
+  border: 1px solid rgba(104, 224, 157, 0.28);
   background: linear-gradient(
     120deg,
-    rgba(163, 255, 18, 0.08),
-    rgba(0, 245, 212, 0.08)
+    rgba(104, 224, 157, 0.08),
+    rgba(51, 208, 255, 0.08)
   );
 }
 
@@ -62,7 +62,7 @@
 .goalCta {
   padding: 7px 10px;
   border-radius: var(--radius-sm);
-  border: 1px solid rgba(163, 255, 18, 0.38);
+  border: 1px solid rgba(104, 224, 157, 0.38);
   background: rgba(7, 10, 18, 0.76);
   color: #f4feff;
   font-size: var(--text-xs);
@@ -73,7 +73,7 @@
 }
 
 .goalCta:hover {
-  border-color: rgba(163, 255, 18, 0.62);
+  border-color: rgba(104, 224, 157, 0.62);
   color: #ffffff;
 }
 
@@ -81,10 +81,10 @@
   margin: 0 0 10px;
   padding: 10px 12px;
   border-radius: var(--radius-md);
-  border: 1px solid rgba(0, 245, 212, 0.22);
+  border: 1px solid rgba(51, 208, 255, 0.22);
   background: linear-gradient(
     140deg,
-    rgba(0, 245, 212, 0.07),
+    rgba(51, 208, 255, 0.07),
     rgba(43, 230, 203, 0.04)
   );
   display: grid;
@@ -113,7 +113,7 @@
 .weeklyDigestCta {
   margin-top: 4px;
   justify-self: start;
-  border: 1px solid rgba(0, 245, 212, 0.35);
+  border: 1px solid rgba(51, 208, 255, 0.35);
   background: rgba(8, 12, 22, 0.72);
   color: #f3fbff;
   border-radius: 10px;
@@ -125,7 +125,7 @@
 }
 
 .weeklyDigestCta:hover {
-  border-color: rgba(0, 245, 212, 0.55);
+  border-color: rgba(51, 208, 255, 0.55);
 }
 
 .weeklyDigestGrid {
@@ -167,7 +167,7 @@
 }
 
 .weeklyDigestDeltaUp {
-  color: #a3ff12;
+  color: #68e09d;
 }
 
 .weeklyDigestDeltaDown {
@@ -301,10 +301,10 @@
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  border: 2px solid rgba(0, 245, 212, 0.35);
+  border: 2px solid rgba(51, 208, 255, 0.35);
   box-shadow:
-    0 0 8px rgba(0, 245, 212, 0.16),
-    0 0 12px rgba(255, 45, 149, 0.12);
+    0 0 8px rgba(51, 208, 255, 0.16),
+    0 0 12px rgba(255, 95, 143, 0.12);
   object-fit: cover;
 }
 
@@ -317,7 +317,7 @@
   letter-spacing: 0.3px;
   margin: var(--space-2) 0 var(--space-4);
   text-transform: uppercase;
-  text-shadow: 0 0 10px rgba(0, 245, 212, 0.24);
+  text-shadow: 0 0 10px rgba(51, 208, 255, 0.24);
 }
 
 .shareButton {
@@ -335,7 +335,7 @@
 }
 
 .shareButton:hover {
-  border-color: rgba(0, 245, 212, 0.38);
+  border-color: rgba(51, 208, 255, 0.38);
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
   color: #fff;
 }
@@ -355,8 +355,8 @@
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.6px;
-  background: rgba(0, 245, 212, 0.18);
-  border: 1px solid rgba(0, 245, 212, 0.35);
+  background: rgba(51, 208, 255, 0.18);
+  border: 1px solid rgba(51, 208, 255, 0.35);
   color: #bffcf0;
 }
 
@@ -392,11 +392,11 @@
   margin-top: 6px;
   padding: 8px;
   border-radius: 12px;
-  border: 1px solid rgba(0, 245, 212, 0.2);
+  border: 1px solid rgba(51, 208, 255, 0.2);
   background: linear-gradient(
     135deg,
-    rgba(0, 245, 212, 0.08),
-    rgba(255, 45, 149, 0.08)
+    rgba(51, 208, 255, 0.08),
+    rgba(255, 95, 143, 0.08)
   );
   display: grid;
   gap: 6px;
@@ -426,7 +426,7 @@
 }
 
 .feedToggle:hover {
-  border-color: rgba(0, 245, 212, 0.4);
+  border-color: rgba(51, 208, 255, 0.4);
 }
 
 .feedPreview {
@@ -464,7 +464,7 @@
 }
 
 .feedItem:hover {
-  border-color: rgba(0, 245, 212, 0.38);
+  border-color: rgba(51, 208, 255, 0.38);
   background: rgba(8, 14, 24, 0.78);
 }
 
@@ -492,8 +492,8 @@
 }
 
 .compareSelect:focus-visible {
-  border-color: rgba(0, 245, 212, 0.55);
-  box-shadow: 0 0 0 3px rgba(0, 245, 212, 0.2);
+  border-color: rgba(51, 208, 255, 0.55);
+  box-shadow: 0 0 0 3px rgba(51, 208, 255, 0.2);
 }
 
 .statsGrid {
@@ -613,8 +613,8 @@
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, #00f5d4, #a3ff12);
-  box-shadow: 0 0 6px rgba(0, 245, 212, 0.2);
+  background: linear-gradient(90deg, #33d0ff, #68e09d);
+  box-shadow: 0 0 6px rgba(51, 208, 255, 0.2);
 }
 
 .statCard {
@@ -639,7 +639,7 @@
   top: 0;
   bottom: 0;
   width: 3px;
-  background: linear-gradient(180deg, #00f5d4, #ff2d95);
+  background: linear-gradient(180deg, #33d0ff, #ff5f8f);
   opacity: 0.4;
 }
 
@@ -648,8 +648,8 @@
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(120px 80px at 15% 0%, rgba(0, 245, 212, 0.16), transparent 65%),
-    radial-gradient(140px 90px at 90% 20%, rgba(255, 45, 149, 0.14), transparent 70%);
+    radial-gradient(120px 80px at 15% 0%, rgba(51, 208, 255, 0.16), transparent 65%),
+    radial-gradient(140px 90px at 90% 20%, rgba(255, 95, 143, 0.14), transparent 70%);
   opacity: 0.35;
   pointer-events: none;
 }
@@ -680,18 +680,18 @@
 }
 
 .statWin {
-  border-color: rgba(0, 245, 212, 0.35);
-  box-shadow: 0 0 10px rgba(0, 245, 212, 0.1);
+  border-color: rgba(51, 208, 255, 0.35);
+  box-shadow: 0 0 10px rgba(51, 208, 255, 0.1);
 }
 
 .statLoss {
-  border-color: rgba(255, 45, 149, 0.35);
-  box-shadow: 0 0 10px rgba(255, 45, 149, 0.1);
+  border-color: rgba(255, 95, 143, 0.35);
+  box-shadow: 0 0 10px rgba(255, 95, 143, 0.1);
 }
 
 .statRate {
-  border-color: rgba(163, 255, 18, 0.35);
-  box-shadow: 0 0 10px rgba(163, 255, 18, 0.1);
+  border-color: rgba(104, 224, 157, 0.35);
+  box-shadow: 0 0 10px rgba(104, 224, 157, 0.1);
 }
 
 .statLabel {
@@ -725,8 +725,8 @@
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, rgba(0, 245, 212, 0.8), rgba(255, 45, 149, 0.9));
-  box-shadow: 0 0 6px rgba(0, 245, 212, 0.18);
+  background: linear-gradient(90deg, rgba(51, 208, 255, 0.8), rgba(255, 95, 143, 0.9));
+  box-shadow: 0 0 6px rgba(51, 208, 255, 0.18);
 }
 
 .statSpark {
@@ -741,7 +741,7 @@
   fill: none;
   stroke: rgba(255, 255, 255, 0.85);
   stroke-width: 2;
-  filter: drop-shadow(0 0 3px rgba(0, 245, 212, 0.2));
+  filter: drop-shadow(0 0 3px rgba(51, 208, 255, 0.2));
 }
 .statHero {
   grid-column: span 2;
@@ -801,10 +801,10 @@
 }
 
 .card:hover {
-  border-color: rgba(0, 245, 212, 0.2);
+  border-color: rgba(51, 208, 255, 0.2);
   box-shadow:
     var(--shadow-strong),
-    0 0 0 1px rgba(0, 245, 212, 0.06) inset;
+    0 0 0 1px rgba(51, 208, 255, 0.06) inset;
 }
 
 .cardTitle {
@@ -895,13 +895,13 @@
 }
 
 .good {
-  border-color: rgba(0, 245, 212, 0.45);
-  background: rgba(0, 245, 212, 0.08);
+  border-color: rgba(51, 208, 255, 0.45);
+  background: rgba(51, 208, 255, 0.08);
 }
 
 .bad {
-  border-color: rgba(255, 45, 149, 0.45);
-  background: rgba(255, 45, 149, 0.08);
+  border-color: rgba(255, 95, 143, 0.45);
+  background: rgba(255, 95, 143, 0.08);
 }
 
 .hint {
@@ -978,7 +978,7 @@
 
 .activityCell:hover .activityDot {
   transform: scale(1.2);
-  box-shadow: 0 0 16px rgba(0, 245, 212, 0.35);
+  box-shadow: 0 0 16px rgba(51, 208, 255, 0.35);
 }
 
 .activityTooltip {
@@ -1115,7 +1115,7 @@
 }
 
 .chartLineActive {
-  filter: drop-shadow(0 0 4px rgba(0, 245, 212, 0.4));
+  filter: drop-shadow(0 0 4px rgba(51, 208, 255, 0.4));
 }
 
 .socialsGrid {
@@ -1148,13 +1148,13 @@
 }
 
 .socialInput:focus {
-  border-color: rgba(0, 245, 212, 0.45);
-  box-shadow: 0 0 0 2px rgba(0, 245, 212, 0.15);
+  border-color: rgba(51, 208, 255, 0.45);
+  box-shadow: 0 0 0 2px rgba(51, 208, 255, 0.15);
 }
 
 .socialInput:focus-visible {
-  border-color: rgba(0, 245, 212, 0.55);
-  box-shadow: 0 0 0 3px rgba(0, 245, 212, 0.2);
+  border-color: rgba(51, 208, 255, 0.55);
+  box-shadow: 0 0 0 3px rgba(51, 208, 255, 0.2);
 }
 
 .socialsActions {
@@ -1168,15 +1168,15 @@
   padding: 10px 18px;
   border-radius: 10px;
   font-weight: 800;
-  background: linear-gradient(135deg, #a3ff12, #00f5d4);
+  background: linear-gradient(135deg, #68e09d, #33d0ff);
   color: #081016;
-  box-shadow: 0 0 10px rgba(0, 245, 212, 0.2);
+  box-shadow: 0 0 10px rgba(51, 208, 255, 0.2);
   transition: box-shadow 0.2s ease, filter 0.2s ease;
 }
 
 .saveBtn:hover:not(:disabled) {
   filter: brightness(1.03);
-  box-shadow: 0 0 14px rgba(0, 245, 212, 0.26);
+  box-shadow: 0 0 14px rgba(51, 208, 255, 0.26);
 }
 
 .saveBtn:disabled {
@@ -1368,7 +1368,7 @@
 }
 
 .table tbody tr:hover {
-  background: rgba(0, 245, 212, 0.12);
+  background: rgba(51, 208, 255, 0.12);
 }
 
 .table tbody tr:last-child td {
@@ -1605,11 +1605,11 @@
 }
 
 .good {
-  color: #a3ff12 !important;
+  color: #68e09d !important;
 }
 
 .bad {
-  color: #ff2d95 !important;
+  color: #ff5f8f !important;
 }
 
 .smallNote {
@@ -1954,8 +1954,8 @@
 .rankEloValue {
   font-size: 1rem;
   font-weight: 900;
-  color: #a3ff12;
-  text-shadow: 0 0 8px rgba(163, 255, 18, 0.28);
+  color: #68e09d;
+  text-shadow: 0 0 8px rgba(104, 224, 157, 0.28);
 }
 
 .rankItem {
@@ -2046,3 +2046,4 @@
   color: #ff4d5e;
   text-shadow: 0 0 8px rgba(255, 77, 94, 0.32);
 }
+

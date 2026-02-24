@@ -1,4 +1,4 @@
-.wrapper {
+﻿.wrapper {
   max-width: var(--content-max);
   margin: 0 auto;
   padding: var(--space-6) var(--space-4) calc(var(--space-6) * 2);
@@ -47,7 +47,7 @@
   font-weight: 800;
   letter-spacing: 0.4px;
   text-transform: uppercase;
-  text-shadow: 0 0 10px rgba(0, 245, 212, 0.24);
+  text-shadow: 0 0 10px rgba(51, 208, 255, 0.24);
 }
 
 .subtitle {
@@ -162,3 +162,4 @@
     display: none;
   }
 }
+

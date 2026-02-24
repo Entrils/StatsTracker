@@ -1,4 +1,4 @@
-.wrapper {
+﻿.wrapper {
   padding: var(--space-6) var(--space-5);
   display: grid;
   gap: var(--space-4);
@@ -17,7 +17,7 @@
 }
 
 .backLink {
-  color: #9fffea;
+  color: #9fdfff;
   text-decoration: none;
   font-size: var(--text-sm);
 }
@@ -494,7 +494,7 @@
 
 .finalMapScore {
   text-align: center;
-  color: #9fffea;
+  color: #9fdfff;
   font-weight: 700;
 }
 
@@ -581,7 +581,7 @@
 
 .turnTimer {
   margin: 6px 0 0;
-  color: #9fffea;
+  color: #9fdfff;
   font-weight: 700;
   text-align: center;
 }
@@ -773,3 +773,4 @@
     bottom: 12px;
   }
 }
+

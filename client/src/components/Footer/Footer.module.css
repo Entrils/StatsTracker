@@ -1,4 +1,4 @@
-.footer {
+﻿.footer {
   margin-top: auto;
   padding: var(--space-2) var(--space-3) var(--space-1);
   text-align: center;
@@ -22,8 +22,8 @@
   text-transform: uppercase;
   margin-bottom: var(--space-1);
   text-shadow:
-    0 0 16px rgba(0, 245, 212, 0.35),
-    0 0 26px rgba(255, 45, 149, 0.2);
+    0 0 16px rgba(51, 208, 255, 0.35),
+    0 0 26px rgba(255, 95, 143, 0.2);
 }
 
 .copy {
@@ -56,3 +56,4 @@
 .sep {
   color: var(--text-muted);
 }
+
