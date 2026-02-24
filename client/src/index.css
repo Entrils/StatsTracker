@@ -9,11 +9,19 @@
     --bg-card: rgba(9, 12, 24, 0.78);
     --bg-glass: rgba(12, 16, 30, 0.64);
 
+    --surface-1: rgba(9, 12, 24, 0.82);
+    --surface-2: rgba(12, 16, 30, 0.74);
+    --surface-3: rgba(16, 22, 38, 0.68);
+
     --border-soft: rgba(255, 255, 255, 0.08);
     --border-strong: rgba(0, 245, 212, 0.24);
+    --border-muted: rgba(255, 255, 255, 0.12);
 
     --text-main: #f3f6ff;
     --text-muted: #a9b4cd;
+    --text-1: #f3f6ff;
+    --text-2: #c7d3ea;
+    --text-3: #93a1be;
     --content-max: 1160px;
     --content-max-narrow: 960px;
 
@@ -34,16 +42,24 @@
     --text-md: 1rem;
     --text-lg: 1.25rem;
     --text-xl: 1.625rem;
+    --heading-1: clamp(1.65rem, 2.6vw, 2.1rem);
+    --heading-2: clamp(1.2rem, 1.7vw, 1.5rem);
+    --heading-3: clamp(1.02rem, 1.2vw, 1.15rem);
 
     --btn-primary-bg: linear-gradient(135deg, #a3ff12, #2be6cb);
     --btn-primary-fg: #081016;
-    --btn-secondary-bg: rgba(8, 12, 22, 0.78);
-    --btn-secondary-fg: #eaf0ff;
-    --btn-secondary-border: rgba(255, 255, 255, 0.14);
+    --btn-secondary-bg: var(--surface-2);
+    --btn-secondary-fg: var(--text-1);
+    --btn-secondary-border: var(--border-muted);
     --btn-danger-bg: rgba(255, 77, 109, 0.16);
     --btn-danger-fg: #ff7f97;
     --btn-danger-border: rgba(255, 77, 109, 0.42);
-    --btn-focus-ring: 0 0 0 2px rgba(43, 230, 203, 0.28);
+    --btn-focus-ring: 0 0 0 2px rgba(43, 230, 203, 0.22);
+
+    --accent-data: #2be6cb;
+    --accent-success: #9eea38;
+    --accent-danger: #ff4d6d;
+    --accent-warning: #f1b34a;
 
     --neon-cyan: #2be6cb;
     --neon-lime: #9eea38;
@@ -52,7 +68,7 @@
     --neon-blue: #4cc9f0;
 
     --shadow-strong: 0 14px 34px rgba(0, 0, 0, 0.45);
-    --shadow-glow: 0 0 16px rgba(0, 245, 212, 0.16);
+    --shadow-glow: 0 0 10px rgba(0, 245, 212, 0.1);
     --shadow-card: 0 10px 24px rgba(0, 0, 0, 0.34);
 
     --control-size-sm: 32px;
@@ -151,16 +167,32 @@
   h4,
   h5 {
     font-family:
-      "Oxanium",
-      "Noto Sans",
-      "Segoe UI",
-      sans-serif;
+    "Oxanium",
+    "Noto Sans",
+    "Segoe UI",
+    sans-serif;
     font-weight: 700;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.02em;
+    line-height: 1.2;
+    margin: 0;
+  }
+
+  h1 {
+    font-size: var(--heading-1);
+  }
+
+  h2 {
+    font-size: var(--heading-2);
+  }
+
+  h3 {
+    font-size: var(--heading-3);
   }
 
   p {
     line-height: 1.6;
+    margin: 0;
+    color: var(--text-2);
   }
 
   a {

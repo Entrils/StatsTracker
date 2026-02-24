@@ -1,4 +1,12 @@
 describe("Visual Smoke", () => {
+  const BREAKPOINTS = [
+    { name: "360", width: 360, height: 780 },
+    { name: "390", width: 390, height: 844 },
+    { name: "768", width: 768, height: 1024 },
+    { name: "1024", width: 1024, height: 768 },
+    { name: "1440", width: 1440, height: 900 },
+  ];
+
   function mockSharedApis() {
     cy.intercept("GET", "**/healthz", {
       statusCode: 200,
@@ -98,42 +106,102 @@ describe("Visual Smoke", () => {
     }).as("tournaments");
   }
 
-  it("desktop key pages render without layout break", () => {
-    cy.viewport(1440, 900);
+  function assertNoBodyOverflow() {
+    cy.window().then((win) => {
+      const doc = win.document.documentElement;
+      if (doc.scrollWidth > win.innerWidth + 2) {
+        throw new Error(
+          `Horizontal overflow detected: scrollWidth=${doc.scrollWidth}, innerWidth=${win.innerWidth}`,
+        );
+      }
+    });
+  }
+
+  it("renders key pages across target breakpoints", () => {
     mockSharedApis();
 
-    cy.visit("/players");
-    cy.wait("@leaderboard");
-    cy.contains("Alpha").should("be.visible");
-    cy.screenshot("visual-desktop-players");
+    BREAKPOINTS.forEach((bp) => {
+      cy.viewport(bp.width, bp.height);
 
-    cy.visit("/player/p1");
-    cy.wait("@player");
-    cy.contains("Alpha").should("be.visible");
-    cy.screenshot("visual-desktop-player-profile");
+      cy.visit("/players");
+      cy.wait("@leaderboard");
+      cy.contains("Alpha").should("be.visible");
+      assertNoBodyOverflow();
+      cy.screenshot(`visual-${bp.name}-players`);
 
-    cy.visit("/tournaments");
-    cy.wait("@tournaments");
-    cy.contains("Winter Cup").should("be.visible");
-    cy.screenshot("visual-desktop-tournaments");
-
-    cy.visit("/help");
-    cy.contains("FragPunk").should("be.visible");
-    cy.screenshot("visual-desktop-help");
+      cy.visit("/tournaments");
+      cy.wait("@tournaments");
+      cy.contains("Winter Cup").should("be.visible");
+      assertNoBodyOverflow();
+      cy.screenshot(`visual-${bp.name}-tournaments`);
+    });
   });
 
-  it("mobile key pages render without major overlap", () => {
-    cy.viewport(390, 844);
-    mockSharedApis();
+  it("keeps consistent loading/empty/error/success states", () => {
+    cy.viewport(1024, 768);
+    let mode = "success";
 
-    cy.visit("/players");
-    cy.wait("@leaderboard");
-    cy.get("[data-cy='mobile-quick-nav']").should("be.visible");
-    cy.screenshot("visual-mobile-players");
+    cy.intercept("GET", "**/healthz", {
+      statusCode: 200,
+      body: { ok: true, ts: Date.now() },
+    });
 
+    cy.intercept("GET", "**/tournaments*", (req) => {
+      if (mode === "loading") {
+        req.reply({
+          delay: 1200,
+          statusCode: 200,
+          body: { rows: [], total: 0 },
+        });
+        return;
+      }
+      if (mode === "empty") {
+        req.reply({ statusCode: 200, body: { rows: [], total: 0 } });
+        return;
+      }
+      if (mode === "error") {
+        req.reply({ statusCode: 500, body: { error: "boom" } });
+        return;
+      }
+      req.reply({
+        statusCode: 200,
+        body: {
+          rows: [
+            {
+              id: "tour-1",
+              title: "Winter Cup",
+              status: "upcoming",
+              teamFormat: "5x5",
+              startsAt: Date.now() + 3600000,
+              registeredTeams: 4,
+              maxTeams: 16,
+              requirements: { minElo: 0, minMatches: 0 },
+              prizePool: "$500",
+            },
+          ],
+          total: 1,
+        },
+      });
+    }).as("tournamentsState");
+
+    mode = "loading";
     cy.visit("/tournaments");
-    cy.wait("@tournaments");
+    cy.get("[data-cy='state-message'][data-tone='loading']").should("be.visible");
+    cy.wait("@tournamentsState");
+
+    mode = "empty";
+    cy.visit("/tournaments");
+    cy.wait("@tournamentsState");
+    cy.get("[data-cy='state-message'][data-tone='empty']").should("be.visible");
+
+    mode = "error";
+    cy.visit("/tournaments");
+    cy.wait("@tournamentsState");
+    cy.get("[data-cy='state-message'][data-tone='error']").should("be.visible");
+
+    mode = "success";
+    cy.visit("/tournaments");
+    cy.wait("@tournamentsState");
     cy.contains("Winter Cup").should("be.visible");
-    cy.screenshot("visual-mobile-tournaments");
   });
 });

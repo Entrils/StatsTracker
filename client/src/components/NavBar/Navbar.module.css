@@ -482,6 +482,54 @@
   box-shadow: none;
 }
 
+.offcanvasMore {
+  display: grid;
+  gap: 8px;
+}
+
+.offcanvasMoreToggle {
+  width: 100%;
+  font-size: var(--text-md);
+  font-weight: 700;
+  color: #d7def4;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(7, 10, 18, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+}
+
+.offcanvasMoreToggle:hover {
+  border-color: rgba(0, 245, 212, 0.5);
+}
+
+.offcanvasMoreChevron {
+  font-size: 10px;
+  opacity: 0.75;
+  transition: transform 0.2s ease;
+}
+
+.offcanvasMoreChevronOpen {
+  transform: rotate(180deg);
+}
+
+.offcanvasMoreList {
+  display: none;
+  gap: 8px;
+}
+
+.offcanvasMoreListOpen {
+  display: grid;
+}
+
+.offcanvasSubLink {
+  padding-left: 18px;
+  font-size: var(--text-sm);
+}
+
 .offcanvasActions {
   display: flex;
   flex-direction: column;

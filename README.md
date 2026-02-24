@@ -90,6 +90,28 @@ npm run dev
 Сервер (`server/`):
 - `npm test` - тесты роутов и логики API
 
+## Design QA (smoke)
+
+Дизайн-регрессия проверяется через Cypress-спеку:
+- `client/cypress/e2e/visual-smoke.cy.js`
+
+Покрытие:
+- брейкпоинты `360`, `390`, `768`, `1024`, `1440`
+- ключевые страницы: `Players`, `Tournaments`
+- базовые UI-состояния: `loading`, `empty`, `error`, `success`
+- проверка на критичный горизонтальный overflow body
+
+Как обновлять скриншоты "до/после":
+1. Запустить `cd client && npm run cy:run -- --spec cypress/e2e/visual-smoke.cy.js`
+2. Забрать артефакты из `client/cypress/screenshots/`
+3. Добавить скриншоты в PR/документацию (папки `before`/`after`)
+
+Smoke-checklist перед релизом:
+1. На мобильном нет наложения навигации и CTA.
+2. Таблицы/карточки не вызывают горизонтальный скролл всей страницы.
+3. На `Players` и `Tournaments` читается главный фокус экрана за 2-3 секунды.
+4. Состояния `loading/empty/error/success` визуально консистентны.
+
 ## Примечание
 
 - Это фанатский неофициальный проект.

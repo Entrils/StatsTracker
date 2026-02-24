@@ -51,11 +51,11 @@
 .primary {
   color: var(--btn-primary-fg);
   background: var(--btn-primary-bg);
-  border-color: rgba(163, 255, 18, 0.35);
+  border-color: rgba(158, 234, 56, 0.35);
 }
 
 .primary:hover:not(:disabled) {
-  filter: brightness(1.03);
+  filter: brightness(1.02);
 }
 
 .secondary {
@@ -65,8 +65,8 @@
 }
 
 .secondary:hover:not(:disabled) {
-  border-color: rgba(43, 230, 203, 0.45);
-  filter: brightness(1.03);
+  border-color: rgba(43, 230, 203, 0.42);
+  filter: brightness(1.02);
 }
 
 .danger {
@@ -76,5 +76,5 @@
 }
 
 .danger:hover:not(:disabled) {
-  filter: brightness(1.03);
+  filter: brightness(1.02);
 }

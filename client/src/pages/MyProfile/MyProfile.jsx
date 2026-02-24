@@ -793,34 +793,6 @@ export default function MyProfile() {
         shareStatus={shareStatus}
         banInfo={banInfo}
       />
-      {!!nextGoal && (
-        <section className={styles.goalCard}>
-          <div className={styles.goalMeta}>
-            <p className={styles.goalTitle}>
-              {t.me?.goalSectionTitle || "Next best action"}
-            </p>
-            <p className={styles.goalHeadline}>{nextGoal.title}</p>
-            <p className={styles.goalText}>{nextGoal.text}</p>
-          </div>
-          <Link
-            to={nextGoal.href}
-            className={styles.goalCta}
-            onClick={() => {
-              if (!uid || !nextGoal?.key) return;
-              trackUxEvent("goal_engine_click", {
-                meta: {
-                  source: "my_profile",
-                  uid,
-                  goalKey: String(nextGoal.key),
-                  href: String(nextGoal.href || ""),
-                },
-              });
-            }}
-          >
-            {nextGoal.cta}
-          </Link>
-        </section>
-      )}
       <div className={styles.tabsRow}>
         {[
           { id: "overview", label: t.me?.tabOverview || "Overview" },
@@ -840,22 +812,6 @@ export default function MyProfile() {
           </button>
         ))}
       </div>
-      <div className={styles.mobileQuickActions}>
-        <Link to="/upload" className={styles.mobileQuickBtn}>
-          {t.nav?.upload || "Upload"}
-        </Link>
-        <Link to="/friends" className={styles.mobileQuickBtn}>
-          {t.nav?.friends || "Friends"}
-        </Link>
-        <button
-          type="button"
-          className={styles.mobileQuickBtn}
-          onClick={() => setActiveTab("friends")}
-        >
-          {t.me?.tabFriends || "VS Friends"}
-        </button>
-      </div>
-
       <div className={styles.profileLayout}>
         <aside className={styles.sidebarColumn}>
           <div className={styles.sidebarSlot}>
@@ -875,6 +831,34 @@ export default function MyProfile() {
         <section className={styles.mainColumn}>
           {activeTab === "overview" && (
             <>
+              {!!nextGoal && (
+                <section className={styles.goalCard}>
+                  <div className={styles.goalMeta}>
+                    <p className={styles.goalTitle}>
+                      {t.me?.goalSectionTitle || "Next best action"}
+                    </p>
+                    <p className={styles.goalHeadline}>{nextGoal.title}</p>
+                    <p className={styles.goalText}>{nextGoal.text}</p>
+                  </div>
+                  <Link
+                    to={nextGoal.href}
+                    className={styles.goalCta}
+                    onClick={() => {
+                      if (!uid || !nextGoal?.key) return;
+                      trackUxEvent("goal_engine_click", {
+                        meta: {
+                          source: "my_profile",
+                          uid,
+                          goalKey: String(nextGoal.key),
+                          href: String(nextGoal.href || ""),
+                        },
+                      });
+                    }}
+                  >
+                    {nextGoal.cta}
+                  </Link>
+                </section>
+              )}
               <OverviewSection
                 t={t}
                 summary={summary}

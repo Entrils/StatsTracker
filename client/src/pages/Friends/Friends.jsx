@@ -339,18 +339,6 @@ export default function Friends() {
             </Button>
           </div>
         </div>
-        <div className={styles.mobileQuickActions}>
-          <Link to="/players" className={styles.mobileQuickBtn}>
-            {t.nav?.players || "Players"}
-          </Link>
-          <Link to="/me" className={styles.mobileQuickBtn}>
-            {t.nav?.myProfile || "My profile"}
-          </Link>
-          <Link to="/upload" className={styles.mobileQuickBtn}>
-            {t.nav?.upload || "Upload"}
-          </Link>
-        </div>
-
         {tab === "friends" && activityFeed.length > 0 ? (
           <div className={styles.feedCard}>
             <button

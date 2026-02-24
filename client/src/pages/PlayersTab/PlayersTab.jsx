@@ -6,7 +6,6 @@ import PageState from "@/components/StateMessage/PageState";
 import TrustMetaBar from "@/components/TrustMetaBar/TrustMetaBar";
 import Button from "@/components/ui/Button";
 import { useLang } from "@/i18n/LanguageContext";
-import { useAuth } from "@/auth/AuthContext";
 import { dedupedJsonRequest } from "@/utils/network/dedupedFetch";
 import { trackUxEvent } from "@/utils/analytics/trackUxEvent";
 
@@ -23,7 +22,6 @@ const LAST_FILTER_STORAGE_KEY = "players_last_filter_v1";
 
 export default function PlayersTab() {
   const { t } = useLang();
-  const { user } = useAuth();
 
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
   const [rawRows, setRawRows] = useState([]);
@@ -282,7 +280,7 @@ export default function PlayersTab() {
           .replace("{elo}", String(Math.round(Number(newcomers.elo || 0)))),
       });
     }
-    return items.slice(0, 3);
+    return items.slice(0, 2);
   }, [filteredAndSorted, t.leaderboard]);
 
   const trustMeta = useMemo(() => {
@@ -340,35 +338,6 @@ export default function PlayersTab() {
             <strong>{steamOnline.toLocaleString()}</strong>
           </p>
         )}
-        <div
-          className={`${styles.mobileQuickActions} ${
-            user ? "" : styles.mobileQuickActionsGuest
-          }`}
-        >
-          {user ? (
-            <>
-              <Link to="/upload" className={styles.mobileQuickBtn}>
-                {t.nav?.upload || "Upload"}
-              </Link>
-              <Link to="/tournaments" className={styles.mobileQuickBtn}>
-                {t.nav?.tournaments || "Tournaments"}
-              </Link>
-              <Link to="/me" className={styles.mobileQuickBtn}>
-                {t.nav?.myProfile || "My profile"}
-              </Link>
-            </>
-          ) : (
-            <>
-              <Link to="/tournaments" className={styles.mobileQuickBtn}>
-                {t.nav?.tournaments || "Tournaments"}
-              </Link>
-              <Link to="/help" className={styles.mobileQuickBtn}>
-                {t.nav?.help || "Help"}
-              </Link>
-            </>
-          )}
-        </div>
-
         <div className={styles.controls}>
           <input
             type="text"
@@ -732,12 +701,14 @@ export default function PlayersTab() {
                   <Link to={`/player/${p.uid}`} className={styles.mobileCta}>
                     {t.leaderboard?.openProfile || "Player Profile"}
                   </Link>
-                  <div className={styles.mobileMeta}>
+                  <div className={styles.mobileMetaPrimary}>
                     <span>{t.leaderboard.elo || "ELO"}: {Math.round(p.elo || 0)}</span>
-                    <span>{t.leaderboard.matches || "Matches"}: {p.matches}</span>
                     <span>{t.leaderboard.winrate || "Winrate"}: {p.winrate.toFixed(1)}%</span>
-                    <span>{t.leaderboard.avgScore || "Avg score"}: {Math.round(p.avgScore)}</span>
                     <span>{t.leaderboard.kda || "KDA"}: {p.kda.toFixed(2)}</span>
+                  </div>
+                  <div className={styles.mobileMetaSecondary}>
+                    <span>{t.leaderboard.matches || "Matches"}: {p.matches}</span>
+                    <span>{t.leaderboard.avgScore || "Avg score"}: {Math.round(p.avgScore)}</span>
                   </div>
                 </article>
               );

@@ -1,7 +1,6 @@
 .card {
-  background: var(--bg-card);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--surface-1);
+  border: 1px solid var(--border-soft);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-strong);
+  box-shadow: var(--shadow-card);
 }
-

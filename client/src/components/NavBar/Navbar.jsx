@@ -17,6 +17,7 @@ export default function Navbar() {
   const [open, setOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
+  const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
   const [friendRequests, setFriendRequests] = useState(0);
   const dropdownRef = useRef(null);
   const langRef = useRef(null);
@@ -123,6 +124,7 @@ export default function Navbar() {
   const closeMobile = () => {
     setMobileOpen(false);
     setLangOpen(false);
+    setMobileMoreOpen(false);
   };
 
   const languages = [
@@ -140,10 +142,8 @@ export default function Navbar() {
   const isTournamentsActive = location.pathname.startsWith("/tournaments");
   const isUploadActive = location.pathname.startsWith("/upload");
   const isHelpActive = location.pathname.startsWith("/help");
-  const isFriendsActive = location.pathname.startsWith("/friends");
   const mobileQuickItems = user
     ? [
-        { key: "upload", to: "/upload", label: t.nav.upload || "Upload", active: isUploadActive },
         { key: "players", to: "/players", label: t.nav.players || "Players", active: isPlayersActive },
         {
           key: "tournaments",
@@ -151,13 +151,7 @@ export default function Navbar() {
           label: tournamentsLabel,
           active: isTournamentsActive,
         },
-        {
-          key: "friends",
-          to: "/friends",
-          label: t.nav.friends || "Friends",
-          active: isFriendsActive,
-          badge: friendRequests > 0 ? friendRequests : 0,
-        },
+        { key: "upload", to: "/upload", label: t.nav.upload || "Upload", active: isUploadActive },
       ]
     : [
         { key: "players", to: "/players", label: t.nav.players || "Players", active: isPlayersActive },
@@ -488,37 +482,66 @@ export default function Navbar() {
             </NavLink>
           )}
           {user && (
-            <NavLink
-              to="/achievements"
-              onClick={closeMobile}
-              className={({ isActive }) =>
-                `${styles.offcanvasLink} ${isActive ? styles.active : ""}`
-              }
-            >
-              {t.nav.achievements || "Achievements"}
-            </NavLink>
-          )}
-          {user && (
-            <NavLink
-              to="/settings"
-              onClick={closeMobile}
-              className={({ isActive }) =>
-                `${styles.offcanvasLink} ${isActive ? styles.active : ""}`
-              }
-            >
-              {t.nav.settings || "Settings"}
-            </NavLink>
-          )}
-          {isAdmin && (
-            <NavLink
-              to="/admin"
-              onClick={closeMobile}
-              className={({ isActive }) =>
-                `${styles.offcanvasLink} ${isActive ? styles.active : ""}`
-              }
-            >
-              {t.nav.admin || "Admin"}
-            </NavLink>
+            <div className={styles.offcanvasMore}>
+              <button
+                type="button"
+                className={styles.offcanvasMoreToggle}
+                onClick={() => setMobileMoreOpen((v) => !v)}
+                aria-expanded={mobileMoreOpen ? "true" : "false"}
+              >
+                <span>{t.nav.more || "More"}</span>
+                <span
+                  className={`${styles.offcanvasMoreChevron} ${
+                    mobileMoreOpen ? styles.offcanvasMoreChevronOpen : ""
+                  }`}
+                  aria-hidden="true"
+                >
+                  v
+                </span>
+              </button>
+
+              <div
+                className={`${styles.offcanvasMoreList} ${
+                  mobileMoreOpen ? styles.offcanvasMoreListOpen : ""
+                }`}
+              >
+                <NavLink
+                  to="/achievements"
+                  onClick={closeMobile}
+                  className={({ isActive }) =>
+                    `${styles.offcanvasLink} ${styles.offcanvasSubLink} ${
+                      isActive ? styles.active : ""
+                    }`
+                  }
+                >
+                  {t.nav.achievements || "Achievements"}
+                </NavLink>
+                <NavLink
+                  to="/settings"
+                  onClick={closeMobile}
+                  className={({ isActive }) =>
+                    `${styles.offcanvasLink} ${styles.offcanvasSubLink} ${
+                      isActive ? styles.active : ""
+                    }`
+                  }
+                >
+                  {t.nav.settings || "Settings"}
+                </NavLink>
+                {isAdmin && (
+                  <NavLink
+                    to="/admin"
+                    onClick={closeMobile}
+                    className={({ isActive }) =>
+                      `${styles.offcanvasLink} ${styles.offcanvasSubLink} ${
+                        isActive ? styles.active : ""
+                      }`
+                    }
+                  >
+                    {t.nav.admin || "Admin"}
+                  </NavLink>
+                )}
+              </div>
+            </div>
           )}
         </div>
 

@@ -40,6 +40,14 @@ export default function TournamentBoardRow({
   const full = Number(row.registeredTeams) >= Number(row.maxTeams);
   const solo = isSoloFormat(row.teamFormat);
   const statusLabel = tt?.tabs?.[row.status] || row.status;
+  const statusToneClass =
+    row.status === "live"
+      ? styles.statusLive
+      : row.status === "completed"
+        ? styles.statusCompleted
+        : row.status === "cancelled"
+          ? styles.statusCancelled
+          : styles.statusUpcoming;
 
   return (
     <article className={styles.boardRow}>
@@ -58,10 +66,12 @@ export default function TournamentBoardRow({
         </div>
       </div>
 
-      <div>{formatTournamentDate(row.startsAt, lang)}</div>
-      <div>{row.teamFormat}</div>
-      <div>
-        {row.registeredTeams}/{row.maxTeams}
+      <div className={styles.cellValue}>{formatTournamentDate(row.startsAt, lang)}</div>
+      <div className={styles.cellValue}>{row.teamFormat}</div>
+      <div className={styles.cellValue}>
+        <span className={styles.participantsPill}>
+          {row.registeredTeams}/{row.maxTeams}
+        </span>
       </div>
       <div className={styles.requirementsBlock}>
         <RequirementLine ok={reqState.eloOk} value={row?.requirements?.minElo ?? 0} label="ELO" />
@@ -72,10 +82,10 @@ export default function TournamentBoardRow({
         />
         <RequirementLine ok={reqState.fragpunkOk} value="FragPunk" label="ID" />
       </div>
-      <div>{row.prizePool || "-"}</div>
+      <div className={styles.cellValue}>{row.prizePool || "-"}</div>
 
       <div className={styles.colStatus}>
-        <span className={styles.status}>{statusLabel}</span>
+        <span className={`${styles.status} ${statusToneClass}`}>{statusLabel}</span>
         {user &&
           !participating &&
           (solo ? null : (
