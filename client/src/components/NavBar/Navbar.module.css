@@ -23,7 +23,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-4);
+  gap: clamp(8px, 1.1vw, 14px);
 }
 
 .navbar::before {
@@ -58,6 +58,8 @@
   border-radius: 0;
   background: none;
   border: none;
+  text-decoration: none;
+  cursor: pointer;
   text-shadow: 0 0 8px rgba(102, 163, 255, 0.16);
 }
 
@@ -73,10 +75,12 @@
 
 .links {
   display: flex;
-  gap: 8px;
+  gap: 6px;
+  flex: 1 1 auto;
+  min-width: 0;
   position: relative;
   z-index: 1;
-  padding: 5px;
+  padding: 4px;
   border-radius: 10px;
   background: rgba(8, 12, 22, 0.56);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -84,14 +88,15 @@
 
 .link {
   position: relative;
-  font-size: 0.86rem;
+  font-size: 0.82rem;
   font-weight: 700;
   color: #b2bfda;
   text-decoration: none;
   transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease;
-  padding: 8px 10px;
+  padding: 7px 8px;
   border-radius: 8px;
   border: 1px solid transparent;
+  white-space: nowrap;
 }
 
 .linkStack {
@@ -157,9 +162,45 @@
 .right {
   display: flex;
   align-items: center;
-  gap: var(--space-4);
+  gap: clamp(8px, 1vw, 12px);
   position: relative;
   z-index: 2;
+  flex-shrink: 0;
+}
+
+.search {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 1 240px;
+  min-width: 150px;
+}
+
+.searchInput {
+  width: 100%;
+  min-width: 0;
+  height: 38px;
+  border-radius: 11px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(7, 10, 18, 0.74);
+  color: #f2f4ff;
+  padding: 0 12px;
+  font-size: 0.82rem;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.searchInput::placeholder {
+  color: rgba(176, 189, 217, 0.82);
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: rgba(51, 208, 255, 0.56);
+  box-shadow: 0 0 10px rgba(51, 208, 255, 0.2);
+}
+
+.searchInput:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(51, 208, 255, 0.28);
 }
 
 .desktopLogin {
@@ -451,6 +492,15 @@
   gap: 12px;
 }
 
+.offcanvasSearch {
+  display: flex;
+}
+
+.offcanvasSearch .searchInput {
+  min-width: 0;
+  width: 100%;
+}
+
 .offcanvasLink {
   font-size: var(--text-md);
   font-weight: 700;
@@ -571,6 +621,7 @@
 
 @media (max-width: 920px) {
   .links,
+  .search,
   .right .langDropdown,
   .desktopLogin {
     display: none;
@@ -650,6 +701,33 @@
     align-items: center;
     justify-content: center;
     box-shadow: 0 0 6px rgba(255, 95, 143, 0.22);
+  }
+}
+
+@media (max-width: 1260px) {
+  .search {
+    display: none;
+  }
+}
+
+@media (max-width: 1120px) {
+  .logo {
+    font-size: 18px;
+    letter-spacing: 0.9px;
+  }
+
+  .logo span {
+    padding: 4px 8px;
+  }
+
+  .links {
+    gap: 4px;
+    padding: 3px;
+  }
+
+  .link {
+    font-size: 0.76rem;
+    padding: 6px 7px;
   }
 }
 

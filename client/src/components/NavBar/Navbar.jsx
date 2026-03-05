@@ -1,5 +1,5 @@
-﻿import { useEffect, useRef, useState } from "react";
-import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { signOut } from "firebase/auth";
 import styles from "@/components/NavBar/Navbar.module.css";
 import { useLang } from "@/i18n/LanguageContext";
@@ -19,6 +19,7 @@ export default function Navbar() {
   const [langOpen, setLangOpen] = useState(false);
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
   const [friendRequests, setFriendRequests] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
   const dropdownRef = useRef(null);
   const langRef = useRef(null);
   const langMobileRef = useRef(null);
@@ -121,10 +122,24 @@ export default function Navbar() {
     };
   }, [user]);
 
+  useEffect(() => {
+    const q = new URLSearchParams(location.search).get("q") || "";
+    setSearchQuery(q);
+  }, [location.search]);
+
   const closeMobile = () => {
     setMobileOpen(false);
     setLangOpen(false);
     setMobileMoreOpen(false);
+  };
+
+  const handleSearchSubmit = (event) => {
+    event.preventDefault();
+    const q = searchQuery.trim();
+    if (!q) return;
+    const params = new URLSearchParams({ q });
+    navigate(`/players?${params.toString()}`);
+    closeMobile();
   };
 
   const languages = [
@@ -167,9 +182,13 @@ export default function Navbar() {
   return (
     <nav className={styles.navbar}>
       <div className={styles.navInner}>
-        <div className={styles.logo}>
+        <Link
+          to="/players"
+          className={styles.logo}
+          aria-label={t.nav?.home || "Home"}
+        >
           FragPunk <span>Tracker</span>
-        </div>
+        </Link>
 
         <div className={styles.links}>
           {user && (
@@ -222,6 +241,21 @@ export default function Navbar() {
         </div>
 
         <div className={styles.right}>
+          <form
+            className={styles.search}
+            onSubmit={handleSearchSubmit}
+            role="search"
+          >
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className={styles.searchInput}
+              placeholder={t.nav?.searchPlaceholder || "Search players, teams, tournaments"}
+              aria-label={t.nav?.searchAria || "Search players, teams, tournaments"}
+            />
+          </form>
+
           {!user && (
             <div className={styles.desktopLogin}>
               <DiscordLoginButton />
@@ -405,6 +439,20 @@ export default function Navbar() {
         </div>
 
         <div className={styles.offcanvasLinks}>
+          <form
+            className={styles.offcanvasSearch}
+            onSubmit={handleSearchSubmit}
+            role="search"
+          >
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className={styles.searchInput}
+              placeholder={t.nav?.searchPlaceholder || "Search players, teams, tournaments"}
+              aria-label={t.nav?.searchAria || "Search players, teams, tournaments"}
+            />
+          </form>
           {user && (
             <NavLink
               to="/upload"

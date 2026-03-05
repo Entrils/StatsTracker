@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import styles from "@/pages/PlayersTab/PlayersTab.module.css";
 import StateMessage from "@/components/StateMessage/StateMessage";
 import PageState from "@/components/StateMessage/PageState";
@@ -19,9 +19,11 @@ const SORTS = {
 const PAGE_SIZE = 300;
 const SKELETON_ROWS = 8;
 const LAST_FILTER_STORAGE_KEY = "players_last_filter_v1";
+const ONBOARDING_DISMISSED_KEY = "players_onboarding_dismissed_v1";
 
 export default function PlayersTab() {
   const { t } = useLang();
+  const location = useLocation();
 
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
   const [rawRows, setRawRows] = useState([]);
@@ -37,6 +39,7 @@ export default function PlayersTab() {
   const [lastSyncedAt, setLastSyncedAt] = useState(0);
   const rawRowsRef = useRef([]);
   const activationTrackedRef = useRef(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
     rawRowsRef.current = rawRows;
@@ -53,10 +56,18 @@ export default function PlayersTab() {
       if (Object.values(SORTS).includes(nextSort)) {
         setSortBy(nextSort);
       }
+      const dismissedRaw = window.localStorage.getItem(ONBOARDING_DISMISSED_KEY);
+      setShowOnboarding(dismissedRaw !== "1");
     } catch {
       // ignore read errors
     }
   }, []);
+
+  useEffect(() => {
+    const query = new URLSearchParams(location.search).get("q");
+    if (query === null) return;
+    setSearch(query);
+  }, [location.search]);
 
   const fetchPage = useCallback(async (reset = false) => {
     if (reset) {
@@ -328,6 +339,16 @@ export default function PlayersTab() {
     });
   }, [search, sortBy]);
 
+  const dismissOnboarding = useCallback(() => {
+    setShowOnboarding(false);
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(ONBOARDING_DISMISSED_KEY, "1");
+    } catch {
+      // ignore storage errors
+    }
+  }, []);
+
   return (
     <div className={styles.wrapper}>
       <div className={styles.header}>
@@ -456,6 +477,28 @@ export default function PlayersTab() {
             </Button>
           </div>
         </div>
+        {showOnboarding && (
+          <section className={styles.onboarding}>
+            <div className={styles.onboardingMeta}>
+              <p className={styles.onboardingTitle}>
+                {t.leaderboard?.onboardingTitle || "Start with four simple steps"}
+              </p>
+              <ol className={styles.onboardingList}>
+                <li>{t.leaderboard?.onboardingStepSearch || "Search for your in-game name above."}</li>
+                <li>{t.leaderboard?.onboardingStepProfile || "Open your player profile from the list."}</li>
+                <li>{t.leaderboard?.onboardingStepCompare || "Compare your stats vs others."}</li>
+                <li>{t.leaderboard?.onboardingStepUpload || "Go to Upload to add more matches."}</li>
+              </ol>
+            </div>
+            <button
+              type="button"
+              className={styles.onboardingDismiss}
+              onClick={dismissOnboarding}
+            >
+              {t.leaderboard?.onboardingDismiss || "Got it"}
+            </button>
+          </section>
+        )}
         {!!quickInsight && (
           <div className={styles.quickInsight}>
             <div className={styles.quickInsightMeta}>

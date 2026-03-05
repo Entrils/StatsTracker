@@ -29,6 +29,7 @@ export default function UploadTab() {
   const [toasts, setToasts] = useState([]);
   const [manualResultRequest, setManualResultRequest] = useState(null);
   const [lastAnalyzedAt, setLastAnalyzedAt] = useState(0);
+  const [hasSeenTips, setHasSeenTips] = useState(false);
 
   const tesseractRef = useRef(null);
   const tesseractInitRef = useRef(null);
@@ -190,6 +191,16 @@ export default function UploadTab() {
     };
   }, [selectedFiles]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = window.localStorage.getItem("upload_tips_seen_v1");
+      setHasSeenTips(raw === "1");
+    } catch {
+      // ignore
+    }
+  }, []);
+
   useEffect(
     () => () => {
       if (manualResultResolverRef.current) {
@@ -256,6 +267,36 @@ export default function UploadTab() {
           ?
         </a>
       </div>
+
+      {!hasSeenTips && (
+        <section className={styles.tips}>
+          <div className={styles.tipsMeta}>
+            <p className={styles.tipsTitle}>
+              {t.upload?.tipsTitle || "Best results from your screenshots"}
+            </p>
+            <ul className={styles.tipsList}>
+              <li>{t.upload?.tipsFullScreen || "Use full-screen match results without UI cropped."}</li>
+              <li>{t.upload?.tipsQuality || "Avoid blur, strong glare, or super low resolution."}</li>
+              <li>{t.upload?.tipsUnique || "Upload each match once; duplicates are skipped."}</li>
+            </ul>
+          </div>
+          <button
+            type="button"
+            className={styles.tipsDismiss}
+            onClick={() => {
+              setHasSeenTips(true);
+              if (typeof window === "undefined") return;
+              try {
+                window.localStorage.setItem("upload_tips_seen_v1", "1");
+              } catch {
+                // ignore
+              }
+            }}
+          >
+            {t.upload?.tipsDismiss || "Hide tips"}
+          </button>
+        </section>
+      )}
 
       <UploadDropzoneCard
         t={t}

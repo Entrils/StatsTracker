@@ -67,23 +67,13 @@ export default function TournamentsPage() {
                 >
                   {t.nav?.myTeams || "My teams"}
                 </Button>
-                {isAdmin ? (
-                  <Button
-                    size="sm"
-                    className={styles.mobileQuickBtn}
-                    onClick={() => navigate("/tournaments/create")}
-                  >
-                    {tt.create || "Create tournament"}
-                  </Button>
-                ) : (
-                  <Button
-                    size="sm"
-                    className={styles.mobileQuickBtn}
-                    onClick={() => navigate("/help")}
-                  >
-                    {t.nav?.help || "Help"}
-                  </Button>
-                )}
+                <Button
+                  size="sm"
+                  className={styles.mobileQuickBtn}
+                  onClick={() => navigate(isAdmin ? "/tournaments/create" : "/help")}
+                >
+                  {isAdmin ? (tt.create || "Create tournament") : (t.nav?.help || "Help")}
+                </Button>
               </>
             ) : (
               <>
